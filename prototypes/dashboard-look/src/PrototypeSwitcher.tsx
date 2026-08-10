@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export type VariantKey = "C6A" | "C6B" | "C6C" | "C6D";
 
@@ -8,9 +8,6 @@ export const VARIANTS: { key: VariantKey; name: string }[] = [
   { key: "C6C", name: "fresh teal — mesh blobs + grain" },
   { key: "C6D", name: "warm sunrise — untextured control" },
 ];
-
-type FontKey = "dm" | "newsreader";
-const FONT_LABEL: Record<FontKey, string> = { dm: "DM Serif", newsreader: "Newsreader" };
 
 // PROTOTYPE — floating variant switcher. Not for production; nothing here ships.
 export function PrototypeSwitcher({
@@ -25,15 +22,6 @@ export function PrototypeSwitcher({
     const next = (idx + dir + VARIANTS.length) % VARIANTS.length;
     onChange(VARIANTS[next].key);
   };
-
-  // PROTOTYPE — while we're comparing display faces, flip `data-font` on <html> so
-  // every variant's `font-display` token swaps live, no redeploy needed.
-  const [font, setFont] = useState<FontKey>(
-    () => (document.documentElement.dataset.font as FontKey) || "dm",
-  );
-  useEffect(() => {
-    document.documentElement.dataset.font = font === "dm" ? "" : font;
-  }, [font]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -68,14 +56,6 @@ export function PrototypeSwitcher({
         className="grid h-8 w-8 place-items-center rounded-full text-lg hover:bg-white/10"
       >
         →
-      </button>
-      <span className="h-5 w-px bg-white/15" aria-hidden="true" />
-      <button
-        type="button"
-        onClick={() => setFont((f) => (f === "dm" ? "newsreader" : "dm"))}
-        className="rounded-full bg-white/10 px-2.5 py-1 font-mono text-[11px] tracking-wide hover:bg-white/20"
-      >
-        font: {FONT_LABEL[font]}
       </button>
     </div>
   );

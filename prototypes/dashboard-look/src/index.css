@@ -1,31 +1,11 @@
 @import "tailwindcss";
 
 @theme {
-  /* PROTOTYPE — two display faces in play while we compare, toggled via [data-font] on <html>. */
-  --font-display: "DM Serif Display", ui-serif, Georgia, serif;
-}
-
-:root[data-font="newsreader"] {
+  /* Newsreader — settled display face for the blob-backdrop direction. */
   --font-display: "Newsreader Display", ui-serif, Georgia, serif;
 }
 
-/* Self-hosted display face candidates for the winning blob-backdrop direction — latin subset only. */
-@font-face {
-  font-family: "DM Serif Display";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/dm-serif-display-normal.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "DM Serif Display";
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url("./assets/fonts/dm-serif-display-italic.woff2") format("woff2");
-}
-
+/* Self-hosted, latin subset only. */
 @font-face {
   font-family: "Newsreader Display";
   font-style: normal;
