@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Sparkles } from "lucide-react";
-import { BottomNav, Blobs, panelClass, sheenClass, theme } from "../theme";
+import { BottomNav, panelClass, sheenClass, theme } from "../theme";
 import { labelReading, needsReviewFields, totalsForGrams, type Confidence } from "../data";
 import {
   AmountStepper,
@@ -54,8 +54,6 @@ export function VariantA() {
 
   return (
     <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
-      <Blobs />
-
       <div className="relative flex flex-col gap-5 px-5 pb-8 pt-14">
         <ConfirmHeader />
 

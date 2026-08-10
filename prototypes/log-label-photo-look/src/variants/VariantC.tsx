@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles } from "lucide-react";
-import { BottomNav, Blobs, panelClass, sheenClass, theme } from "../theme";
+import { BottomNav, panelClass, sheenClass, theme } from "../theme";
 import { LABEL_ROW_POSITIONS, labelReading, needsReviewFields, scaledTotals, type Confidence } from "../data";
 import { ConfidenceMark, ConfirmActions, ConfirmHeader, LabelPhoto, ServingsStepper, TotalsPanel } from "./shared";
 
@@ -34,8 +34,6 @@ export function VariantC() {
 
   return (
     <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
-      <Blobs />
-
       <div className="relative flex flex-col gap-5 px-5 pb-8 pt-14">
         <ConfirmHeader />
 
