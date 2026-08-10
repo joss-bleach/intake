@@ -271,7 +271,7 @@ export function VariantC6Base({
             Left to eat today
           </p>
           <p
-            className="mt-1 font-display text-6xl leading-none tracking-[-0.02em]"
+            className={`${theme.heroKcalInline ? "mt-3" : "mt-1"} font-display text-6xl leading-none tracking-[-0.02em]`}
             style={{ color: t.heading }}
           >
             {today.caloriesRemaining.toLocaleString()}
@@ -287,7 +287,8 @@ export function VariantC6Base({
             </p>
           )}
 
-          <div className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-[#ece7f6]">
+          <div
+            className={`${theme.heroKcalInline ? "mt-3" : "mt-5"} h-2.5 w-full overflow-hidden rounded-full bg-[#ece7f6]`}
             <div
               className={`h-full rounded-full bg-gradient-to-r ${theme.barGradient}`}
               style={{ width: `${eatenPct}%` }}
