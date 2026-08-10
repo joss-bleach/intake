@@ -69,11 +69,7 @@ function ExpandableRow({
             <span className="truncate text-sm font-medium" style={{ color: theme.text.foodName }}>
               {item.name}
             </span>
-            {flagged && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
-                <Sparkles className="h-2.5 w-2.5" /> estimated
-              </span>
-            )}
+            {flagged && <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-500" aria-label="Estimated" />}
           </div>
           <span className="text-xs" style={{ color: theme.text.faint }}>
             {item.quantity.value}
