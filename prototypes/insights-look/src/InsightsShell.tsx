@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
+import { ArrowLeft } from "lucide-react";
 import type { ComponentType } from "react";
 import { BottomNav, C6Backdrop, useC6Chrome } from "./c6-shared";
 import { THEME } from "./theme";
@@ -38,15 +39,17 @@ export function InsightsShell({ ComparisonBlock }: { ComparisonBlock: ComponentT
         transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       >
         {/* Header + Day/Week toggle */}
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]" style={{ color: t.heading }}>
-              Insights
-            </h1>
-            <p className="mt-1 text-sm" style={{ color: t.label }}>
-              {insightsData.userName}&rsquo;s macro &amp; micronutrient breakdown
-            </p>
-          </div>
+        <div>
+          <button
+            type="button"
+            aria-label="Back to dashboard"
+            className="mb-3 grid h-9 w-9 place-items-center rounded-full bg-white/50 ring-1 ring-inset ring-white/70 backdrop-blur-xl transition-transform active:scale-95"
+          >
+            <ArrowLeft className="h-4 w-4" style={{ color: t.body }} strokeWidth={2.25} />
+          </button>
+          <h1 className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]" style={{ color: t.heading }}>
+            Insights
+          </h1>
         </div>
 
         <div className="flex w-fit items-center gap-1 rounded-full bg-white/40 p-1 ring-1 ring-inset ring-white/70 backdrop-blur-xl">
@@ -85,6 +88,12 @@ export function InsightsShell({ ComparisonBlock }: { ComparisonBlock: ComponentT
 
         {/* More of / less of — the layout under test */}
         <ComparisonBlock items={nrvItems} t={t} panelClass={panelClass} tileClass={tileClass} sheenClass={sheenClass} />
+
+        {/* Disclaimer — states the comparison's assumption plainly, once, at the foot of the
+            screen rather than repeated as a caption under the comparison heading. */}
+        <p className="px-1 text-center text-xs italic" style={{ color: t.faint }}>
+          *Against UK/EU Nutrient reference values
+        </p>
       </motion.div>
 
       <BottomNav theme={THEME} active="insights" />

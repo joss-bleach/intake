@@ -1,5 +1,5 @@
 import type { C6TextPalette } from "../c6-shared";
-import { ComparisonCaption, DIRECTION_STYLE, type ResolvedNrvItem } from "../comparison-shared";
+import { DIRECTION_STYLE, type ResolvedNrvItem } from "../comparison-shared";
 import type { NrvDirection } from "../data";
 
 const GROUP_ORDER: { direction: NrvDirection; heading: string }[] = [
@@ -27,9 +27,8 @@ export function ComparisonB({
     <div className={panelClass}>
       <div className={sheenClass} aria-hidden="true" />
       <h2 className="text-base font-semibold" style={{ color: t.heading }}>
-        More of / less of
+        Nutrient balance
       </h2>
-      <ComparisonCaption t={t} />
 
       <div className="mt-5 flex flex-col gap-5">
         {GROUP_ORDER.map((group) => {
