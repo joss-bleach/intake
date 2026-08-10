@@ -81,7 +81,11 @@ function IngredientCard({
             <span className="truncate font-medium" style={{ color: theme.text.foodName }}>
               {item.name}
             </span>
-            {flagged && <span className={reviewBadgeClass}>estimated</span>}
+            {flagged && (
+              <span className={reviewBadgeClass}>
+                <Sparkles className="h-2.5 w-2.5" /> estimated
+              </span>
+            )}
           </div>
           <span className="text-xs" style={{ color: theme.text.faint }}>
             {item.quantity.value}
