@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  /* Newsreader — settled display face for the blob-backdrop direction. */
+  --font-display: "Newsreader Display", ui-serif, Georgia, serif;
+}
+
+/* Self-hosted, latin subset only. */
+@font-face {
+  font-family: "Newsreader Display";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("./assets/fonts/newsreader-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader Display";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/newsreader-italic.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  min-height: 100svh;
+  /* Neutral "desk" backdrop behind the mobile frame so variants read as a phone screen, not a full page. */
+  background: #eceef1;
+  font-family:
+    system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+#root {
+  min-height: 100svh;
+}
