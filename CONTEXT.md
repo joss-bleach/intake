@@ -29,3 +29,19 @@ Tag on a `NutritionFact` field recording where the value came from: `"database"`
 
 **ParseFailure**:
 An Effect failure (not a success value) representing model output that couldn't even be decoded — missing fields, broken JSON. Distinct from `needs_review`, which is a valid, decodable, but low-confidence success.
+
+**Food**:
+A reusable, searchable nutrition record, normalized to per-100g/100ml, backing zero or more `LoggedItem`s. Source-agnostic — a `Food` may come from the OFF cache, CoFID, an `llm_estimate_fallback`, or a verified `label_extraction`; all four live in the same table, distinguished only by their provenance tag. Editing a `Food` directly (e.g. fixing a bad saved value) updates it for every future log — this is the "correct the product" flow, distinct from correcting one `LoggedItem`.
+_Avoid_: product, item (ambiguous with `LoggedItem`)
+
+**NutrientValue**:
+One nutrient amount (code, value, unit) attached to either a `Food` or a `LoggedItem`, stored in a narrow value table rather than fixed columns — CoFID alone carries ~150–185 nutrient fields, most NULL for any given OFF or label-extracted `Food`. Carries its own provenance/confidence per ADR 0001, since confidence is per-field, not per-record.
+
+**DiaryEntry**:
+The parent record of one logging action — a timestamp and entry method (description or label-photo) grouping one or more `LoggedItem`s. A multi-ingredient description ("chicken sandwich with mayo") produces one `DiaryEntry` with several `LoggedItem` children, not one row with an ingredients array — keeps each ingredient individually correctable.
+
+**LoggedItem**:
+One resolved `Food` + quantity saved under a `DiaryEntry`. A correction to *this specific log* (e.g. wrong quantity typed) is a new `LoggedItem` row with `corrected_from_id` pointing at the original, which is kept unmodified for audit and the eval correction-feedback loop (see #6) — never a separate `corrections` table. This is instance-level correction; it's distinct from editing the underlying `Food`, which corrects the product itself for all future logs.
+
+**SavedMeal**:
+A named, reusable bundle of `Food` + quantity pairs (`SavedMealItem`s) a user can re-log in one action — e.g. a sandwich built from several separately-scanned label reads. Tracks `times_logged`/`last_logged_at` for frequency ranking. A single, un-bundled food re-logged from history ("recently had Weetabix") is *not* a `SavedMeal` — it's just a query over `LoggedItem` grouped by `Food`; `SavedMeal` is reserved for deliberately named multi-item bundles.
