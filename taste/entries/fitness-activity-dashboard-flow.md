@@ -1,6 +1,6 @@
 ---
 image: images/fitness-activity-dashboard-flow.png
-direction: null
+direction: photographic-sporty-fitness-dashboard
 screens: [dashboard, goals, onboarding]
 added: 2026-08-10
 ---

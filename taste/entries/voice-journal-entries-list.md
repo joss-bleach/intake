@@ -1,6 +1,6 @@
 ---
 image: images/voice-journal-entries-list.png
-direction: null
+direction: pastel-gradient-blob-backdrop
 screens: [log, journal]
 added: 2026-08-10
 ---

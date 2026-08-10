@@ -1,6 +1,6 @@
 ---
 image: images/nutrition-dashboard-sage-green.jpg
-direction: null
+direction: template-gradient-macro-dashboard
 screens: [dashboard]
 added: 2026-08-10
 ---

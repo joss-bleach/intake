@@ -1,6 +1,6 @@
 ---
 image: images/orange-journal-macro-rating.jpg
-direction: null
+direction: navy-ring-badge-coach-journal
 screens: [journal, meal-log]
 added: 2026-08-10
 ---

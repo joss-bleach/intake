@@ -1,6 +1,6 @@
 ---
 image: images/health-dashboard-profile-cards.png
-direction: null
+direction: pastel-gradient-blob-backdrop
 screens: [dashboard, profile, settings]
 added: 2026-08-10
 ---

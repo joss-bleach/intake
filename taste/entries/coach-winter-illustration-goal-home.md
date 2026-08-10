@@ -1,6 +1,6 @@
 ---
 image: images/coach-winter-illustration-goal-home.jpg
-direction: null
+direction: navy-ring-badge-coach-journal
 screens: [home, goals, coach]
 added: 2026-08-10
 ---

@@ -1,6 +1,6 @@
 ---
 image: images/peach-recipe-library-scan-meal.jpg
-direction: null
+direction: warm-peach-photographic
 screens: [recipes, meal-log, scan]
 added: 2026-08-10
 ---

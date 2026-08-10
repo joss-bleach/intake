@@ -1,6 +1,6 @@
 ---
 image: images/warm-cream-energy-gauge-dashboard.jpg
-direction: null
+direction: soft-cream-icon-dashboard
 screens: [dashboard, meal-log]
 added: 2026-08-10
 ---

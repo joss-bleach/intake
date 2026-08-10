@@ -1,6 +1,6 @@
 ---
 image: images/nutrition-dashboard-peach-gradient.png
-direction: null
+direction: soft-cream-icon-dashboard
 screens: [dashboard]
 added: 2026-08-10
 ---

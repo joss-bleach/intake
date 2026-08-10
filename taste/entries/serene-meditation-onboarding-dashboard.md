@@ -1,6 +1,6 @@
 ---
 image: images/serene-meditation-onboarding-dashboard.png
-direction: null
+direction: pastel-gradient-blob-backdrop
 screens: [onboarding, dashboard]
 added: 2026-08-10
 ---

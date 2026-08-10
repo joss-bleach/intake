@@ -1,6 +1,6 @@
 ---
 image: images/health-report-fullness-slider.png
-direction: null
+direction: pastel-gradient-blob-backdrop
 screens: [onboarding, dashboard, insights]
 added: 2026-08-10
 ---

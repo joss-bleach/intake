@@ -1,6 +1,6 @@
 ---
 image: images/skincare-routine-checklist-insights.png
-direction: null
+direction: warm-peach-photographic
 screens: [onboarding, dashboard, insights]
 added: 2026-08-10
 ---

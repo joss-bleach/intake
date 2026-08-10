@@ -1,6 +1,6 @@
 ---
 image: images/fitness-activity-plan-composite.png
-direction: null
+direction: photographic-sporty-fitness-dashboard
 screens: [analytics, goals, onboarding]
 added: 2026-08-10
 ---
