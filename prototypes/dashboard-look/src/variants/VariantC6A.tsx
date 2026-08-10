@@ -10,6 +10,7 @@ export function VariantC6A({ data }: { data: typeof dashboardData }) {
         pageBg: "bg-[#f6f2fb]",
         blobs: ["bg-violet-300/60", "bg-fuchsia-200/60", "bg-sky-200/50"],
         barGradient: "from-violet-500 via-fuchsia-400 to-sky-400",
+        heroKcalInline: true,
         navActiveClass: "text-violet-600",
         navButtonGradient: "from-violet-500 to-fuchsia-500",
         texture: "grain",

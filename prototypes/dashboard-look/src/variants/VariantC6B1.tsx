@@ -15,6 +15,7 @@ export function VariantC6B1({ data }: { data: typeof dashboardData }) {
         navButtonGradient: "from-purple-600 to-cyan-500",
         texture: "glass",
         foodBlock: "meals",
+        foodRowStyle: "divider",
         text: {
           heading: "#1e1b4b",
           emphasisStrong: "#312c6b",

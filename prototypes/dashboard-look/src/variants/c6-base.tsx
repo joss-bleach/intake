@@ -128,6 +128,12 @@ export interface C6Theme {
   text?: Partial<C6TextPalette>;
   /** Which treatment the food-logging block uses. Defaults to "recent". */
   foodBlock?: C6FoodBlock;
+  /** "card" (default) — each food row is its own glass card. "divider" —
+   * plain rows separated by a muted underline, no per-row card. */
+  foodRowStyle?: "card" | "divider";
+  /** Hero panel: fold "kcal" inline after the big number, muted, instead of
+   * a separate "kcal left today" line underneath. */
+  heroKcalInline?: boolean;
 }
 
 // PROTOTYPE — subtle SVG film-grain, tuned to sit on the backdrop only (it's
@@ -179,18 +185,29 @@ export function VariantC6Base({
   const showGrain = theme.texture === "grain" || theme.texture === "mesh";
 
   const foodBlock = theme.foodBlock ?? "recent";
+  const foodRowStyle = theme.foodRowStyle ?? "card";
   // Higher-contrast card recipe for the food rows: pushed to near-opaque so
   // they stay legible over a saturated backdrop, rather than reusing the
   // lighter default translucent card.
   const highContrastRow = foodBlock !== "recent";
-  const foodRowClass = highContrastRow
-    ? "relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-white/80 px-4 py-3 ring-1 ring-inset ring-white/95 backdrop-blur-lg"
-    : `relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl px-4 py-3 ring-1 ring-inset backdrop-blur-md ${
-        isGlass ? "bg-white/65 ring-white/75" : "bg-white/40 ring-white/60"
-      }`;
-  const foodRowSheen = highContrastRow
-    ? "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/70 via-white/10 to-transparent"
-    : "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/40 via-white/5 to-transparent";
+  const foodRowClass =
+    foodRowStyle === "divider"
+      ? "flex items-center justify-between gap-3 py-3"
+      : highContrastRow
+        ? "relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-white/80 px-4 py-3 ring-1 ring-inset ring-white/95 backdrop-blur-lg"
+        : `relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl px-4 py-3 ring-1 ring-inset backdrop-blur-md ${
+            isGlass ? "bg-white/65 ring-white/75" : "bg-white/40 ring-white/60"
+          }`;
+  const foodRowSheen =
+    foodRowStyle === "divider"
+      ? undefined
+      : highContrastRow
+        ? "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/70 via-white/10 to-transparent"
+        : "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/40 via-white/5 to-transparent";
+  // Divider rows get a straight muted underline instead of a card edge —
+  // last row in each group skips it.
+  const foodRowBorder = (isLast: boolean) =>
+    foodRowStyle === "divider" && !isLast ? { borderBottom: `1px solid ${t.muted}30` } : undefined;
 
   return (
     <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
@@ -258,10 +275,17 @@ export function VariantC6Base({
             style={{ color: t.heading }}
           >
             {today.caloriesRemaining.toLocaleString()}
+            {theme.heroKcalInline && (
+              <span className="ml-2 font-sans text-xl font-normal" style={{ color: t.suffixLight }}>
+                kcal
+              </span>
+            )}
           </p>
-          <p className="mt-1.5 text-sm font-medium" style={{ color: t.emphasisStrong }}>
-            kcal left today
-          </p>
+          {!theme.heroKcalInline && (
+            <p className="mt-1.5 text-sm font-medium" style={{ color: t.emphasisStrong }}>
+              kcal left today
+            </p>
+          )}
 
           <div className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-[#ece7f6]">
             <div
@@ -326,11 +350,15 @@ export function VariantC6Base({
                   <h2 className="text-base font-semibold" style={{ color: t.heading }}>
                     {meal.name}
                   </h2>
-                  <div className="mt-3 flex flex-col gap-2.5">
+                  <div className={`mt-3 flex flex-col ${foodRowStyle === "divider" ? "" : "gap-2.5"}`}>
                     {meal.items.length > 0 ? (
-                      meal.items.map((food) => (
-                        <div key={food.name} className={foodRowClass}>
-                          <div className={foodRowSheen} aria-hidden="true" />
+                      meal.items.map((food, i) => (
+                        <div
+                          key={food.name}
+                          className={foodRowClass}
+                          style={foodRowBorder(i === meal.items.length - 1)}
+                        >
+                          {foodRowSheen && <div className={foodRowSheen} aria-hidden="true" />}
                           <div className="min-w-0">
                             <p
                               className="truncate text-sm font-medium"
@@ -342,25 +370,18 @@ export function VariantC6Base({
                               {food.detail}
                             </p>
                           </div>
-                          <button
-                            type="button"
-                            aria-label={`Add ${food.name}`}
-                            className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white transition-transform active:scale-95`}
-                          >
-                            <Plus className="h-4 w-4" strokeWidth={2.5} />
-                          </button>
                         </div>
                       ))
                     ) : (
                       <div className={`${foodRowClass} justify-start gap-3`}>
-                        <div className={foodRowSheen} aria-hidden="true" />
+                        {foodRowSheen && <div className={foodRowSheen} aria-hidden="true" />}
                         <span className="text-sm" style={{ color: t.muted }}>
                           Not logged yet
                         </span>
                         <button
                           type="button"
                           aria-label={`Add ${meal.name.toLowerCase()}`}
-                          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-white/70 to-white/40 text-[#5a5490] ring-1 ring-inset ring-white/90 transition-transform active:scale-95"
+                          className={`ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white transition-transform active:scale-95`}
                         >
                           <Plus className="h-4 w-4" strokeWidth={2.5} />
                         </button>
@@ -376,9 +397,13 @@ export function VariantC6Base({
                 Recently logged
               </h2>
               <div className="mt-4 flex flex-col gap-2.5">
-                {RECENT_FOODS.map((food) => (
-                  <div key={food.name} className={foodRowClass}>
-                    <div className={foodRowSheen} aria-hidden="true" />
+                {RECENT_FOODS.map((food, i) => (
+                  <div
+                    key={food.name}
+                    className={foodRowClass}
+                    style={foodRowBorder(i === RECENT_FOODS.length - 1)}
+                  >
+                    {foodRowSheen && <div className={foodRowSheen} aria-hidden="true" />}
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium" style={{ color: t.foodName }}>
                         {food.name}
