@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowLeft, Beef, Check, Droplet, Minus, Plus, Sparkles, Wheat } from "lucide-react";
 import { MACRO_CHIP, confidentDotClass, panelClass, sheenClass, theme } from "../theme";
 import { SERVING_GRAMS, labelReading, type Confidence, type scaledTotals } from "../data";
@@ -137,6 +137,12 @@ export interface UnitConfig {
   default: number;
   toGrams: (value: number) => number;
   format: (value: number) => string;
+  // Click-to-edit support: editValue turns the internal value into the
+  // plain number the typed input shows (e.g. "250" while in 100g mode,
+  // not "2.5"); parse turns whatever the user typed back into that
+  // internal value.
+  editValue: (value: number) => number;
+  parse: (input: number) => number;
 }
 
 export const UNIT_CONFIG: Record<Unit, UnitConfig> = {
@@ -147,6 +153,8 @@ export const UNIT_CONFIG: Record<Unit, UnitConfig> = {
     default: 1,
     toGrams: (v) => v * SERVING_GRAMS,
     format: (v) => String(v),
+    editValue: (v) => v,
+    parse: (n) => n,
   },
   "100g": {
     label: "Amount",
@@ -155,6 +163,8 @@ export const UNIT_CONFIG: Record<Unit, UnitConfig> = {
     default: 1,
     toGrams: (v) => v * 100,
     format: (v) => `${Math.round(v * 100)}g`,
+    editValue: (v) => Math.round(v * 100),
+    parse: (n) => n / 100,
   },
   grams: {
     label: "Amount",
@@ -163,6 +173,8 @@ export const UNIT_CONFIG: Record<Unit, UnitConfig> = {
     default: SERVING_GRAMS,
     toGrams: (v) => v,
     format: (v) => `${v}g`,
+    editValue: (v) => v,
+    parse: (n) => n,
   },
 };
 
@@ -200,6 +212,22 @@ export function AmountStepper({
   value: number;
   onChange: (n: number) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const startEdit = () => {
+    setDraft(String(config.editValue(value)));
+    setEditing(true);
+  };
+
+  const commit = () => {
+    const n = Number(draft);
+    if (Number.isFinite(n) && n > 0) {
+      onChange(Math.max(config.min, Math.round(config.parse(n) * 10) / 10));
+    }
+    setEditing(false);
+  };
+
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-2.5 ring-1 ring-inset ring-white/70">
       <span className="text-sm" style={{ color: theme.text.label }}>
@@ -214,9 +242,32 @@ export function AmountStepper({
         >
           <Minus className="h-3.5 w-3.5" style={{ color: theme.text.body }} />
         </button>
-        <span className="w-14 text-center font-display text-lg tabular-nums" style={{ color: theme.text.heading }}>
-          {config.format(value)}
-        </span>
+        {editing ? (
+          <input
+            type="number"
+            inputMode="decimal"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+              if (e.key === "Escape") setEditing(false);
+            }}
+            className="w-14 rounded-lg bg-white text-center font-display text-lg tabular-nums ring-1 ring-inset ring-black/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            style={{ color: theme.text.heading }}
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={startEdit}
+            aria-label="Edit amount"
+            className="w-14 rounded-lg text-center font-display text-lg tabular-nums transition-colors hover:bg-white/60"
+            style={{ color: theme.text.heading }}
+          >
+            {config.format(value)}
+          </button>
+        )}
         <button
           type="button"
           aria-label="Increase amount"

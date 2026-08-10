@@ -61,7 +61,7 @@ export function VariantA() {
         <LabelBento />
 
         <UnitToggle value={unit} onChange={changeUnit} />
-        <AmountStepper config={config} value={amount} onChange={setAmount} />
+        <AmountStepper key={unit} config={config} value={amount} onChange={setAmount} />
 
         <TotalsPanel totals={totals} amountLabel={amountLabel} reviewCount={reviewCount} />
 
