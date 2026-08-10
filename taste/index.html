@@ -31,8 +31,25 @@
 <body>
   <h1>Taste library</h1>
   <p class="subtitle">Design inspiration for Intake, grouped by direction. See <code>taste/README.md</code> for how to add to this.</p>
-  
-  <div id="sections"><p class="empty">No entries yet. See <code>taste/README.md</code> for how to add one.</p></div>
+  <div class="filters" id="filters"><button class="filter-btn active" data-screen="">All</button><button class="filter-btn" data-screen="log-description">log-description</button></div>
+  <div id="sections">
+      <section class="direction" id="__unsorted__">
+        <h2>Unsorted</h2>
+        <p class="direction-desc">Not yet assigned to a direction.</p>
+        <div class="entries">
+    <article class="entry" data-screens="log-description">
+      <img src="entries/images/log-description-input.jpeg" alt="log-description-input" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Full-screen modal sheet (X close, top-left; &quot;Guide&quot; link, top-right) on a warm off-white background,<br>with an in-progress system Live Activity pill overlapping the status bar. The body is a single large<br>white card holding one open-ended textarea, placeholder text in light grey: `Describe your meal, e.g.<br>&quot;grilled salmon with butter, potatoes and asparagus&quot;` — quoted example doubling as the only instruction<br>on the screen, no labelled fields. Cursor sits at the top ready to type; the rest of the card is empty<br>white space, no visual pressure to fill it in a particular shape.</p>
+<p>Below the card, left-aligned small-caps label &quot;RECENT LOGS&quot; over a horizontally-scrolling row of pill<br>chips (rounded-full, thin grey border, black text) reading past meal descriptions verbatim — &quot;Coffee and<br>Toast&quot;, &quot;Pitta, Halloumi and Dips&quot;, a clipped &quot;Tu…&quot; — offered as tap-to-reuse shortcuts rather than a<br>history list. Standard iOS keyboard docked at the bottom.</p>
+<h3>Why it's here</h3>
+<p>The whole input surface is one freeform textarea with an example-as-instruction placeholder, not a<br>structured form — logging starts from a sentence, not fields. Recent Logs as reusable pill chips (not a<br>list) is a fast path back to a previous entry. Both are candidate patterns for Intake's log-by-description<br>entry point, upstream of the parse/correction view #30 covers.</p>
+        <div class="chips"><span class="chip" data-screen="log-description">log-description</span></div>
+      </div>
+    </article></div>
+      </section></div>
   <script>
     const buttons = document.querySelectorAll(".filter-btn");
     const entries = document.querySelectorAll(".entry");
