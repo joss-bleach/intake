@@ -55,6 +55,30 @@ const RECENT_FOODS = [
 
 export type C6Texture = "none" | "grain" | "glass" | "mesh";
 
+interface C6TextPalette {
+  heading: string;
+  emphasisStrong: string;
+  label: string;
+  body: string;
+  suffixLight: string;
+  foodName: string;
+  muted: string;
+  mutedLabel: string;
+  faint: string;
+}
+
+const DEFAULT_TEXT: C6TextPalette = {
+  heading: "#2f2a42",
+  emphasisStrong: "#4a4360",
+  label: "#544d68",
+  body: "#453f5c",
+  suffixLight: "#847c99",
+  foodName: "#3d3555",
+  muted: "#726a89",
+  mutedLabel: "#5f5876",
+  faint: "#948ba9",
+};
+
 export interface C6Theme {
   /** Page backdrop wash behind the blobs, e.g. "bg-[#f6f2fb]". */
   pageBg: string;
@@ -68,6 +92,8 @@ export interface C6Theme {
   navActiveClass: string;
   navButtonGradient: string;
   texture: C6Texture;
+  /** Overrides for the default violet-grey text palette — e.g. an indigo-950 tint. */
+  text?: Partial<C6TextPalette>;
 }
 
 // PROTOTYPE — subtle SVG film-grain, tuned to sit on the backdrop only (it's
@@ -100,6 +126,8 @@ export function VariantC6Base({
   const orderedMacros = [...macros].sort((a, b) =>
     a.key === "protein" ? -1 : b.key === "protein" ? 1 : 0,
   );
+
+  const t: C6TextPalette = { ...DEFAULT_TEXT, ...theme.text };
 
   // Texture B (frosted glass cards) turns up the glass treatment on every panel;
   // every other texture (or no texture) keeps the standard C6 glass recipe.
@@ -155,25 +183,37 @@ export function VariantC6Base({
       >
         {/* Greeting */}
         <div className="flex items-end justify-between">
-          <h1 className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em] text-[#2f2a42]">
+          <h1
+            className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
+            style={{ color: t.heading }}
+          >
             Good afternoon,
             <br />
             {data.userName}
           </h1>
           <div className="mb-1 flex items-center gap-1.5 rounded-full bg-white/35 px-3 py-1.5 ring-1 ring-inset ring-white/70 backdrop-blur-xl">
             <Flame className="h-4 w-4 text-orange-400" strokeWidth={2.25} />
-            <span className="text-sm font-semibold text-[#4a4360]">{streak.currentDays}-day</span>
+            <span className="text-sm font-semibold" style={{ color: t.emphasisStrong }}>
+              {streak.currentDays}-day
+            </span>
           </div>
         </div>
 
         {/* Hero panel: calories remaining is the headline */}
         <div className={panelClass}>
           <div className={sheenClass} aria-hidden="true" />
-          <p className="text-sm text-[#544d68]">Left to eat today</p>
-          <p className="mt-1 font-display text-6xl leading-none tracking-[-0.02em] text-[#2f2a42]">
+          <p className="text-sm" style={{ color: t.label }}>
+            Left to eat today
+          </p>
+          <p
+            className="mt-1 font-display text-6xl leading-none tracking-[-0.02em]"
+            style={{ color: t.heading }}
+          >
             {today.caloriesRemaining.toLocaleString()}
           </p>
-          <p className="mt-1.5 text-sm font-medium text-[#4a4360]">kcal left today</p>
+          <p className="mt-1.5 text-sm font-medium" style={{ color: t.emphasisStrong }}>
+            kcal left today
+          </p>
 
           <div className="mt-5 h-2.5 w-full overflow-hidden rounded-full bg-[#ece7f6]">
             <div
@@ -181,8 +221,8 @@ export function VariantC6Base({
               style={{ width: `${eatenPct}%` }}
             />
           </div>
-          <p className="mt-3 text-sm leading-relaxed text-[#453f5c]">
-            <span className="font-semibold text-[#4a4360]">
+          <p className="mt-3 text-sm leading-relaxed" style={{ color: t.body }}>
+            <span className="font-semibold" style={{ color: t.emphasisStrong }}>
               {today.calories.toLocaleString()}
             </span>{" "}
             of {today.goal.toLocaleString()} kcal logged so far.
@@ -201,10 +241,18 @@ export function VariantC6Base({
                 <span className={`flex h-8 w-8 items-center justify-center rounded-full ${style.chip}`}>
                   <Icon className="h-4 w-4" strokeWidth={2.25} />
                 </span>
-                <p className="mt-3 text-sm font-medium text-[#4a4360]">{macro.label}</p>
-                <p className="mt-0.5 font-display text-xl tracking-[-0.01em] text-[#2f2a42]">
+                <p className="mt-3 text-sm font-medium" style={{ color: t.emphasisStrong }}>
+                  {macro.label}
+                </p>
+                <p
+                  className="mt-0.5 font-display text-xl tracking-[-0.01em]"
+                  style={{ color: t.heading }}
+                >
                   {macro.grams}
-                  <span className="ml-0.5 font-sans text-xs font-normal text-[#847c99]">
+                  <span
+                    className="ml-0.5 font-sans text-xs font-normal"
+                    style={{ color: t.suffixLight }}
+                  >
                     /{macro.goalGrams}g
                   </span>
                 </p>
@@ -222,7 +270,9 @@ export function VariantC6Base({
         {/* Recently logged — tap to re-log */}
         <div className={panelClass}>
           <div className={sheenClass} aria-hidden="true" />
-          <h2 className="text-base font-semibold text-[#2f2a42]">Recently logged</h2>
+          <h2 className="text-base font-semibold" style={{ color: t.heading }}>
+            Recently logged
+          </h2>
           <div className="mt-4 flex flex-col gap-2.5">
             {RECENT_FOODS.map((food) => (
               <div
@@ -236,8 +286,12 @@ export function VariantC6Base({
                   aria-hidden="true"
                 />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-[#3d3555]">{food.name}</p>
-                  <p className="text-xs text-[#726a89]">{food.detail}</p>
+                  <p className="truncate text-sm font-medium" style={{ color: t.foodName }}>
+                    {food.name}
+                  </p>
+                  <p className="text-xs" style={{ color: t.muted }}>
+                    {food.detail}
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -255,8 +309,10 @@ export function VariantC6Base({
         <div className={panelClass}>
           <div className={sheenClass} aria-hidden="true" />
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-[#2f2a42]">This week</h2>
-            <span className="text-sm text-[#5f5876]">
+            <h2 className="text-base font-semibold" style={{ color: t.heading }}>
+              This week
+            </h2>
+            <span className="text-sm" style={{ color: t.mutedLabel }}>
               {streak.days.filter((d) => d.logged).length}/{streak.days.length} logged
             </span>
           </div>
@@ -279,14 +335,13 @@ export function VariantC6Base({
                       />
                     ) : (
                       <div className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-[#d8d2e6]">
-                        <CircleDashed className="h-4 w-4 text-[#948ba9]" strokeWidth={2} />
+                        <CircleDashed className="h-4 w-4" style={{ color: t.faint }} strokeWidth={2} />
                       </div>
                     )}
                   </div>
                   <span
-                    className={`text-xs font-medium ${
-                      isToday ? "text-[#3d3555]" : "text-[#726a89]"
-                    }`}
+                    className="text-xs font-medium"
+                    style={{ color: isToday ? t.foodName : t.muted }}
                   >
                     {day.label}
                   </span>

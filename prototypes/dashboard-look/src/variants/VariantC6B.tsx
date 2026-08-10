@@ -13,6 +13,18 @@ export function VariantC6B({ data }: { data: typeof dashboardData }) {
         navActiveClass: "text-purple-600",
         navButtonGradient: "from-purple-600 to-cyan-500",
         texture: "glass",
+        // Indigo-950 tint on the text palette instead of the default violet-black.
+        text: {
+          heading: "#1e1b4b",
+          emphasisStrong: "#312c6b",
+          label: "#403a7a",
+          body: "#332e6d",
+          suffixLight: "#6b64a3",
+          foodName: "#282460",
+          muted: "#5a5490",
+          mutedLabel: "#4a4480",
+          faint: "#8480ad",
+        },
       }}
     />
   );
