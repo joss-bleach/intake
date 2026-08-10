@@ -289,6 +289,7 @@ export function VariantC6Base({
 
           <div
             className={`${theme.heroKcalInline ? "mt-3" : "mt-5"} h-2.5 w-full overflow-hidden rounded-full bg-[#ece7f6]`}
+          >
             <div
               className={`h-full rounded-full bg-gradient-to-r ${theme.barGradient}`}
               style={{ width: `${eatenPct}%` }}
