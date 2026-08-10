@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 
-export type VariantKey = "A" | "B" | "C";
+export type VariantKey = "A" | "B" | "C" | "C2";
 
 export const VARIANTS: { key: VariantKey; name: string }[] = [
   { key: "A", name: "inline edit-in-place" },
   { key: "B", name: "expanding ingredient cards" },
   { key: "C", name: "compact list + bottom sheet" },
+  { key: "C2", name: "compact list, expands in place (no sheet)" },
 ];
 
 // PROTOTYPE — floating variant switcher. Not for production; nothing here ships.

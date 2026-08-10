@@ -4,6 +4,7 @@ import { PrototypeSwitcher, VARIANTS, type VariantKey } from "./PrototypeSwitche
 import { VariantA } from "./variants/VariantA";
 import { VariantB } from "./variants/VariantB";
 import { VariantC } from "./variants/VariantC";
+import { VariantC2 } from "./variants/VariantC2";
 
 function readVariantFromUrl(): VariantKey {
   const param = new URLSearchParams(window.location.search).get("variant");
@@ -33,6 +34,7 @@ export default function App() {
         {variant === "A" && <VariantA />}
         {variant === "B" && <VariantB />}
         {variant === "C" && <VariantC />}
+        {variant === "C2" && <VariantC2 />}
       </PhoneFrame>
       <PrototypeSwitcher current={variant} onChange={handleChange} />
     </>
