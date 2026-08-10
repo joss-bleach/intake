@@ -64,6 +64,9 @@ export interface C6Theme {
   meshBlobs?: string[];
   /** Hero calorie progress bar, linear left-to-right. */
   barGradient: string;
+  /** Nav active-icon colour + log button fill, matched to the theme's accent. */
+  navActiveClass: string;
+  navButtonGradient: string;
   texture: C6Texture;
 }
 
@@ -300,7 +303,7 @@ export function VariantC6Base({
       <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-white/80 backdrop-blur-2xl">
         <div className="relative mx-auto flex max-w-[420px] items-center justify-between px-8 pb-[max(1.125rem,env(safe-area-inset-bottom))] pt-4">
           <div className="flex items-center gap-8">
-            <NavIcon icon={Home} label="Home" active />
+            <NavIcon icon={Home} label="Home" active activeClass={theme.navActiveClass} />
             <NavIcon icon={LineChart} label="Insights" />
           </div>
           <div className="flex items-center gap-8">
@@ -310,7 +313,7 @@ export function VariantC6Base({
           <button
             type="button"
             aria-label="Log food"
-            className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white ring-4 ring-white/80 transition-transform active:scale-95"
+            className={`absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white ring-4 ring-white/80 transition-transform active:scale-95`}
           >
             <Plus className="h-6 w-6" strokeWidth={2.5} />
           </button>
@@ -324,10 +327,12 @@ function NavIcon({
   icon: Icon,
   label,
   active = false,
+  activeClass = "text-violet-600",
 }: {
   icon: typeof Home;
   label: string;
   active?: boolean;
+  activeClass?: string;
 }) {
   return (
     <button
@@ -335,7 +340,7 @@ function NavIcon({
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
-        active ? "text-violet-600" : "text-[#726a89] hover:text-[#4a4360]"
+        active ? activeClass : "text-[#726a89] hover:text-[#4a4360]"
       }`}
     >
       <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 2} />
