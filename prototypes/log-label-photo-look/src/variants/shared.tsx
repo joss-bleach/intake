@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Beef, Check, Droplet, Minus, Plus, Sparkles, Wheat } from "lucide-react";
+import { ArrowLeft, Beef, Check, Droplet, Minus, Plus, Sparkles, Wheat, X } from "lucide-react";
 import { MACRO_CHIP, confidentDotClass, panelClass, sheenClass, theme } from "../theme";
 import { SERVING_GRAMS, labelReading, type Confidence, type scaledTotals } from "../data";
 
@@ -364,6 +364,32 @@ export function TotalsPanel({
           {reviewCount === 1 ? " it" : " them"} below.
         </p>
       )}
+    </div>
+  );
+}
+
+// Floating in the bottom-right, above the fixed bottom nav — Discard is a
+// quiet ghost circle (this isn't the risky action), Save is the one flat
+// affordance on the page carrying weight, a subtle brand-gradient pill
+// rather than the loud solid nav-button treatment.
+export function ConfirmActions() {
+  return (
+    <div className="fixed bottom-24 right-5 z-20 flex items-center gap-2">
+      <button
+        type="button"
+        aria-label="Discard"
+        className="grid h-11 w-11 place-items-center rounded-full bg-white/70 ring-1 ring-inset ring-white/80 backdrop-blur-xl transition-transform active:scale-95"
+        style={{ color: theme.text.faint }}
+      >
+        <X className="h-4.5 w-4.5" strokeWidth={2.25} />
+      </button>
+      <button
+        type="button"
+        className={`flex h-11 items-center gap-1.5 rounded-full bg-gradient-to-br ${theme.navButtonGradient} px-5 text-sm font-medium text-white shadow-[0_8px_24px_-6px_rgba(109,40,217,0.5)] transition-transform active:scale-95`}
+      >
+        <Check className="h-4 w-4" strokeWidth={2.5} />
+        Save
+      </button>
     </div>
   );
 }

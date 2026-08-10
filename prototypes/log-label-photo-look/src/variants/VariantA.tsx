@@ -6,6 +6,7 @@ import { labelReading, needsReviewFields, totalsForGrams, type Confidence } from
 import {
   AmountStepper,
   ConfidenceMark,
+  ConfirmActions,
   ConfirmHeader,
   LabelBento,
   TotalsPanel,
@@ -81,6 +82,7 @@ export function VariantA() {
         </div>
       </div>
 
+      <ConfirmActions />
       <BottomNav />
     </div>
   );

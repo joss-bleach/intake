@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X, ZoomIn } from "lucide-react";
 import { BottomNav, Blobs, panelClass, sheenClass, theme } from "../theme";
 import { labelReading, needsReviewFields, scaledTotals, type Confidence } from "../data";
-import { ConfidenceMark, ConfirmHeader, LabelPhoto, ServingsStepper, TotalsPanel } from "./shared";
+import { ConfidenceMark, ConfirmActions, ConfirmHeader, LabelPhoto, ServingsStepper, TotalsPanel } from "./shared";
 
 const FIELD_LABELS: Record<string, string> = {
   calories: "Calories",
@@ -71,6 +71,7 @@ export function VariantB() {
         </div>
       </div>
 
+      <ConfirmActions />
       <BottomNav />
 
       <AnimatePresence>
