@@ -386,7 +386,7 @@ export function ConfirmActions() {
       </button>
       <button
         type="button"
-        className={`flex h-11 items-center gap-1.5 rounded-full bg-gradient-to-br ${theme.navButtonGradient} px-5 text-sm font-medium text-white shadow-[0_8px_24px_-6px_rgba(109,40,217,0.5)] transition-transform active:scale-95`}
+        className={`flex h-11 items-center gap-1.5 rounded-full bg-gradient-to-br ${theme.navButtonGradient} px-5 text-sm font-medium text-white transition-transform active:scale-95`}
       >
         <Check className="h-4 w-4" strokeWidth={2.5} />
         Save
