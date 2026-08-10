@@ -1,10 +1,9 @@
 import { VariantC6Base } from "./c6-base";
 import type { dashboardData } from "../data";
 
-// C6-B — Cool indigo + frosted glass cards (clean backdrop, glassier panels).
-// Food-log cards use the higher-contrast "recent-contrast" treatment — the
-// default translucent card read too faint against this backdrop's blobs.
-export function VariantC6B({ data }: { data: typeof dashboardData }) {
+// C6-B1 — same cool-indigo theme as C6-B, but the food log is grouped into
+// breakfast/lunch/dinner/snacks instead of a flat recently-logged list.
+export function VariantC6B1({ data }: { data: typeof dashboardData }) {
   return (
     <VariantC6Base
       data={data}
@@ -15,8 +14,7 @@ export function VariantC6B({ data }: { data: typeof dashboardData }) {
         navActiveClass: "text-purple-600",
         navButtonGradient: "from-purple-600 to-cyan-500",
         texture: "glass",
-        foodBlock: "recent-contrast",
-        // Indigo-950 tint on the text palette instead of the default violet-black.
+        foodBlock: "meals",
         text: {
           heading: "#1e1b4b",
           emphasisStrong: "#312c6b",

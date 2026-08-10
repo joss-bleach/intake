@@ -4,6 +4,7 @@ import { PrototypeSwitcher, VARIANTS, type VariantKey } from "./PrototypeSwitche
 import { dashboardData } from "./data";
 import { VariantC6A } from "./variants/VariantC6A";
 import { VariantC6B } from "./variants/VariantC6B";
+import { VariantC6B1 } from "./variants/VariantC6B1";
 import { VariantC6C } from "./variants/VariantC6C";
 import { VariantC6D } from "./variants/VariantC6D";
 
@@ -34,6 +35,7 @@ export default function App() {
       <PhoneFrame>
         {variant === "C6A" && <VariantC6A data={dashboardData} />}
         {variant === "C6B" && <VariantC6B data={dashboardData} />}
+        {variant === "C6B1" && <VariantC6B1 data={dashboardData} />}
         {variant === "C6C" && <VariantC6C data={dashboardData} />}
         {variant === "C6D" && <VariantC6D data={dashboardData} />}
       </PhoneFrame>

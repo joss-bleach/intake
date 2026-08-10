@@ -53,7 +53,39 @@ const RECENT_FOODS = [
   { name: "Almond butter toast", detail: "290 kcal" },
 ];
 
+// Same foods, grouped the way a meals-tabs treatment would show them — one
+// meal (dinner) left unlogged to demo the empty state.
+const MEALS: { name: string; items: { name: string; detail: string }[] }[] = [
+  {
+    name: "Breakfast",
+    items: [
+      { name: "Greek yogurt", detail: "150 kcal" },
+      { name: "Almond butter toast", detail: "290 kcal" },
+    ],
+  },
+  {
+    name: "Lunch",
+    items: [{ name: "Chicken & rice", detail: "480 kcal" }],
+  },
+  {
+    name: "Dinner",
+    items: [],
+  },
+  {
+    name: "Snacks",
+    items: [{ name: "Protein shake", detail: "210 kcal" }],
+  },
+];
+
 export type C6Texture = "none" | "grain" | "glass" | "mesh";
+
+/**
+ * "recent" — flat recently-logged list, standard card contrast (the original).
+ * "recent-contrast" — same list, cards pushed to near-opaque for legibility
+ *   over a saturated backdrop.
+ * "meals" — grouped into breakfast/lunch/dinner/snacks, same boosted contrast.
+ */
+export type C6FoodBlock = "recent" | "recent-contrast" | "meals";
 
 interface C6TextPalette {
   heading: string;
@@ -94,6 +126,8 @@ export interface C6Theme {
   texture: C6Texture;
   /** Overrides for the default violet-grey text palette — e.g. an indigo-950 tint. */
   text?: Partial<C6TextPalette>;
+  /** Which treatment the food-logging block uses. Defaults to "recent". */
+  foodBlock?: C6FoodBlock;
 }
 
 // PROTOTYPE — subtle SVG film-grain, tuned to sit on the backdrop only (it's
@@ -143,6 +177,20 @@ export function VariantC6Base({
     : "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/50 via-white/5 to-transparent";
 
   const showGrain = theme.texture === "grain" || theme.texture === "mesh";
+
+  const foodBlock = theme.foodBlock ?? "recent";
+  // Higher-contrast card recipe for the food rows: pushed to near-opaque so
+  // they stay legible over a saturated backdrop, rather than reusing the
+  // lighter default translucent card.
+  const highContrastRow = foodBlock !== "recent";
+  const foodRowClass = highContrastRow
+    ? "relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl bg-white/80 px-4 py-3 ring-1 ring-inset ring-white/95 backdrop-blur-lg"
+    : `relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl px-4 py-3 ring-1 ring-inset backdrop-blur-md ${
+        isGlass ? "bg-white/65 ring-white/75" : "bg-white/40 ring-white/60"
+      }`;
+  const foodRowSheen = highContrastRow
+    ? "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/70 via-white/10 to-transparent"
+    : "pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/40 via-white/5 to-transparent";
 
   return (
     <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
@@ -267,42 +315,90 @@ export function VariantC6Base({
           })}
         </div>
 
-        {/* Recently logged — tap to re-log */}
+        {/* Food log — either a flat recently-logged list or grouped by meal,
+            depending on theme.foodBlock. */}
         <div className={panelClass}>
           <div className={sheenClass} aria-hidden="true" />
-          <h2 className="text-base font-semibold" style={{ color: t.heading }}>
-            Recently logged
-          </h2>
-          <div className="mt-4 flex flex-col gap-2.5">
-            {RECENT_FOODS.map((food) => (
-              <div
-                key={food.name}
-                className={`relative flex items-center justify-between gap-3 overflow-hidden rounded-2xl px-4 py-3 ring-1 ring-inset backdrop-blur-md ${
-                  isGlass ? "bg-white/65 ring-white/75" : "bg-white/40 ring-white/60"
-                }`}
-              >
-                <div
-                  className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-white/40 via-white/5 to-transparent"
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium" style={{ color: t.foodName }}>
-                    {food.name}
-                  </p>
-                  <p className="text-xs" style={{ color: t.muted }}>
-                    {food.detail}
-                  </p>
+          {foodBlock === "meals" ? (
+            <div className="flex flex-col gap-5">
+              {MEALS.map((meal) => (
+                <div key={meal.name}>
+                  <h2 className="text-base font-semibold" style={{ color: t.heading }}>
+                    {meal.name}
+                  </h2>
+                  <div className="mt-3 flex flex-col gap-2.5">
+                    {meal.items.length > 0 ? (
+                      meal.items.map((food) => (
+                        <div key={food.name} className={foodRowClass}>
+                          <div className={foodRowSheen} aria-hidden="true" />
+                          <div className="min-w-0">
+                            <p
+                              className="truncate text-sm font-medium"
+                              style={{ color: t.foodName }}
+                            >
+                              {food.name}
+                            </p>
+                            <p className="text-xs" style={{ color: t.muted }}>
+                              {food.detail}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            aria-label={`Add ${food.name}`}
+                            className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white transition-transform active:scale-95`}
+                          >
+                            <Plus className="h-4 w-4" strokeWidth={2.5} />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={`${foodRowClass} justify-start gap-3`}>
+                        <div className={foodRowSheen} aria-hidden="true" />
+                        <span className="text-sm" style={{ color: t.muted }}>
+                          Not logged yet
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Add ${meal.name.toLowerCase()}`}
+                          className="ml-auto grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-white/70 to-white/40 text-[#5a5490] ring-1 ring-inset ring-white/90 transition-transform active:scale-95"
+                        >
+                          <Plus className="h-4 w-4" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  aria-label={`Add ${food.name}`}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white transition-transform active:scale-95"
-                >
-                  <Plus className="h-4 w-4" strokeWidth={2.5} />
-                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <h2 className="text-base font-semibold" style={{ color: t.heading }}>
+                Recently logged
+              </h2>
+              <div className="mt-4 flex flex-col gap-2.5">
+                {RECENT_FOODS.map((food) => (
+                  <div key={food.name} className={foodRowClass}>
+                    <div className={foodRowSheen} aria-hidden="true" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium" style={{ color: t.foodName }}>
+                        {food.name}
+                      </p>
+                      <p className="text-xs" style={{ color: t.muted }}>
+                        {food.detail}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Add ${food.name}`}
+                      className={`grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white transition-transform active:scale-95`}
+                    >
+                      <Plus className="h-4 w-4" strokeWidth={2.5} />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </div>
 
         {/* 7-day streak */}

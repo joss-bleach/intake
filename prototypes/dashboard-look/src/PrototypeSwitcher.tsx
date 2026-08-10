@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 
-export type VariantKey = "C6A" | "C6B" | "C6C" | "C6D";
+export type VariantKey = "C6A" | "C6B" | "C6B1" | "C6C" | "C6D";
 
 export const VARIANTS: { key: VariantKey; name: string }[] = [
   { key: "C6A", name: "lavender — film grain" },
-  { key: "C6B", name: "cool indigo — frosted glass cards" },
+  { key: "C6B", name: "cool indigo — recently logged, high-contrast cards" },
+  { key: "C6B1", name: "cool indigo — meals (breakfast/lunch/dinner/snacks)" },
   { key: "C6C", name: "fresh teal — mesh blobs + grain" },
   { key: "C6D", name: "warm sunrise — untextured control" },
 ];
