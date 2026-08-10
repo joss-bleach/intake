@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ArrowLeft, Beef, Check, Droplet, Minus, Plus, Sparkles, Wheat } from "lucide-react";
 import { MACRO_CHIP, confidentDotClass, panelClass, sheenClass, theme } from "../theme";
-import { labelReading, scaledTotals, type Confidence } from "../data";
+import { SERVING_GRAMS, labelReading, type Confidence, type scaledTotals } from "../data";
 
 // Shared across all three variants — same back arrow + product-name header,
 // same servings stepper + hero totals treatment (ported from the
@@ -27,9 +27,53 @@ export function ConfirmHeader() {
       <p className="font-display text-2xl leading-[1.2] tracking-[-0.01em]" style={{ color: theme.text.heading }}>
         {labelReading.productName.value}
       </p>
-      <p className="mt-0.5 text-sm" style={{ color: theme.text.faint }}>
-        Label says {labelReading.servingLabel.value} per serving
-      </p>
+    </div>
+  );
+}
+
+// A compact row of "shield" tiles echoing a UK front-of-pack nutrition
+// label's Energy/Fat/Saturates/Sugars/Salt strip — rendered in our own
+// bento/glass language rather than faking a photo of the real thing.
+// Overlapping rounded-top tiles read as one connected strip, same as the
+// printed original. Values are the as-read per-serving readings (same
+// source as the correction list below), independent of Variant A's unit
+// toggle further down the page.
+const LABEL_BENTO_FIELDS: { key: keyof typeof labelReading.perServing; label: string; suffix: string }[] = [
+  { key: "calories", label: "Energy", suffix: "kcal" },
+  { key: "fat", label: "Fat", suffix: "g" },
+  { key: "satFat", label: "Saturates", suffix: "g" },
+  { key: "sugars", label: "Sugars", suffix: "g" },
+  { key: "salt", label: "Salt", suffix: "g" },
+];
+
+export function LabelBento({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex ${className}`}>
+      {LABEL_BENTO_FIELDS.map((f, i) => {
+        const field = labelReading.perServing[f.key] as { value: number; confidence: Confidence };
+        return (
+          <div
+            key={f.key}
+            style={{ zIndex: LABEL_BENTO_FIELDS.length - i }}
+            className={`relative flex-1 rounded-t-[1.4rem] rounded-b-lg bg-white/55 px-1.5 pb-2.5 pt-3 text-center ring-1 ring-inset ring-white/70 backdrop-blur-xl ${
+              i > 0 ? "-ml-2" : ""
+            }`}
+          >
+            <p className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: theme.text.faint }}>
+              {f.label}
+            </p>
+            <p className="mt-1 font-display text-base leading-tight tracking-[-0.01em]" style={{ color: theme.text.heading }}>
+              {field.value}
+              <span className="ml-0.5 font-sans text-[10px] font-normal" style={{ color: theme.text.suffixLight }}>
+                {f.suffix}
+              </span>
+            </p>
+            {field.confidence === "needs_review" && (
+              <Sparkles className="mx-auto mt-1 h-2.5 w-2.5 text-amber-500" aria-label="Estimated" />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -78,6 +122,114 @@ export function LabelPhoto({ overlay, className = "" }: { overlay?: ReactNode; c
   );
 }
 
+// Variant A's amount control switches what it's measuring in — the
+// serving as printed, a flat 100g reference, or a free gram amount — each
+// with its own step size, floor and display format, but sharing one
+// stepper shell (AmountStepper) and one totals source (data.ts'
+// totalsForGrams), so the numbers below never drift out of sync with
+// whichever unit is selected.
+export type Unit = "serving" | "100g" | "grams";
+
+export interface UnitConfig {
+  label: string;
+  step: number;
+  min: number;
+  default: number;
+  toGrams: (value: number) => number;
+  format: (value: number) => string;
+}
+
+export const UNIT_CONFIG: Record<Unit, UnitConfig> = {
+  serving: {
+    label: `Serving (${SERVING_GRAMS}g)`,
+    step: 0.5,
+    min: 0.5,
+    default: 1,
+    toGrams: (v) => v * SERVING_GRAMS,
+    format: (v) => String(v),
+  },
+  "100g": {
+    label: "Amount",
+    step: 0.5,
+    min: 0.5,
+    default: 1,
+    toGrams: (v) => v * 100,
+    format: (v) => `${Math.round(v * 100)}g`,
+  },
+  grams: {
+    label: "Amount",
+    step: 10,
+    min: 10,
+    default: SERVING_GRAMS,
+    toGrams: (v) => v,
+    format: (v) => `${v}g`,
+  },
+};
+
+export function UnitToggle({ value, onChange }: { value: Unit; onChange: (unit: Unit) => void }) {
+  const options: { key: Unit; label: string }[] = [
+    { key: "serving", label: "Serving" },
+    { key: "100g", label: "100g" },
+    { key: "grams", label: "Grams" },
+  ];
+  return (
+    <div className="flex gap-1 rounded-full bg-white/50 p-1 ring-1 ring-inset ring-white/70">
+      {options.map((o) => (
+        <button
+          key={o.key}
+          type="button"
+          onClick={() => onChange(o.key)}
+          className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${
+            value === o.key ? "bg-white shadow-sm" : ""
+          }`}
+          style={{ color: value === o.key ? theme.text.heading : theme.text.faint }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function AmountStepper({
+  config,
+  value,
+  onChange,
+}: {
+  config: UnitConfig;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-2.5 ring-1 ring-inset ring-white/70">
+      <span className="text-sm" style={{ color: theme.text.label }}>
+        {config.label}
+      </span>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          aria-label="Decrease amount"
+          onClick={() => onChange(Math.max(config.min, Math.round((value - config.step) * 10) / 10))}
+          className="grid h-7 w-7 place-items-center rounded-full bg-white ring-1 ring-inset ring-black/10 active:scale-95"
+        >
+          <Minus className="h-3.5 w-3.5" style={{ color: theme.text.body }} />
+        </button>
+        <span className="w-14 text-center font-display text-lg tabular-nums" style={{ color: theme.text.heading }}>
+          {config.format(value)}
+        </span>
+        <button
+          type="button"
+          aria-label="Increase amount"
+          onClick={() => onChange(Math.round((value + config.step) * 10) / 10)}
+          className="grid h-7 w-7 place-items-center rounded-full bg-white ring-1 ring-inset ring-black/10 active:scale-95"
+        >
+          <Plus className="h-3.5 w-3.5" style={{ color: theme.text.body }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ServingsStepper({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/50 px-4 py-2.5 ring-1 ring-inset ring-white/70">
@@ -112,14 +264,20 @@ export function ServingsStepper({ value, onChange }: { value: number; onChange: 
   );
 }
 
-export function TotalsPanel({ servings, reviewCount }: { servings: number; reviewCount: number }) {
-  const t = scaledTotals(servings);
-
+export function TotalsPanel({
+  totals: t,
+  amountLabel,
+  reviewCount,
+}: {
+  totals: ReturnType<typeof scaledTotals>;
+  amountLabel: string;
+  reviewCount: number;
+}) {
   return (
     <div className={panelClass}>
       <div className={sheenClass} aria-hidden="true" />
       <p className="text-sm" style={{ color: theme.text.label }}>
-        Logging {servings} {servings === 1 ? "serving" : "servings"}
+        {amountLabel}
       </p>
       <p className="mt-1 font-display text-6xl leading-none tracking-[-0.02em]" style={{ color: theme.text.heading }}>
         {t.calories}

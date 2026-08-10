@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, X, ZoomIn } from "lucide-react";
 import { BottomNav, Blobs, panelClass, sheenClass, theme } from "../theme";
-import { labelReading, needsReviewFields, type Confidence } from "../data";
+import { labelReading, needsReviewFields, scaledTotals, type Confidence } from "../data";
 import { ConfidenceMark, ConfirmHeader, LabelPhoto, ServingsStepper, TotalsPanel } from "./shared";
 
 const FIELD_LABELS: Record<string, string> = {
@@ -49,7 +49,11 @@ export function VariantB() {
         </div>
 
         <ServingsStepper value={servings} onChange={setServings} />
-        <TotalsPanel servings={servings} reviewCount={reviewCount} />
+        <TotalsPanel
+          totals={scaledTotals(servings)}
+          amountLabel={`Logging ${servings} ${servings === 1 ? "serving" : "servings"}`}
+          reviewCount={reviewCount}
+        />
 
         <div className={`${panelClass} !p-0`}>
           <div className={sheenClass} aria-hidden="true" />

@@ -2,8 +2,17 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { BottomNav, Blobs, panelClass, sheenClass, theme } from "../theme";
-import { labelReading, needsReviewFields, type Confidence } from "../data";
-import { ConfidenceMark, ConfirmHeader, LabelPhoto, ServingsStepper, TotalsPanel } from "./shared";
+import { labelReading, needsReviewFields, totalsForGrams, type Confidence } from "../data";
+import {
+  AmountStepper,
+  ConfidenceMark,
+  ConfirmHeader,
+  LabelBento,
+  TotalsPanel,
+  UNIT_CONFIG,
+  UnitToggle,
+  type Unit,
+} from "./shared";
 
 const FIELD_LABELS: Record<string, string> = {
   calories: "Calories",
@@ -17,15 +26,30 @@ const FIELD_LABELS: Record<string, string> = {
 };
 const FIELD_ORDER = ["calories", "fat", "satFat", "carbs", "sugars", "fiber", "protein", "salt"] as const;
 
-// Variant A — the photo is just the first thing in the page: a static
-// snapshot pinned above the fold, then confirmation scrolls normally below
-// it. No persistent link back to the photo once you've scrolled past it —
-// the baseline, cheapest-to-build shape, direct continuation of the
-// description screen's C2 pattern (#30).
+// Variant A — no photo mockup at all. What was read off the label opens the
+// page as its own bento strip (a nod to the shield-shaped UK front-of-pack
+// layout, not an attempt to look photographed), then a unit toggle lets the
+// logged amount be expressed as a serving, a flat 100g, or a free gram
+// figure — the totals panel and correction list below track whichever is
+// selected. Direct continuation of the description screen's C2 pattern (#30).
 export function VariantA() {
-  const [servings, setServings] = useState(1);
+  const [unit, setUnit] = useState<Unit>("serving");
+  const [amount, setAmount] = useState(UNIT_CONFIG.serving.default);
   const [openField, setOpenField] = useState<string | null>(null);
   const reviewCount = needsReviewFields().length;
+
+  const config = UNIT_CONFIG[unit];
+  const grams = config.toGrams(amount);
+  const totals = totalsForGrams(grams);
+  const amountLabel =
+    unit === "serving"
+      ? `Logging ${amount} ${amount === 1 ? "serving" : "servings"} (${grams}g)`
+      : `Logging ${grams}g`;
+
+  const changeUnit = (next: Unit) => {
+    setUnit(next);
+    setAmount(UNIT_CONFIG[next].default);
+  };
 
   return (
     <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
@@ -34,10 +58,12 @@ export function VariantA() {
       <div className="relative flex flex-col gap-5 px-5 pb-8 pt-14">
         <ConfirmHeader />
 
-        <LabelPhoto className="mx-auto w-[85%]" />
+        <LabelBento />
 
-        <ServingsStepper value={servings} onChange={setServings} />
-        <TotalsPanel servings={servings} reviewCount={reviewCount} />
+        <UnitToggle value={unit} onChange={changeUnit} />
+        <AmountStepper config={config} value={amount} onChange={setAmount} />
+
+        <TotalsPanel totals={totals} amountLabel={amountLabel} reviewCount={reviewCount} />
 
         <div className={`${panelClass} !p-0`}>
           <div className={sheenClass} aria-hidden="true" />

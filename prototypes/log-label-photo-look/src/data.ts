@@ -81,6 +81,32 @@ export function scaledTotals(servings: number) {
   };
 }
 
+// Printed serving size, pulled out of servingLabel ("1 bar (40g)") — the
+// anchor Variant A's unit toggle scales away from when the user switches to
+// 100g or a custom gram amount.
+export const SERVING_GRAMS = 40;
+
+// Same shape as scaledTotals, but from the per-100g basis rather than the
+// per-serving-as-read basis — lets Variant A's unit toggle (serving / 100g /
+// grams) recompute totals for an arbitrary gram amount, not just serving
+// multiples.
+export function totalsForGrams(grams: number) {
+  const p = labelReading.per100g;
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  const f = grams / 100;
+  return {
+    calories: Math.round(p.calories * f),
+    protein: round1(p.protein * f),
+    carbs: round1(p.carbs * f),
+    sugars: round1(p.sugars * f),
+    fat: round1(p.fat * f),
+    satFat: round1(p.satFat * f),
+    fiber: round1(p.fiber * f),
+    salt: round2(p.salt * f),
+  };
+}
+
 export function needsReviewFields(): (keyof LabelNutrients)[] {
   return (Object.keys(labelReading.perServing) as (keyof LabelNutrients)[]).filter(
     (k) => labelReading.perServing[k].confidence === "needs_review",
