@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Beef, Check, Droplet, Sparkles, Wheat, X } from "lucide-react";
-import { Blobs, MACRO_CHIP, panelClass, sheenClass, theme } from "../theme";
+import { ArrowLeft, Beef, Check, Droplet, Sparkles, Wheat, X } from "lucide-react";
+import { BottomNav, Blobs, MACRO_CHIP, panelClass, sheenClass, theme } from "../theme";
 import { needsReviewCount, parsedDescription, totals, type ParsedIngredient } from "../data";
 
 // Variant C — the list stays ultra-compact (plain divider rows, echoing the
@@ -19,13 +19,17 @@ export function VariantC() {
 
       <div className="relative flex flex-col gap-5 px-5 pb-8 pt-14">
         <div>
-          <h1
-            className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
+          <button
+            type="button"
+            aria-label="Back to description"
+            className="mb-3 grid h-9 w-9 place-items-center rounded-full bg-white/50 ring-1 ring-inset ring-white/70 backdrop-blur-xl transition-transform active:scale-95"
+          >
+            <ArrowLeft className="h-4 w-4" style={{ color: theme.text.body }} strokeWidth={2.25} />
+          </button>
+          <p
+            className="font-display text-2xl leading-[1.2] tracking-[-0.01em]"
             style={{ color: theme.text.heading }}
           >
-            Logged from your description
-          </h1>
-          <p className="mt-1.5 text-sm" style={{ color: theme.text.muted }}>
             "{parsedDescription.rawInput}"
           </p>
         </div>
@@ -79,6 +83,8 @@ export function VariantC() {
           </ul>
         </div>
       </div>
+
+      <BottomNav />
 
       {editing && <CorrectionSheet item={editing} onClose={() => setEditing(null)} />}
     </div>
@@ -158,9 +164,11 @@ function CorrectionSheet({ item, onClose }: { item: ParsedIngredient; onClose: (
 
         <label className="mt-4 flex items-center justify-between gap-3 text-sm" style={{ color: theme.text.mutedLabel }}>
           Quantity
+          {/* Inputs stay at 16px+ (text-base) — anything smaller triggers
+              iOS Safari's auto-zoom-on-focus. */}
           <input
             defaultValue={item.quantity.value}
-            className="w-28 rounded-lg bg-white px-2.5 py-1.5 text-right ring-1 ring-inset ring-black/10"
+            className="w-28 rounded-lg bg-white px-2.5 py-1.5 text-right text-base ring-1 ring-inset ring-black/10"
             style={{ color: theme.text.body }}
           />
         </label>
@@ -168,7 +176,7 @@ function CorrectionSheet({ item, onClose }: { item: ParsedIngredient; onClose: (
           Calories
           <input
             defaultValue={item.calories.value}
-            className="w-28 rounded-lg bg-white px-2.5 py-1.5 text-right tabular-nums ring-1 ring-inset ring-black/10"
+            className="w-28 rounded-lg bg-white px-2.5 py-1.5 text-right text-base tabular-nums ring-1 ring-inset ring-black/10"
             style={{ color: theme.text.body }}
           />
         </label>
@@ -184,7 +192,7 @@ function CorrectionSheet({ item, onClose }: { item: ParsedIngredient; onClose: (
                 </div>
                 <input
                   defaultValue={field.value}
-                  className="mt-0.5 w-full bg-transparent text-center text-sm font-semibold tabular-nums outline-none"
+                  className="mt-0.5 w-full bg-transparent text-center text-base font-semibold tabular-nums outline-none"
                   style={{ color: theme.text.body }}
                 />
               </label>

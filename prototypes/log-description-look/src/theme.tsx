@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { BookOpen, Home, LineChart, Plus, User } from "lucide-react";
 
 // PROTOTYPE — visual skin is NOT what this prototype is testing. It's the
 // C6-B1 direction settled on the Dashboard screen (ticket #29, branch
@@ -12,6 +13,8 @@ export const theme = {
   barGradient: "from-purple-600 via-violet-400 to-cyan-400",
   accentClass: "text-purple-600",
   accentGradient: "from-purple-600 to-cyan-500",
+  navActiveClass: "text-purple-600",
+  navButtonGradient: "from-purple-600 to-cyan-500",
   text: {
     heading: "#1e1b4b",
     emphasisStrong: "#312c6b",
@@ -74,3 +77,52 @@ export const MACRO_CHIP = {
   carbs: { bar: "from-amber-200 to-amber-400", chip: "bg-amber-50 text-amber-600" },
   fat: { bar: "from-violet-300 to-violet-400", chip: "bg-violet-50 text-violet-600" },
 } as const;
+
+// Fixed bottom nav — ported verbatim from c6-base.tsx. "Log" is the active
+// tab here (this screen lives inside the logging flow, not the dashboard).
+export function BottomNav() {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-white/80 backdrop-blur-2xl">
+      <div className="relative mx-auto flex max-w-[420px] items-center justify-between px-8 pb-[max(1.125rem,env(safe-area-inset-bottom))] pt-4">
+        <div className="flex items-center gap-8">
+          <NavIcon icon={Home} label="Home" />
+          <NavIcon icon={LineChart} label="Insights" />
+        </div>
+        <div className="flex items-center gap-8">
+          <NavIcon icon={BookOpen} label="Log" active />
+          <NavIcon icon={User} label="Profile" />
+        </div>
+        <button
+          type="button"
+          aria-label="Log food"
+          className={`absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white ring-4 ring-white/80 transition-transform active:scale-95`}
+        >
+          <Plus className="h-6 w-6" strokeWidth={2.5} />
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function NavIcon({
+  icon: Icon,
+  label,
+  active = false,
+}: {
+  icon: typeof Home;
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
+        active ? theme.navActiveClass : "text-[#726a89] hover:text-[#4a4360]"
+      }`}
+    >
+      <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 2} />
+    </button>
+  );
+}
