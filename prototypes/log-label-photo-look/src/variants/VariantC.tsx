@@ -92,9 +92,10 @@ export function VariantC() {
             ))}
           </ul>
         </div>
+
+        <ConfirmActions />
       </div>
 
-      <ConfirmActions />
       <BottomNav />
     </div>
   );

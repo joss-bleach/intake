@@ -368,13 +368,14 @@ export function TotalsPanel({
   );
 }
 
-// Floating in the bottom-right, above the fixed bottom nav — Discard is a
-// quiet ghost circle (this isn't the risky action), Save is the one flat
+// Static, in the normal document flow — the last thing in the scrolling
+// content, right-aligned rather than floating over it. Discard is a quiet
+// ghost circle (this isn't the risky action), Save is the one flat
 // affordance on the page carrying weight, a subtle brand-gradient pill
 // rather than the loud solid nav-button treatment.
 export function ConfirmActions() {
   return (
-    <div className="fixed bottom-24 right-5 z-20 flex items-center gap-2">
+    <div className="flex items-center justify-end gap-2">
       <button
         type="button"
         aria-label="Discard"

@@ -80,9 +80,10 @@ export function VariantA() {
             ))}
           </ul>
         </div>
+
+        <ConfirmActions />
       </div>
 
-      <ConfirmActions />
       <BottomNav />
     </div>
   );

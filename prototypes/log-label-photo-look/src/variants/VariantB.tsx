@@ -69,9 +69,10 @@ export function VariantB() {
             ))}
           </ul>
         </div>
+
+        <ConfirmActions />
       </div>
 
-      <ConfirmActions />
       <BottomNav />
 
       <AnimatePresence>
