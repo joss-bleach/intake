@@ -2,15 +2,15 @@ import { useCallback, useEffect, useState } from "react";
 import { PhoneFrame } from "./PhoneFrame";
 import { PrototypeSwitcher, VARIANTS, type VariantKey } from "./PrototypeSwitcher";
 import { dashboardData } from "./data";
-import { VariantA } from "./variants/VariantA";
-import { VariantB } from "./variants/VariantB";
-import { VariantC } from "./variants/VariantC";
-import { VariantD } from "./variants/VariantD";
+import { VariantC6A } from "./variants/VariantC6A";
+import { VariantC6B } from "./variants/VariantC6B";
+import { VariantC6C } from "./variants/VariantC6C";
+import { VariantC6D } from "./variants/VariantC6D";
 
 function readVariantFromUrl(): VariantKey {
   const param = new URLSearchParams(window.location.search).get("variant");
   const match = VARIANTS.find((v) => v.key === param);
-  return match ? match.key : "A";
+  return match ? match.key : "C6A";
 }
 
 export default function App() {
@@ -32,10 +32,10 @@ export default function App() {
   return (
     <>
       <PhoneFrame>
-        {variant === "A" && <VariantA data={dashboardData} />}
-        {variant === "B" && <VariantB data={dashboardData} />}
-        {variant === "C" && <VariantC data={dashboardData} />}
-        {variant === "D" && <VariantD data={dashboardData} />}
+        {variant === "C6A" && <VariantC6A data={dashboardData} />}
+        {variant === "C6B" && <VariantC6B data={dashboardData} />}
+        {variant === "C6C" && <VariantC6C data={dashboardData} />}
+        {variant === "C6D" && <VariantC6D data={dashboardData} />}
       </PhoneFrame>
       <PrototypeSwitcher current={variant} onChange={handleChange} />
     </>
