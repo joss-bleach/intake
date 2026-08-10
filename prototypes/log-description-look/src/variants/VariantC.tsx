@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Beef, Check, Droplet, Sparkles, Wheat, X } from "lucide-react";
-import { Blobs, panelClass, sheenClass, theme } from "../theme";
+import { Blobs, MACRO_CHIP, panelClass, sheenClass, theme } from "../theme";
 import { needsReviewCount, parsedDescription, totals, type ParsedIngredient } from "../data";
 
 // Variant C — the list stays ultra-compact (plain divider rows, echoing the
@@ -14,46 +14,70 @@ export function VariantC() {
   const [editing, setEditing] = useState<ParsedIngredient | null>(null);
 
   return (
-    <div className={`relative min-h-full ${theme.pageBg} px-5 pt-14 pb-28`}>
+    <div className={`relative isolate min-h-full overflow-hidden ${theme.pageBg} pb-24`}>
       <Blobs />
 
-      <h1 className="font-[var(--font-display)] text-2xl" style={{ color: theme.text.heading }}>
-        Logged from your description
-      </h1>
-      <p className="mt-1 text-sm" style={{ color: theme.text.muted }}>
-        "{parsedDescription.rawInput}"
-      </p>
+      <div className="relative flex flex-col gap-5 px-5 pb-8 pt-14">
+        <div>
+          <h1
+            className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
+            style={{ color: theme.text.heading }}
+          >
+            Logged from your description
+          </h1>
+          <p className="mt-1.5 text-sm" style={{ color: theme.text.muted }}>
+            "{parsedDescription.rawInput}"
+          </p>
+        </div>
 
-      <div className={`mt-5 ${panelClass}`}>
-        <div className={sheenClass} aria-hidden="true" />
-        <div className="flex items-baseline justify-between">
-          <span className="text-4xl font-semibold tabular-nums" style={{ color: theme.text.emphasisStrong }}>
+        <div className={panelClass}>
+          <div className={sheenClass} aria-hidden="true" />
+          <p className="text-sm" style={{ color: theme.text.label }}>
+            Total logged
+          </p>
+          <p className="mt-1 font-display text-6xl leading-none tracking-[-0.02em]" style={{ color: theme.text.heading }}>
             {t.calories}
-            <span className="ml-1 text-base font-normal" style={{ color: theme.text.suffixLight }}>
+            <span className="ml-2 font-sans text-xl font-normal" style={{ color: theme.text.suffixLight }}>
               kcal
             </span>
-          </span>
-          <div className="flex gap-2 text-xs" style={{ color: theme.text.mutedLabel }}>
-            <span>{t.protein}g P</span>
-            <span>{t.carbs}g C</span>
-            <span>{t.fat}g F</span>
-          </div>
-        </div>
-        {reviewCount > 0 && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: theme.text.faint }}>
-            <Sparkles className="h-3 w-3 text-amber-500" />
-            {reviewCount} {reviewCount === 1 ? "item" : "items"} estimated — tap the sparkle to fix.
           </p>
-        )}
-      </div>
 
-      <div className={`mt-4 ${panelClass} !p-0`}>
-        <div className={sheenClass} aria-hidden="true" />
-        <ul>
-          {items.map((item, i) => (
-            <CompactRow key={item.id} item={item} isLast={i === items.length - 1} onEdit={() => setEditing(item)} />
-          ))}
-        </ul>
+          <div className="mt-4 grid grid-cols-3 gap-2.5">
+            {(["protein", "carbs", "fat"] as const).map((key) => {
+              const meta = MACRO_META[key];
+              const chip = MACRO_CHIP[key];
+              return (
+                <div key={key} className="flex flex-col items-center gap-1.5 rounded-2xl bg-white/50 py-3 ring-1 ring-inset ring-white/70">
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-full ${chip.chip}`}>
+                    <meta.icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+                  </span>
+                  <span className="font-display text-lg tracking-[-0.01em]" style={{ color: theme.text.heading }}>
+                    {t[key]}
+                    <span className="ml-0.5 font-sans text-xs font-normal" style={{ color: theme.text.suffixLight }}>
+                      g
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {reviewCount > 0 && (
+            <p className="mt-4 flex items-center gap-1.5 text-xs" style={{ color: theme.text.faint }}>
+              <Sparkles className="h-3 w-3 text-amber-500" />
+              {reviewCount} {reviewCount === 1 ? "item" : "items"} estimated — tap the sparkle to fix.
+            </p>
+          )}
+        </div>
+
+        <div className={`${panelClass} !p-0`}>
+          <div className={sheenClass} aria-hidden="true" />
+          <ul>
+            {items.map((item, i) => (
+              <CompactRow key={item.id} item={item} isLast={i === items.length - 1} onEdit={() => setEditing(item)} />
+            ))}
+          </ul>
+        </div>
       </div>
 
       {editing && <CorrectionSheet item={editing} onClose={() => setEditing(null)} />}
@@ -121,7 +145,7 @@ function CorrectionSheet({ item, onClose }: { item: ParsedIngredient; onClose: (
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-indigo-950/15" />
         <div className="flex items-center justify-between">
-          <h2 className="font-[var(--font-display)] text-lg" style={{ color: theme.text.heading }}>
+          <h2 className="font-display text-lg" style={{ color: theme.text.heading }}>
             {item.name}
           </h2>
           <button type="button" onClick={onClose} aria-label="Close" className="grid h-7 w-7 place-items-center rounded-full hover:bg-black/5">

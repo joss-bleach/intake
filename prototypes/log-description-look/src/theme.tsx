@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+
 // PROTOTYPE — visual skin is NOT what this prototype is testing. It's the
 // C6-B1 direction settled on the Dashboard screen (ticket #29, branch
 // prototype/dashboard-look): cool-indigo pastel-gradient-blob backdrop,
@@ -38,12 +40,37 @@ export const reviewBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-amber-100/80 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200";
 export const confidentDotClass = "text-emerald-500";
 
+// Ported verbatim from c6-base.tsx (prototype/dashboard-look) — same blob
+// geometry, animation, and white gradient wash. The static, unanimated,
+// differently-positioned version this replaced is why the first pass didn't
+// read as the same app: the backdrop is most of what makes C6-B1 recognizable.
 export function Blobs() {
   return (
-    <div className="absolute inset-0 -z-20 overflow-hidden">
-      <div className={`absolute -top-24 -left-16 h-72 w-72 rounded-full blur-3xl ${theme.blobs[0]}`} />
-      <div className={`absolute top-1/3 -right-20 h-80 w-80 rounded-full blur-3xl ${theme.blobs[1]}`} />
-      <div className={`absolute bottom-0 left-1/4 h-64 w-64 rounded-full blur-3xl ${theme.blobs[2]}`} />
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <motion.div
+        className={`absolute -left-24 -top-16 h-72 w-72 rounded-full ${theme.blobs[0]} blur-3xl`}
+        animate={{ x: [0, 18, 0], y: [0, 14, 0], scale: [1, 1.08, 1] }}
+        transition={{ duration: 26, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={`absolute -right-28 top-40 h-80 w-80 rounded-full ${theme.blobs[1]} blur-3xl`}
+        animate={{ x: [0, -16, 0], y: [0, 20, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 32, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className={`absolute bottom-0 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full ${theme.blobs[2]} blur-3xl`}
+        animate={{ x: [0, 14, 0], y: [0, -12, 0], scale: [1, 1.06, 1] }}
+        transition={{ duration: 30, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-white/40" />
     </div>
   );
 }
+
+// Macro chip palette — locked red/yellow/green-adjacent family, identical to
+// the dashboard's bento tiles (protein=rose, carbs=amber, fat=violet).
+export const MACRO_CHIP = {
+  protein: { bar: "from-rose-300 to-rose-400", chip: "bg-rose-50 text-rose-600" },
+  carbs: { bar: "from-amber-200 to-amber-400", chip: "bg-amber-50 text-amber-600" },
+  fat: { bar: "from-violet-300 to-violet-400", chip: "bg-violet-50 text-violet-600" },
+} as const;

@@ -28,7 +28,7 @@ export function VariantA() {
     <div className={`relative min-h-full ${theme.pageBg} px-5 pt-14 pb-28`}>
       <Blobs />
 
-      <h1 className="font-[var(--font-display)] text-2xl" style={{ color: theme.text.heading }}>
+      <h1 className="font-display text-2xl" style={{ color: theme.text.heading }}>
         Here's what we heard
       </h1>
       <p className="mt-1 text-sm" style={{ color: theme.text.muted }}>
