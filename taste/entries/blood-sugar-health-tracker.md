@@ -1,6 +1,6 @@
 ---
 image: images/blood-sugar-health-tracker.png
-direction: null
+direction: pastel-sparkline-raised-fab
 screens: [dashboard, history, reports]
 added: 2026-08-10
 ---

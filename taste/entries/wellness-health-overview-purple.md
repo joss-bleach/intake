@@ -1,6 +1,6 @@
 ---
 image: images/wellness-health-overview-purple.png
-direction: null
+direction: pastel-sparkline-raised-fab
 screens: [dashboard, mood-check-in, health-overview]
 added: 2026-08-10
 ---

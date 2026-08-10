@@ -1,6 +1,6 @@
 ---
 image: images/log-food-entry-method-picker.png
-direction: null
+direction: cream-serif-log-flow
 screens: [log-food, logging]
 added: 2026-08-10
 ---

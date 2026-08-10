@@ -1,6 +1,6 @@
 ---
 image: images/workout-plan-calories-dark.png
-direction: null
+direction: dark-purple-ring-gauge
 screens: [dashboard, plan, nutrition-detail]
 added: 2026-08-10
 ---

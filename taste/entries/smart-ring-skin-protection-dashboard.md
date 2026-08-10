@@ -1,6 +1,6 @@
 ---
 image: images/smart-ring-skin-protection-dashboard.jpg
-direction: null
+direction: frosted-glass-over-photo
 screens: [dashboard]
 added: 2026-08-10
 ---

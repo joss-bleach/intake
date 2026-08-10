@@ -33,157 +33,18 @@
   <p class="subtitle">Design inspiration for Intake, grouped by direction. See <code>taste/README.md</code> for how to add to this.</p>
   <div class="filters" id="filters"><button class="filter-btn active" data-screen="">All</button><button class="filter-btn" data-screen="achievements">achievements</button><button class="filter-btn" data-screen="analytics">analytics</button><button class="filter-btn" data-screen="chat">chat</button><button class="filter-btn" data-screen="coach">coach</button><button class="filter-btn" data-screen="community">community</button><button class="filter-btn" data-screen="dashboard">dashboard</button><button class="filter-btn" data-screen="goals">goals</button><button class="filter-btn" data-screen="health-overview">health-overview</button><button class="filter-btn" data-screen="history">history</button><button class="filter-btn" data-screen="home">home</button><button class="filter-btn" data-screen="insights">insights</button><button class="filter-btn" data-screen="journal">journal</button><button class="filter-btn" data-screen="leaderboard">leaderboard</button><button class="filter-btn" data-screen="log">log</button><button class="filter-btn" data-screen="log-confirmation">log-confirmation</button><button class="filter-btn" data-screen="log-description">log-description</button><button class="filter-btn" data-screen="log-food">log-food</button><button class="filter-btn" data-screen="logging">logging</button><button class="filter-btn" data-screen="meal-detail">meal-detail</button><button class="filter-btn" data-screen="meal-log">meal-log</button><button class="filter-btn" data-screen="mood-check-in">mood-check-in</button><button class="filter-btn" data-screen="nutrition-detail">nutrition-detail</button><button class="filter-btn" data-screen="onboarding">onboarding</button><button class="filter-btn" data-screen="plan">plan</button><button class="filter-btn" data-screen="profile">profile</button><button class="filter-btn" data-screen="recipes">recipes</button><button class="filter-btn" data-screen="reports">reports</button><button class="filter-btn" data-screen="scan">scan</button><button class="filter-btn" data-screen="settings">settings</button><button class="filter-btn" data-screen="transactions">transactions</button></div>
   <div id="sections">
-      <section class="direction" id="__unsorted__">
-        <h2>Unsorted</h2>
-        <p class="direction-desc">Not yet assigned to a direction.</p>
+      <section class="direction" id="cream-serif-log-flow">
+        <h2>cream-serif-log-flow</h2>
+        <p class="direction-desc">A single real product's own screenshots (not a mockup template) walking the log-a-meal-by-text flow end to
+end: warm off-white/cream/peach backgrounds, a system Live Activity pill overlapping the status bar on
+every screen, plain X-close and text-link chrome (no drag handles), serif-leaning headings and numerals,
+and a dark-green rounded-pill primary CTA (&quot;Log entry&quot;, &quot;Done&quot;) that only appears once there's something to
+act on. Cards are white with thin grey borders rather than shadows, and AI-thinking states get an
+illustrated placeholder plus a plain-language present-participle status line (&quot;Identifying foods…&quot;) instead
+of a spinner. Members: `log-description-input`, `log-description-filled-state`,
+`log-description-processing`, `log-food-entry-method-picker`, `meal-balance-score-breakdown`,
+`meal-summary-item-list`.</p>
         <div class="entries">
-    <article class="entry" data-screens="dashboard,chat">
-      <img src="entries/images/ai-assistant-quick-actions-dashboard.webp" alt="ai-assistant-quick-actions-dashboard" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Left: an iPhone frame on light grey, an AI-assistant home screen. Header &quot;Hi Daniel 👋 / How can I assist<br>you today?&quot;, a rounded search-style input (&quot;Ask anything…&quot;, magnifying-glass left icon, a filled black<br>circular send/arrow button on the right). A &quot;Quick Actions&quot; label over a 2x2 grid of white square tiles,<br>each a small pastel icon-in-tinted-circle plus a centred label (Summarize, Translate, Generate Ideas,<br>Rewrite). Below, &quot;Recent Actions / See all&quot; -- a list of white rounded cards, each a bold question title, a<br>grey one-line answer preview, a small clock icon, and a &quot;1h ago&quot; timestamp.</p>
-<p>Right: two separate floating panel snippets on the same grey backdrop (not phone-framed) -- a &quot;Total<br>Queries&quot; card with a &quot;Last 7 days&quot; dropdown and a light-blue-filled line chart (soft area fill under the<br>line, gridlines, one highlighted data point as a hollow blue-ringed dot) over date labels; and a chat<br>input bar (plus button, &quot;Type a message…&quot; placeholder, mic icon, filled dark circular waveform/voice<br>button). A separate &quot;Key Takeaways&quot; card lists three flat grey rounded rows of bullet-style text with a<br>copy icon top-right.</p>
-<h3>Why it's here</h3>
-<p>The 2x2 &quot;Quick Actions&quot; tile grid (icon + label, pastel tint circles) is a fast pattern for common<br>logging shortcuts (e.g. &quot;Log meal&quot;, &quot;Scan barcode&quot;, &quot;Log water&quot;, &quot;Repeat last&quot;). The clean area-line chart<br>with one highlighted data point is a solid reference for a 7-day calorie-trend graph, and the<br>&quot;Key Takeaways&quot; flat-row card is worth adapting for a plain-language daily nutrition summary.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="chat">chat</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,history,reports">
-      <img src="entries/images/blood-sugar-health-tracker.png" alt="blood-sugar-health-tracker" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three-screen light-mode health-tracking app (blood sugar monitoring), pale grey-lavender background,<br>white cards, small rounded icon badges in pastel colours (lilac, pink, blue).</p>
-<p>Screen 1 (home): top bar with round avatar, &quot;Good Morning [wave emoji] / Wyatt Anderson&quot; greeting, bell<br>and hamburger icons right. Below, a large lilac card labelled &quot;Blood Sugar&quot; with a green &quot;Normal&quot; status<br>pill top-right, a huge bold &quot;208 mg/dL&quot; reading, and a small red/black bar-chart sparkline to its right.<br>&quot;Overview&quot; section header with left/right nav arrows (one filled black circle). Two square stat tiles<br>side by side (&quot;Steps 4,399&quot; lilac card with a small line-sparkline background, &quot;Sleep 7h 30min&quot; pink card<br>with a moon icon). Below, a &quot;Blood Sugar Trend&quot; card with a &quot;Weekly&quot; dropdown and axis labels (&quot;120&quot;,<br>&quot;108&quot;, &quot;Friday&quot;). Bottom: floating pill tab bar, home icon selected in a black circle, plus a bag/log<br>icon, pie-chart icon, profile icon, and a separate raised blue circular FAB (+) breaking out of the bar on<br>the right.</p>
-<p>Screen 2 (History): &quot;History&quot; title, calendar icon top-right. Below, a search bar (&quot;Search your records…&quot;)<br>with a filter/sort icon button. A &quot;Select Date&quot; row shows a month (&quot;July 2026&quot;) with chevron nav, then a<br>horizontally scrollable strip of date chips (day-of-week + number, selected date &quot;20 Saturday&quot; highlighted<br>in a filled rounded rect). A &quot;Select Time&quot; row shows a similar horizontal strip of hour marks (7:30–10:00)<br>as a tick/bar timeline with a highlighted current time marker. &quot;Daily Summary&quot; section: three circular<br>meal-photo avatars (Breakfast/Lunch/Dinner) each with an mg/dL reading beneath. Below, a list of log<br>entries — circular photo thumbnail, reading value, a green &quot;Normal&quot; status pill, chevron to view detail.</p>
-<p>Screen 3 (Reports): back chevron, &quot;Reports&quot; title, refresh/export icon right. Segmented control (Daily /<br>Weekly selected / Monthly) as a pill switcher. Large semicircular gauge arc coloured in three zones<br>(blue/normal, yellow/high, red/very high) with the current reading &quot;250 mg/dL Overview&quot; centred beneath<br>the arc and a small dot marker on the arc showing position. Legend below with three coloured dot + label +<br>percentage rows (Normal 70-130 56%, High 131-180 28%, Very High &gt;180 16%). &quot;Average Blood Sugar&quot; bar chart<br>beneath: dotted/pattern-fill bars for most days, one bar solid black to mark the selected/current day, day<br>labels underneath, with a small callout tag above the highlighted bar showing its status.</p>
-<h3>Why it's here</h3>
-<p>The three-zone colour-coded semicircular gauge with a percentage-breakdown legend is a clean way to<br>summarise a distribution (e.g. days in/out of calorie or macro target) at a glance. The date-chip +<br>hour-tick horizontal timeline pair on the History screen, and the dotted-vs-solid bar chart that highlights<br>just the selected day, are both strong candidates for Intake's log history and weekly trend views.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="history">history</span><span class="chip" data-screen="reports">reports</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="home,goals,coach">
-      <img src="entries/images/coach-winter-illustration-goal-home.jpg" alt="coach-winter-illustration-goal-home" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>&quot;Coach&quot; tab home screen, part of the same app as the orange Journal screen (matching bottom nav labels<br>Coach/Journal/Profile and identical macro-goal values of 92g/208g/264g/27g). Top area: large serif-leaning<br>bold headline in dark navy, two lines, &quot;Today is going to be a good day.&quot; with a white pill badge top-right<br>holding a small flame icon and &quot;0&quot;. Behind/below the headline, a flat vector winter landscape illustration<br>spans the width of the screen — pale pink-to-blue sky gradient, a soft orange sun/glow low on the horizon,<br>white rolling snow hills, two simple dark-green triangular pine trees on the left, a small brown A-frame<br>cabin with a lit yellow window and a wisp of white smoke from its chimney just right of centre, and one<br>more pine tree on the right — a calm, seasonal, editorial-illustration mood rather than a data-forward<br>hero.</p>
-<p>Below the illustration, on plain white background: &quot;My goal&quot; bold black section header, then a white<br>rounded card with four small ring-gauge badges in a row (same style as the Journal screen: yellow/Fat,<br>pink-red/Protein, sky-blue/Carbs, brown/Fiber), each showing &quot;0 / goal g&quot; since nothing's logged yet.</p>
-<p>Next, a white rounded row: a small blue bathroom-scale icon in a rounded square, bold &quot;My daily weigh-in&quot;<br>label, and a circular outline &quot;+&quot; button on the right — a single-purpose quick-add row.</p>
-<p>&quot;My tools&quot; section header, then two large square tiles side by side: a blush-pink tile with a salad-bowl<br>illustration icon, bold &quot;Recipes&quot; and grey &quot;More than 300 recipes&quot; subtext; a mint-green tile with a<br>clipboard/checklist icon, bold &quot;Articles&quot; and grey &quot;More than 500 articles&quot; subtext — a content-library<br>entry point rather than a logging action.</p>
-<p>Bottom nav: Coach (active), Journal, Profile.</p>
-<h3>Why it's here</h3>
-<p>The full-width seasonal illustration paired with a mood-setting headline (&quot;Today is going to be a good<br>day.&quot;) is a distinctive way to open a coaching/home tab with warmth before any data appears — worth<br>considering for Intake's zero-state or daily-open moment. The two-tile &quot;Recipes / Articles&quot; content-library<br>entry point is a reusable pattern for surfacing non-logging content without cluttering the primary<br>tracking flow.</p>
-        <div class="chips"><span class="chip" data-screen="home">home</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="coach">coach</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,community,leaderboard">
-      <img src="entries/images/daily-goal-ring-community-leaderboard.png" alt="daily-goal-ring-community-leaderboard" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Two-screen dark fitness app, near-black background, purple-to-magenta gradient accents.</p>
-<p>Screen 1 (home/dashboard): top bar &quot;Hello, Alex / Let's build something great&quot; greeting left, round<br>avatar with a small notification-count badge and a hamburger-menu button right. Below, a large dark<br>rounded card with two small pill tabs (&quot;Today&quot; selected, &quot;May 17&quot; as a date pill) top corners. Centred, a<br>big circular progress ring — thick gradient arc (magenta to purple) over a dark track — with &quot;You are at<br>56% Daily Goal&quot; stacked centred inside it, and a tiny running-figure icon marking current position on the<br>ring. Below the ring, a one-line encouragement in a rounded pill: a star icon + &quot;Great job! Only 28% left<br>to reach your daily goal.&quot; A small pagination dot pair beneath indicates more cards via swipe. Under the<br>hero card, two side-by-side stat tiles (&quot;Step 4,360/8,000&quot; with a purple footprint icon in a circular<br>badge, &quot;Active calories 320/600&quot; with a flame icon), each a compact dark card with an icon-badge,<br>label and bold value/target line. Bottom: a floating dark pill tab bar with 5 icon-only buttons (home<br>selected/filled purple square, a book/log icon, calendar, bell, profile).</p>
-<p>Screen 2 (Community/leaderboard), shown as a tilted/angled phone mockup: header &quot;Community&quot; with an info<br>circle icon, and a calendar icon button top-right. Below, a ranked vertical list of team/group cards, each<br>row: rank badge (&quot;#1&quot;–&quot;#6&quot;), a square photo thumbnail, group name (e.g. &quot;Morning Movers&quot;, &quot;Strong<br>Together&quot;, &quot;Peak Performers&quot;), member count caption, and a points value + &quot;pts&quot; label right-aligned in a<br>darker pill. The current user's own group (&quot;#3 Peak Performers … You&quot;) is highlighted with a full-width<br>magenta-to-purple gradient fill and white text, standing out from the otherwise plain dark rows above and<br>below it. Same floating icon tab bar at bottom, profile icon now selected/filled.</p>
-<h3>Why it's here</h3>
-<p>The circular daily-goal ring with an inline encouragement pill directly below it (star icon + short<br>supportive copy tied to the live percentage) is a strong, low-effort way to make a single daily number<br>feel motivating rather than clinical — very applicable to a calorie-goal ring in Intake. The<br>highlighted-own-row treatment in the leaderboard (gradient fill breaking an otherwise uniform list) is a<br>reusable way to make &quot;your position&quot; pop out of any ranked or grouped list.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="community">community</span><span class="chip" data-screen="leaderboard">leaderboard</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,goals,onboarding">
-      <img src="entries/images/fitness-activity-dashboard-flow.png" alt="fitness-activity-dashboard-flow" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three iPhone frames on light grey, showing one fitness app's flow. Screen 1 (&quot;Home&quot;): a greeting header<br>(&quot;Hello James! 👋&quot; plus a blue &quot;Pro Member&quot; pill, avatar top-left, bell and kebab icons top-right), then a<br>&quot;Today Starts / See All&quot; section with a wide white card holding a circular progress ring (grey track,<br>black/blue arc) beside a small legend list (Exercise 220/600min, Stand 140/600min). Below it, two<br>side-by-side cards: &quot;Calories 234/848kcal&quot; with a green horizontal bar-segment tracker and two stats<br>underneath (grams carbs / grams fat), and &quot;Activity Tracking 234/848kcal&quot; with a small blue outlined<br>squiggle line-chart and two stats (Done / Left). Below that, a horizontal image card (&quot;Today's Challenge&quot;,<br>a progress bar, &quot;+32%&quot; badge, &quot;Beginner&quot; pill) over a workout photo. Bottom: a pill nav bar with a<br>labelled active &quot;Home&quot; segment (icon + text in a black rounded pill) plus three unlabelled icon-only tabs.</p>
-<p>Screen 2 (&quot;Activity Plan&quot;): a horizontal date strip (dimmed dates either side of a highlighted blue<br>&quot;Today, 25 Nov&quot; pill) above a list of rounded white/pale rows, each a left icon-in-tinted-circle, two-line<br>label (title + subtitle), and a right-aligned bold number + unit -- repeated for Weight Step, Goal Step,<br>Heart Step, Muscle Step. Below, two more full-width cards (Weightlifting task-count + progress bar;<br>Steps with a big number).</p>
-<p>Screen 3 (&quot;Challenge complete&quot;): back-arrow and &quot;+&quot; circular buttons top corners, &quot;Great Work! / Your<br>Daily Challenge is Almost Done! 🔥&quot; heading, a &quot;Wellness Score&quot; row with a big circular gauge (blue/green<br>arc, chevron-navigation either side, checkmark and number badges around the ring, a bold &quot;6.5/10 Good&quot; in<br>the centre), then a &quot;Today Starts / See All&quot; row of two video-thumbnail cards with kcal/min stat overlays.</p>
-<h3>Why it's here</h3>
-<p>The paired &quot;Calories&quot; + &quot;Activity&quot; stat cards side by side (bar tracker vs line chart, each with two<br>sub-stats) is a direct, buildable template for an Intake home screen showing eaten-vs-burned at a glance.<br>The icon-in-circle list row with a trailing bold number+unit is a good pattern for a macro or nutrient<br>breakdown list, and the circular multi-metric gauge (checkmarks + numbers ringed around a central score)<br>is worth adapting for a &quot;daily nutrition score&quot; summary.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="onboarding">onboarding</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="analytics,goals,onboarding">
-      <img src="entries/images/fitness-activity-plan-composite.png" alt="fitness-activity-plan-composite" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>A single marketing composite showing three related phone screens side by side from a fitness/step-tracking<br>app (not calorie-first, but adjacent — steps, walking plans, activity goals).</p>
-<p>Left screen, &quot;Overall&quot; (share/summary card): white back-arrow and &quot;X&quot; close buttons flank a centred title<br>in the header, with a thin blue progress/step-indicator bar beneath it (a multi-step flow dot/segment<br>indicator). Below, a large full-bleed photo card — a blurred-motion running-shoe action shot in warm<br>orange/red tones — with a date overlay top-left (&quot;Tue, 16 Dec/26&quot;) and a huge bold white &quot;80&quot; with &quot;Steps&quot;<br>caption beneath, bottom-left of the photo. Under the photo, a white stat row with three columns (icon +<br>value + label): distance in miles, calories, floors. A full-width solid-blue rounded button below reads<br>&quot;Share&quot; with a small forward/share-arrow icon — this screen is a shareable end-of-activity summary card.</p>
-<p>Middle screen, a home/plan dashboard: circular avatar photo top-left, &quot;Good evening.&quot; bold greeting with<br>grey subtext &quot;tomorrow's [walking-icon] walking slot is&quot;, white bar-chart icon button top-right. Two stacked<br>full-width rounded pills, blue then orange, each showing a bold time (&quot;05:55 AM&quot;, &quot;06:55 AM&quot;) with a small<br>circular swap/refresh icon overlapping the boundary between them — presented as two alternative slot<br>options. Below, &quot;Today's Goal&quot; header with a right-aligned &quot;View Plan&quot; link, then a white card: &quot;Steady<br>Running&quot; label, small icon stats row (distance, 60min duration, 10,500 step target), and a horizontal<br>slider/progress track underneath. Below that, a full-width orange weather-style card: temperature &quot;66.8F&quot;<br>and &quot;Cloudy&quot; with icon, top-left; a circular badge with a bell icon, &quot;05:25 AM&quot; and &quot;Sunrise&quot; caption,<br>top-right; and a translucent progress strip at the bottom showing &quot;82%&quot; and a paired stat.</p>
-<p>Right screen, &quot;Plan Breakdown&quot;: white back-arrow, centred small blue-bag &quot;Plan Breakdown&quot; label pill with<br>icon, white &quot;X&quot; close button. A grey-bordered card: &quot;Week 1&quot; caption, bold &quot;Intermediate Daily Activity<br>Plan&quot; title, and a &quot;Goal:&quot; description line in grey. Below, a scrolling list of white rounded day-cards —<br>&quot;Day 1: Moderate Walk&quot;, &quot;Day 2: Power Walking Session&quot;, &quot;Day 3: Running and Walking Mix&quot;, &quot;Day 4: Active<br>Rest Day with Light Walking&quot; — each with a small icon stats row (distance/duration/step-count) and a thin<br>horizontal progress bar underneath, bar-fill length varying per day to suggest a multi-week plan overview.</p>
-<h3>Why it's here</h3>
-<p>The end-of-session shareable summary card (big number over a full-bleed photo, single clear &quot;Share&quot; CTA) is<br>a strong pattern Intake could reuse for a shareable daily/weekly nutrition recap. The two-alternative-slot<br>picker (stacked pills with a swap icon between them) and the day-by-day plan-breakdown list with per-day<br>progress bars are both transferable to a structured meal-plan or goal-plan view.</p>
-        <div class="chips"><span class="chip" data-screen="analytics">analytics</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="onboarding">onboarding</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,home">
-      <img src="entries/images/foodllama-mascot-ring-dashboard.jpg" alt="foodllama-mascot-ring-dashboard" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Dashboard on a plain white/very-pale-grey background, branded &quot;Foodllama&quot; in bold black top-left, with a<br>white circular person-icon button top-right. Centred below: a huge bold black calorie number &quot;2,129&quot; and<br>grey subtext &quot;82% from 2,570 calories goal&quot; — the primary metric stated as a sentence rather than a<br>labelled stat.</p>
-<p>The centrepiece is a large circular ring gauge, but instead of a plain progress arc, a soft grey rounded<br>&quot;halo&quot; arc sweeps most of the way around (roughly 300°) ending in a small water-droplet-shaped white<br>terminus icon on the right — read as the goal track. Inside the ring sits a 3D-rendered cartoon llama<br>mascot head wearing colourful rainbow sunglasses and a brown pom-pom/beanie-style wool tuft on top,<br>smiling — the mascot occupies the ring's centre in place of a numeric readout. Around the ring's edge, three<br>small circular icon badges sit at different points along the arc like satellites: a blue stopwatch/clock, a<br>yellow house/building icon, and (implied) a third — each presumably tapping into a different stat. To the<br>left of the ring, outside it, a small stat block: a black running-shoe icon, bold &quot;6d&quot;, grey &quot;streak&quot;<br>caption underneath.</p>
-<p>Below the ring, a macro-split summary as inline coloured-bold text on one line: &quot;21% protein&quot; (blue), &quot;38%<br>carbs&quot; (green), &quot;41% fat&quot; (yellow) — no bars or rings, just coloured percentage text separated by plain<br>grey connector words.</p>
-<p>Below that, a smooth filled area/stream chart (not bars) plotting the same three macros as stacked colour<br>bands (blue/green/yellow) over seven days, with a dashed horizontal goal line at &quot;2,570&quot; labelled on the<br>left in a yellow pill, and a small circular avatar marker (llama-with-sunglasses, matching the mascot)<br>pinned at the current day's peak on the line. Day labels below the chart: date number bold, weekday<br>abbreviation small below it (e.g. &quot;6 / WED&quot;), current day highlighted in a light grey rounded pill.</p>
-<p>Bottom: a floating black rounded-full toolbar, icon-only, five items — pencil (manual log), bookmark, image<br>frame, camera, and &quot;...&quot; overflow — overlapping the top of a food-entry list that's just starting to show<br>below (a small food photo thumbnail visible at the very bottom edge).</p>
-<h3>Why it's here</h3>
-<p>The character mascot living inside the progress ring instead of a number is a strong personality/mascot<br>direction — worth flagging for Intake if the product wants warmth over pure data. The smooth stacked-area<br>macro trend chart (vs. bar chart) is a softer alternative to the bar-chart pattern seen elsewhere in this<br>batch, and the floating icon-only bottom toolbar (pencil/bookmark/photo/camera/more) is a clean multi-entry-<br>method logging affordance.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="home">home</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,profile,settings">
-      <img src="entries/images/health-dashboard-profile-cards.png" alt="health-dashboard-profile-cards" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Two iPhone frames on a soft blue-lavender gradient backdrop. Left: an &quot;Insights&quot; screen (small-caps<br>&quot;Analytics&quot; eyebrow above a large serif-ish &quot;Insights&quot; title) with two stacked white cards. The first,<br>&quot;Activity Rings&quot;, shows a line chart (two overlaid lines, one purple one orange, on a dotted-grid<br>background) with a big &quot;72 bpm avg&quot; figure top-right and hour labels (9am-9pm) along the x-axis; below<br>the chart a three-column stat row (Resting / Peak / Average, each a bold number over a small grey label).<br>The second card, &quot;Sleep Breakdown&quot;, repeats that exact pattern with a 7-day purple/orange/light-purple<br>bar chart (legend dots for Deep/REM/Light) and the same three-stat row underneath. A pill-shaped bottom<br>tab bar with four icon buttons (house, small chart, a filled black square-grid &quot;active&quot; icon, person) sits<br>at the bottom, the active tab rendered as a solid black rounded pill.</p>
-<p>Right frame: a &quot;Profile&quot; screen -- name (&quot;Tanzim Ahmed&quot;), member-since date, and a blue &quot;Premium Plan&quot;<br>badge at top. Below it, a white card with three quick stats (Height / Weight / Age) separated by thin<br>vertical dividers, then a &quot;Health Goal&quot; card with a label, percentage, and a horizontal gradient progress<br>bar (purple to orange) with a white circular handle. Below that, two grouped list sections (&quot;Health&quot; and<br>&quot;App&quot;) of white rounded rows, each with a circular icon-in-tinted-circle, a bold title, a grey subtitle,<br>and a trailing arrow-out icon. Same pill tab bar at the bottom, person tab active this time.</p>
-<h3>Why it's here</h3>
-<p>The three-stat row under a chart (bold number, small grey label, thin dividers) is a clean, reusable<br>pattern for showing calorie/macro breakdowns (e.g. &quot;Eaten / Burned / Remaining&quot;). The gradient progress<br>bar with a draggable-looking handle is a strong candidate for a daily calorie-goal indicator, and the<br>grouped icon-row list is a tidy template for a settings or profile screen.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="profile">profile</span><span class="chip" data-screen="settings">settings</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="onboarding,dashboard,insights">
-      <img src="entries/images/health-report-fullness-slider.png" alt="health-report-fullness-slider" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three iPhone frames on a soft pink/purple gradient. Screen 1: a near-blank splash/loading screen -- just a<br>centred gradient (purple-to-pink) heart-shaped logo mark on a pale background, no other content.</p>
-<p>Screen 2 (&quot;Home&quot;): a greeting row (&quot;Hello Jhon 👋 / How are you feeling today?&quot; with avatar and bell icon),<br>a &quot;Today's activity log / See all&quot; section of four equal square tiles in a 2x2 grid, each a<br>tinted-circle icon (alarm clock, cloud, running figure, thermometer) over a bold time and a grey caption<br>(&quot;8:00 AM / Morning walk&quot;, &quot;12:30 PM / Lunch time&quot;, etc). Below, a &quot;Today's suggestions for you&quot; section<br>with three narrower square tiles (icon, bold title, small grey description) -- &quot;Mindful moment&quot;, &quot;Community<br>insight&quot;, &quot;Download report&quot;. Bottom: a pill nav bar with a filled blue circular active icon plus three<br>outline icons.</p>
-<p>Screen 3 (&quot;Health report&quot;): a heading with bell/profile icons, a three-way segmented toggle (Weekly /<br>Monthly / Yearly, active segment a filled purple pill), then a bold state label (&quot;Satisfied / Feel<br>comfortable&quot;) above the standout element: a hand-drawn-style blue-outline stomach illustration with a<br>vertical slider track running beside it, labelled rungs from &quot;Hungry&quot; at the bottom through &quot;Satisfied&quot; to<br>&quot;Very full&quot; at the top, and a purple circular handle on the track marking the current position. A full-width<br>purple &quot;Next&quot; pill button anchors the bottom.</p>
-<h3>Why it's here</h3>
-<p>The vertical fullness/hunger slider against a stomach illustration is an extremely direct fit for Intake --<br>it's essentially a hunger-or-satiety self-report control, exactly the kind of subjective input a<br>nutrition app might want alongside objective calorie counts. The 2x2 activity-log tile grid and the<br>segmented Weekly/Monthly/Yearly toggle are both solid, reusable patterns for a history/insights screen.</p>
-        <div class="chips"><span class="chip" data-screen="onboarding">onboarding</span><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="insights">insights</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="analytics,goals">
-      <img src="entries/images/lavender-plans-weekly-macro-chart.jpg" alt="lavender-plans-weekly-macro-chart" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>A &quot;Plans&quot; screen on a soft lavender/periwinkle background. Header row: white rounded-square back-arrow<br>button, left; centred bold black title &quot;Plans&quot;; white rounded-square button with a vertical three-dot<br>overflow icon, right.</p>
-<p>First card, white, rounded: &quot;Losing Weight Goal&quot; title with an overflow &quot;...&quot; button, then three stat<br>columns side by side, each a big bold black number with a small unit and a grey caption underneath: &quot;56.0<br>kg / Goal Weight&quot;, &quot;-0.45 kg / Goal Rate&quot;, &quot;-0.5 % / Goal Rate&quot;.</p>
-<p>Section label &quot;Your Progress&quot; in bold black, left-aligned, on the lavender background (not inside a card).</p>
-<p>Second card, white, rounded, taller: &quot;Coached Program&quot; title with overflow button, then a legend row of<br>three small coloured square swatches with labels — green &quot;Crabs&quot; [sic, likely &quot;Carbs&quot;], orange &quot;Protein&quot;,<br>light-purple &quot;Fat&quot; — and a right-aligned &quot;Weekly&quot; dropdown pill with a chevron. Below, a stacked bar chart,<br>one bar per weekday (Mon–Sun), each bar built from three separately-rounded pill segments (green at the<br>bottom, orange in the middle, purple on top) rather than one continuous stacked bar, so each nutrient<br>segment reads as its own rounded pill stacked with gaps.</p>
-<p>Below that, a 2×2-ish grid of smaller white rounded stat cards, each with a small circular icon-badge (a<br>heart on pale pink for &quot;Heart Rate&quot; 97 Bpm, a droplet/radar icon on pale blue for &quot;Water&quot; 1200 ml, a shoe<br>icon for &quot;Walk Steps&quot;, a moon/cloud icon for &quot;Sleep&quot;), each card title paired with an overflow &quot;...&quot; button.</p>
-<p>Bottom: a floating circular indigo FAB (icon: horizontal-lines/settings glyph) overlapping a docked white<br>rounded-top tab bar with four icon+label items — Home, Analytics, My Diet, Account — house, up-trending<br>line-chart, ticket/document, and person icons respectively.</p>
-<h3>Why it's here</h3>
-<p>The three-separately-rounded-pill-segments stacked bar (rather than one continuous stacked bar) is a nice<br>detail for a weekly macro-trend chart — worth reusing for Intake's analytics view. The plain<br>number-over-label stat-column pattern (goal weight / goal rate / goal rate %) is a clean way to present a<br>weight-loss goal without extra chrome.</p>
-        <div class="chips"><span class="chip" data-screen="analytics">analytics</span><span class="chip" data-screen="goals">goals</span></div>
-      </div>
-    </article>
-
     <article class="entry" data-screens="log-description">
       <img src="entries/images/log-description-filled-state.png" alt="log-description-filled-state" loading="lazy">
       <div class="entry-body">
@@ -256,6 +117,265 @@
 <h3>Why it's here</h3>
 <p>This is the confirmation/edit step after free-text parsing — each parsed item gets its own editable card<br>with an inline kcal estimate rather than a monolithic edit form, and the explicit &quot;adjust only if you<br>want to&quot; copy sets the expectation that the AI's parse is trustworthy by default. Directly relevant to<br>Intake's own parse-then-confirm flow after a text or photo log.</p>
         <div class="chips"><span class="chip" data-screen="meal-detail">meal-detail</span><span class="chip" data-screen="log-confirmation">log-confirmation</span></div>
+      </div>
+    </article></div>
+      </section>
+
+      <section class="direction" id="lavender-indigo-docked-fab">
+        <h2>lavender-indigo-docked-fab</h2>
+        <p class="direction-desc">A pale lavender/periwinkle dashboard with a purple-to-indigo gradient hero surface (a calorie ring or a
+stacked-pill macro chart), white rounded stat cards below, and — the specific tell — a docked white
+rounded-top tab bar reading Home / Analytics / My Diet / Account with a raised indigo circular FAB
+(stacked-lines icon) overlapping its top edge. Members: `purple-gradient-calorie-progress-home`,
+`lavender-plans-weekly-macro-chart`.</p>
+        <div class="entries">
+    <article class="entry" data-screens="analytics,goals">
+      <img src="entries/images/lavender-plans-weekly-macro-chart.jpg" alt="lavender-plans-weekly-macro-chart" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>A &quot;Plans&quot; screen on a soft lavender/periwinkle background. Header row: white rounded-square back-arrow<br>button, left; centred bold black title &quot;Plans&quot;; white rounded-square button with a vertical three-dot<br>overflow icon, right.</p>
+<p>First card, white, rounded: &quot;Losing Weight Goal&quot; title with an overflow &quot;...&quot; button, then three stat<br>columns side by side, each a big bold black number with a small unit and a grey caption underneath: &quot;56.0<br>kg / Goal Weight&quot;, &quot;-0.45 kg / Goal Rate&quot;, &quot;-0.5 % / Goal Rate&quot;.</p>
+<p>Section label &quot;Your Progress&quot; in bold black, left-aligned, on the lavender background (not inside a card).</p>
+<p>Second card, white, rounded, taller: &quot;Coached Program&quot; title with overflow button, then a legend row of<br>three small coloured square swatches with labels — green &quot;Crabs&quot; [sic, likely &quot;Carbs&quot;], orange &quot;Protein&quot;,<br>light-purple &quot;Fat&quot; — and a right-aligned &quot;Weekly&quot; dropdown pill with a chevron. Below, a stacked bar chart,<br>one bar per weekday (Mon–Sun), each bar built from three separately-rounded pill segments (green at the<br>bottom, orange in the middle, purple on top) rather than one continuous stacked bar, so each nutrient<br>segment reads as its own rounded pill stacked with gaps.</p>
+<p>Below that, a 2×2-ish grid of smaller white rounded stat cards, each with a small circular icon-badge (a<br>heart on pale pink for &quot;Heart Rate&quot; 97 Bpm, a droplet/radar icon on pale blue for &quot;Water&quot; 1200 ml, a shoe<br>icon for &quot;Walk Steps&quot;, a moon/cloud icon for &quot;Sleep&quot;), each card title paired with an overflow &quot;...&quot; button.</p>
+<p>Bottom: a floating circular indigo FAB (icon: horizontal-lines/settings glyph) overlapping a docked white<br>rounded-top tab bar with four icon+label items — Home, Analytics, My Diet, Account — house, up-trending<br>line-chart, ticket/document, and person icons respectively.</p>
+<h3>Why it's here</h3>
+<p>The three-separately-rounded-pill-segments stacked bar (rather than one continuous stacked bar) is a nice<br>detail for a weekly macro-trend chart — worth reusing for Intake's analytics view. The plain<br>number-over-label stat-column pattern (goal weight / goal rate / goal rate %) is a clean way to present a<br>weight-loss goal without extra chrome.</p>
+        <div class="chips"><span class="chip" data-screen="analytics">analytics</span><span class="chip" data-screen="goals">goals</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,home">
+      <img src="entries/images/purple-gradient-calorie-progress-home.jpg" alt="purple-gradient-calorie-progress-home" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Home dashboard on a very pale lavender background. Header row: circular profile photo, left; centred solid<br>indigo/purple pill button with a small gold crown icon and white text &quot;Go To Premium&quot;; white circular<br>notification-bell button with a red unread dot, right.</p>
+<p>Below that, a full-width white pill search bar (magnifying glass icon, grey placeholder &quot;Search&quot;) paired<br>with a small white square button holding a &quot;sliders&quot;/filter-settings icon.</p>
+<p>Main card: a large rounded rectangle filled with a purple-to-indigo diagonal gradient. Top-left: a white<br>circular badge with a compass/target icon and label &quot;Your Progress&quot;. Below, a huge bold white &quot;92%&quot;,<br>smaller white date text &quot;28 February 2025&quot; beneath it. Right side of the card: a circular ring gauge<br>(two-tone — pale lavender track, solid white arc for progress) with centred white text &quot;1480&quot; (large bold)<br>over &quot;Calories&quot; (small).</p>
+<p>Next, a white rounded row card: a small rounded-square icon badge (crown) on pale lavender, bold text<br>&quot;Completed 4 Goals&quot; with grey subtext &quot;Keep Upgrading to Get Benefits&quot; beneath.</p>
+<p>Below that, a three-column white rounded card, one column per macro (Carbs / Protein / Fat), each with a<br>label + &quot;...&quot; overflow button, a bold &quot;used/total g&quot; fraction (e.g. &quot;281 / 359g&quot;), and a thin horizontal<br>progress bar underneath in that macro's colour (green, orange, purple respectively) against a pale-grey<br>track.</p>
+<p>&quot;Planned Meal's&quot; section header with a right-aligned indigo &quot;View All&quot; link, then a list of white rounded<br>rows — square food photo thumbnail, bold label (&quot;Add Breakfast&quot;), grey subtext (&quot;Recommended | 540-715<br>Kcal&quot;), and a circular outline &quot;+&quot; button on the right of each row.</p>
+<p>Bottom: floating indigo circular FAB (stacked-lines icon) overlapping a docked white rounded-top tab bar —<br>Home (active, indigo-filled icon+label), Analytics, My Diet, Account.</p>
+<h3>Why it's here</h3>
+<p>The gradient hero card combining a headline percentage, a date, and a calorie ring all in one surface is a<br>strong &quot;today at a glance&quot; composition. The three-column macro row with inline thin progress bars<br>underneath a bold fraction is a compact, scannable macro-summary pattern worth carrying into Intake's home<br>screen, and &quot;Planned Meal's&quot; as tappable add-rows (not yet-logged placeholders) is a useful proactive-log<br>pattern.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="home">home</span></div>
+      </div>
+    </article></div>
+      </section>
+
+      <section class="direction" id="dark-purple-ring-gauge">
+        <h2>dark-purple-ring-gauge</h2>
+        <p class="direction-desc">Dark-mode fitness dashboards on a near-black background with a vivid purple/violet gradient accent, built
+around a large circular progress-ring hero card (percentage or fraction centred inside the ring) and a dark
+rounded/pill bottom tab bar. Members: `daily-goal-ring-community-leaderboard`, `workout-plan-calories-dark`.</p>
+        <div class="entries">
+    <article class="entry" data-screens="dashboard,community,leaderboard">
+      <img src="entries/images/daily-goal-ring-community-leaderboard.png" alt="daily-goal-ring-community-leaderboard" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Two-screen dark fitness app, near-black background, purple-to-magenta gradient accents.</p>
+<p>Screen 1 (home/dashboard): top bar &quot;Hello, Alex / Let's build something great&quot; greeting left, round<br>avatar with a small notification-count badge and a hamburger-menu button right. Below, a large dark<br>rounded card with two small pill tabs (&quot;Today&quot; selected, &quot;May 17&quot; as a date pill) top corners. Centred, a<br>big circular progress ring — thick gradient arc (magenta to purple) over a dark track — with &quot;You are at<br>56% Daily Goal&quot; stacked centred inside it, and a tiny running-figure icon marking current position on the<br>ring. Below the ring, a one-line encouragement in a rounded pill: a star icon + &quot;Great job! Only 28% left<br>to reach your daily goal.&quot; A small pagination dot pair beneath indicates more cards via swipe. Under the<br>hero card, two side-by-side stat tiles (&quot;Step 4,360/8,000&quot; with a purple footprint icon in a circular<br>badge, &quot;Active calories 320/600&quot; with a flame icon), each a compact dark card with an icon-badge,<br>label and bold value/target line. Bottom: a floating dark pill tab bar with 5 icon-only buttons (home<br>selected/filled purple square, a book/log icon, calendar, bell, profile).</p>
+<p>Screen 2 (Community/leaderboard), shown as a tilted/angled phone mockup: header &quot;Community&quot; with an info<br>circle icon, and a calendar icon button top-right. Below, a ranked vertical list of team/group cards, each<br>row: rank badge (&quot;#1&quot;–&quot;#6&quot;), a square photo thumbnail, group name (e.g. &quot;Morning Movers&quot;, &quot;Strong<br>Together&quot;, &quot;Peak Performers&quot;), member count caption, and a points value + &quot;pts&quot; label right-aligned in a<br>darker pill. The current user's own group (&quot;#3 Peak Performers … You&quot;) is highlighted with a full-width<br>magenta-to-purple gradient fill and white text, standing out from the otherwise plain dark rows above and<br>below it. Same floating icon tab bar at bottom, profile icon now selected/filled.</p>
+<h3>Why it's here</h3>
+<p>The circular daily-goal ring with an inline encouragement pill directly below it (star icon + short<br>supportive copy tied to the live percentage) is a strong, low-effort way to make a single daily number<br>feel motivating rather than clinical — very applicable to a calorie-goal ring in Intake. The<br>highlighted-own-row treatment in the leaderboard (gradient fill breaking an otherwise uniform list) is a<br>reusable way to make &quot;your position&quot; pop out of any ranked or grouped list.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="community">community</span><span class="chip" data-screen="leaderboard">leaderboard</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,plan,nutrition-detail">
+      <img src="entries/images/workout-plan-calories-dark.png" alt="workout-plan-calories-dark" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three-screen dark-mode fitness app on a near-black background with a vivid purple/violet accent.</p>
+<p>Screen 1 (home): top bar with round avatar and &quot;Good Morning! Guy Hawkins&quot; greeting left, search and bell<br>icons right. Below, a large purple rounded rectangle hero card — &quot;My Plan For Today&quot; headline, a circular<br>progress ring on the right showing &quot;25%&quot; in the centre with a thin yellow/gold arc for progress against<br>a purple track, and a small &quot;2/8 Complete&quot; caption. Then a &quot;Start new goal&quot; section: a horizontally<br>scrolling row of image cards (workout photos with a rounded white play button overlaid), each captioned<br>with exercise name, muscle groups, duration and calorie burn as small pill-like text/icon pairs<br>(clock icon + &quot;35 min&quot;, flame icon + &quot;120 cal&quot;). Below that, a &quot;Today task&quot; list of rows, each with a<br>thumbnail, exercise name, duration/calorie captions, and a circular play button on the right. Bottom tab<br>bar: Home (purple, selected), Discover, Activity, Settings, each icon over a small label, on a dark<br>rounded bar.</p>
+<p>Screen 2 (My Plan): back chevron top-left, centred title &quot;My Plan&quot;, &quot;Statics&quot; text button top-right.<br>&quot;Daily Plan&quot; heading with a 2x2 grid of colour-coded stat cards (purple &quot;Calories 720 Kcal&quot; with flame<br>icon, dark &quot;Steps 2,000&quot; with footprints icon, green &quot;Sleep 6 Hours&quot; with moon icon, blue &quot;Water 10 Cups&quot;<br>with droplet icon). Below, &quot;Goal in progress&quot; list of exercise rows identical in style to screen 1's task<br>list.</p>
+<p>Screen 3 (Calories Details): back chevron, &quot;Calories Details&quot; title. Large circular ring gauge centred,<br>gradient from white to orange, showing &quot;753 KCAL OVER&quot; in bold centre text, flanked left/right by plain<br>numeric stats &quot;3541 EATEN&quot; and &quot;854 BURNED&quot;. Below, a &quot;See stats&quot; dropdown chip, then a row of three<br>macro trackers (Carbs/Fat/Protein) each as a label, a thin horizontal progress bar in a distinct colour<br>(pink, orange, purple), and a &quot;current/target g&quot; caption. At the bottom, a dark card with a large emoji<br>face (tired/neutral), &quot;Day rating&quot; heading, a one-line coaching tip (&quot;Eat more healthy carbs to boost<br>your day rating!&quot;) and a &quot;See more&quot; pill button.</p>
+<h3>Why it's here</h3>
+<p>The &quot;Calories Details&quot; screen is close to a direct template for Intake's daily nutrition summary: a<br>single over/under ring gauge flanked by eaten/burned numbers, three colour-coded macro bars beneath, and<br>a friendly emoji + one-line coaching tip card at the bottom turning a plain number into gentle feedback.<br>The colour-coded 2x2 stat grid on the plan screen is a reusable pattern for a daily-glance dashboard.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="plan">plan</span><span class="chip" data-screen="nutrition-detail">nutrition-detail</span></div>
+      </div>
+    </article></div>
+      </section>
+
+      <section class="direction" id="frosted-glass-over-photo">
+        <h2>frosted-glass-over-photo</h2>
+        <p class="direction-desc">Glassmorphic UI laid directly over a full-bleed photographic background rather than a flat colour canvas —
+translucent frosted-glass cards and buttons, photo visible through the panels, serif or editorial type
+choices, and a warm/moody colour-graded backdrop (rock-and-flowers teal light, blurred floral/mossy tones).
+Members: `smart-ring-skin-protection-dashboard`, `sisterly-community-support-app`.</p>
+        <div class="entries">
+    <article class="entry" data-screens="onboarding,community">
+      <img src="entries/images/sisterly-community-support-app.png" alt="sisterly-community-support-app" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three iPhone frames (visible hardware buttons) over blurred warm/cool photographic backgrounds<br>(sunset flowers, mossy green light, dusty rose), for a women's support community app &quot;Sisterly&quot;. Screen 1:<br>a top progress/step indicator bar, a small logo mark, italic serif wordmark &quot;Sisterly&quot; centred, then three<br>stacked feature rows below it (icon, all-caps bold label, one-line grey description) -- &quot;Closed Groups&quot;,<br>&quot;No Judgment&quot;, &quot;Support&quot; -- all set over the blurred photo, with a full-width dark-purple rounded button<br>(&quot;Find your group&quot;) anchoring the bottom.</p>
+<p>Screen 2 (&quot;Your space / Choose what resonates now&quot;): a vertical stack of glassy translucent cards over the<br>green-toned background, each labelled with a small emoji + &quot;Group&quot; eyebrow, a large serif headline (e.g.<br>&quot;Motherhood&quot;, &quot;Moving / New country&quot;, &quot;Divorce / Separation&quot;), a one-line description, a row of overlapping<br>circular avatar thumbnails with a participant count, and a full-width translucent white &quot;Join&quot; button.<br>Bottom tab bar: three pill segments (Space / Dialogues / Profile) in mismatched accent colours.</p>
+<p>Screen 3 (a single story/post): a &quot;Back&quot; link and &quot;Published&quot; date top row, a large curly quotation mark,<br>a big serif pull-quote as the headline, an attribution line (avatar, name, age), body paragraphs in<br>regular grey text, three pill action buttons (&quot;♡ Support&quot;, &quot;Reply&quot;, &quot;Save&quot;), then a full-width dark<br>&quot;Write your story&quot; button and a small &quot;You can write anonymously&quot; caption.</p>
+<h3>Why it's here</h3>
+<p>The translucent glass-card-over-photo treatment and serif pull-quote styling give a warm, human,<br>non-clinical tone -- useful counterpoint to typical data-dense nutrition UI. The topic-card list with<br>avatar-stack + participant count + single CTA is a reusable pattern for community/challenge features if<br>Intake ever adds social or group elements.</p>
+        <div class="chips"><span class="chip" data-screen="onboarding">onboarding</span><span class="chip" data-screen="community">community</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard">
+      <img src="entries/images/smart-ring-skin-protection-dashboard.jpg" alt="smart-ring-skin-protection-dashboard" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Marketing-style presentation of a single &quot;Smart Ring / AI Skin Protection App&quot; dashboard screen, phone<br>mockup centred over a moody, photographic teal-and-slate background (a wet rock with small white flowers<br>growing from it, soft volumetric light streaks). Headline text (&quot;Smart Ring&quot;, &quot;AI Skin Protection App&quot;)<br>top-left, small caption labels (&quot;3 Core Metrics Tracked&quot;, &quot;24/7 Skin Monitoring&quot;) in the corners of the<br>backdrop — these are marketing annotations, not app UI.</p>
+<p>Within the phone frame: header &quot;Dashboard&quot; with a search icon top-right, on a translucent light overlay<br>over the photo background (frosted-glass card, not solid colour). Below it, a stat block: small-caps<br>label &quot;COLLAGEN INDEX&quot;, a large bold &quot;72%&quot; figure, a &quot;+18% vs yesterday&quot; caption, and a small inline<br>sparkline chart to the right tracing recent values with a single highlighted dot. Beneath, the actual<br>photographic hero image continues (the ring product sitting on the rock among flowers) framed within the<br>card as if the metric panel floats over a real-world photo. Below that, a horizontal reminder banner<br>(frosted glass pill) reading &quot;SPF 50+ Next reminder: 12 min&quot; with a &quot;Remind me&quot; button on the right.<br>Under the banner, three equal glass-morphism tiles in a row, each with a small icon, bold label (&quot;Critical<br>/ UV Index 8.6&quot;, &quot;Hydration / 62%&quot;, &quot;Barrier / Normal&quot;) and secondary caption. Bottom nav is a minimal<br>four-icon row (home, log/book, leaf, profile) with no visible labels or container, floating directly on<br>the photo.</p>
+<h3>Why it's here</h3>
+<p>The frosted-glass metric panel floating over a full-bleed photographic background (rather than a flat<br>colour dashboard) is a distinctive art direction worth considering for a hero &quot;today&quot; screen — pairs a<br>single hero number with a sparkline and a horizontal actionable reminder banner (&quot;Next reminder…&quot; +<br>button), a pattern directly reusable for meal or water reminders in Intake.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span></div>
+      </div>
+    </article></div>
+      </section>
+
+      <section class="direction" id="pastel-sparkline-raised-fab">
+        <h2>pastel-sparkline-raised-fab</h2>
+        <p class="direction-desc">Light-mode health dashboards built from the same skeleton: a greeting header with avatar, one hero metric
+card (big bold reading plus a small inline sparkline or ring), two square pastel-tinted stat tiles side by
+side each carrying its own mini sparkline, and a floating pill-shaped bottom nav bar broken by a raised
+circular FAB. Members: `blood-sugar-health-tracker`, `wellness-health-overview-purple`.</p>
+        <div class="entries">
+    <article class="entry" data-screens="dashboard,history,reports">
+      <img src="entries/images/blood-sugar-health-tracker.png" alt="blood-sugar-health-tracker" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three-screen light-mode health-tracking app (blood sugar monitoring), pale grey-lavender background,<br>white cards, small rounded icon badges in pastel colours (lilac, pink, blue).</p>
+<p>Screen 1 (home): top bar with round avatar, &quot;Good Morning [wave emoji] / Wyatt Anderson&quot; greeting, bell<br>and hamburger icons right. Below, a large lilac card labelled &quot;Blood Sugar&quot; with a green &quot;Normal&quot; status<br>pill top-right, a huge bold &quot;208 mg/dL&quot; reading, and a small red/black bar-chart sparkline to its right.<br>&quot;Overview&quot; section header with left/right nav arrows (one filled black circle). Two square stat tiles<br>side by side (&quot;Steps 4,399&quot; lilac card with a small line-sparkline background, &quot;Sleep 7h 30min&quot; pink card<br>with a moon icon). Below, a &quot;Blood Sugar Trend&quot; card with a &quot;Weekly&quot; dropdown and axis labels (&quot;120&quot;,<br>&quot;108&quot;, &quot;Friday&quot;). Bottom: floating pill tab bar, home icon selected in a black circle, plus a bag/log<br>icon, pie-chart icon, profile icon, and a separate raised blue circular FAB (+) breaking out of the bar on<br>the right.</p>
+<p>Screen 2 (History): &quot;History&quot; title, calendar icon top-right. Below, a search bar (&quot;Search your records…&quot;)<br>with a filter/sort icon button. A &quot;Select Date&quot; row shows a month (&quot;July 2026&quot;) with chevron nav, then a<br>horizontally scrollable strip of date chips (day-of-week + number, selected date &quot;20 Saturday&quot; highlighted<br>in a filled rounded rect). A &quot;Select Time&quot; row shows a similar horizontal strip of hour marks (7:30–10:00)<br>as a tick/bar timeline with a highlighted current time marker. &quot;Daily Summary&quot; section: three circular<br>meal-photo avatars (Breakfast/Lunch/Dinner) each with an mg/dL reading beneath. Below, a list of log<br>entries — circular photo thumbnail, reading value, a green &quot;Normal&quot; status pill, chevron to view detail.</p>
+<p>Screen 3 (Reports): back chevron, &quot;Reports&quot; title, refresh/export icon right. Segmented control (Daily /<br>Weekly selected / Monthly) as a pill switcher. Large semicircular gauge arc coloured in three zones<br>(blue/normal, yellow/high, red/very high) with the current reading &quot;250 mg/dL Overview&quot; centred beneath<br>the arc and a small dot marker on the arc showing position. Legend below with three coloured dot + label +<br>percentage rows (Normal 70-130 56%, High 131-180 28%, Very High &gt;180 16%). &quot;Average Blood Sugar&quot; bar chart<br>beneath: dotted/pattern-fill bars for most days, one bar solid black to mark the selected/current day, day<br>labels underneath, with a small callout tag above the highlighted bar showing its status.</p>
+<h3>Why it's here</h3>
+<p>The three-zone colour-coded semicircular gauge with a percentage-breakdown legend is a clean way to<br>summarise a distribution (e.g. days in/out of calorie or macro target) at a glance. The date-chip +<br>hour-tick horizontal timeline pair on the History screen, and the dotted-vs-solid bar chart that highlights<br>just the selected day, are both strong candidates for Intake's log history and weekly trend views.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="history">history</span><span class="chip" data-screen="reports">reports</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,mood-check-in,health-overview">
+      <img src="entries/images/wellness-health-overview-purple.png" alt="wellness-health-overview-purple" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three-screen light-mode wellness/health app, off-white background, deep indigo/navy-purple as the primary<br>accent, with soft pastel secondary cards (light blue, cream/tan).</p>
+<p>Screen 1 (home): &quot;Good Morning, Alex / Here's your health snapshot&quot; greeting left, round avatar right, no<br>button icons. Large indigo rounded card &quot;Wellness Score&quot; with a bold &quot;82 / Very Good&quot; figure, a circular<br>ring gauge on the right (white ring on indigo, small heart icon centred) and a one-line encouragement<br>below (&quot;Keep it up! You're on the right track.&quot;). Below, a &quot;Heart Health&quot; row card with a heart icon,<br>chevron to expand, a bold &quot;72 bpm / Resting Heart Rate&quot; figure and a small multi-bar sparkline in indigo.<br>Then two square stat tiles (&quot;Sleep 7h 24m / Good&quot; with bar sparkline in purple, &quot;Steps 6,842 / Today&quot;<br>with bar sparkline in green). Bottom nav: five items (Home selected, Insights, a raised solid indigo<br>circular + FAB in the centre breaking the bar line, Care, Profile), icon-over-label style on white.</p>
+<p>Screen 2 (mood check-in): hamburger icon and bell (with red dot) top corners. Large friendly heading<br>&quot;How are you feeling today?&quot; with a soft pink circular blob graphic (heart outline) top-right, and small<br>supporting copy &quot;Track your health. Understand your body. Live better.&quot; Below, a horizontally scrollable<br>filter-pill row (All selected/filled dark, Heart, Mind, Sleep, Activity as outlined pills). Then a large<br>indigo &quot;Heart Rate&quot; card with bold &quot;68 bpm / Today, 8:30 AM&quot; and a full-width line chart (white line over<br>indigo, axis-labelled 40–120 on the right, times along the bottom). Below, two secondary rows: a light<br>blue &quot;Stress Level / Low / Calm and balanced&quot; card with a lotus icon, and a cream &quot;Energy Level / Good /<br>Keep maintaining&quot; card with a lightning icon. Same bottom nav with centre FAB.</p>
+<p>Screen 3 (Health Overview): title &quot;Health Overview&quot; with a kebab-menu icon. Segmented control (Today<br>selected/filled dark, Week, Month). A 2x2 grid of pastel stat cards: light-blue &quot;Blood Pressure 118/76<br>mmHg Normal&quot;, cream &quot;Heart Rate 68 bpm Normal&quot;, pale-blue &quot;Blood Oxygen 98% SpO2 Normal&quot;, cream<br>&quot;Temperature 36.6°C Normal&quot; — each with a small relevant icon top-right and a &quot;Normal&quot; caption in muted<br>grey beneath the value. Below, a white &quot;Heart Rate Variability&quot; card with a value (&quot;45 ms&quot;), a &quot;Balanced&quot;<br>tag, and a full-width line chart with 0/30/60 y-axis gridlines. Then a light-blue &quot;Hydration&quot; card: &quot;1.6 L<br>/ Goal: 2.5 L&quot; text on the left, a small circular progress ring (&quot;64%&quot;) on the right.</p>
+<h3>Why it's here</h3>
+<p>The filter-pill row (All/Heart/Mind/Sleep/Activity) for switching what a hero chart shows is a reusable<br>control for an Intake &quot;today&quot; screen that might toggle between calories/macros/water. The 2x2 pastel<br>metric grid with consistent icon-value-status structure, and the small ring-plus-numbers hydration card,<br>are both directly adaptable for a nutrition-overview screen with several simultaneous targets.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="mood-check-in">mood-check-in</span><span class="chip" data-screen="health-overview">health-overview</span></div>
+      </div>
+    </article></div>
+      </section>
+
+      <section class="direction" id="__unsorted__">
+        <h2>Unsorted</h2>
+        <p class="direction-desc">Not yet assigned to a direction.</p>
+        <div class="entries">
+    <article class="entry" data-screens="dashboard,chat">
+      <img src="entries/images/ai-assistant-quick-actions-dashboard.webp" alt="ai-assistant-quick-actions-dashboard" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Left: an iPhone frame on light grey, an AI-assistant home screen. Header &quot;Hi Daniel 👋 / How can I assist<br>you today?&quot;, a rounded search-style input (&quot;Ask anything…&quot;, magnifying-glass left icon, a filled black<br>circular send/arrow button on the right). A &quot;Quick Actions&quot; label over a 2x2 grid of white square tiles,<br>each a small pastel icon-in-tinted-circle plus a centred label (Summarize, Translate, Generate Ideas,<br>Rewrite). Below, &quot;Recent Actions / See all&quot; -- a list of white rounded cards, each a bold question title, a<br>grey one-line answer preview, a small clock icon, and a &quot;1h ago&quot; timestamp.</p>
+<p>Right: two separate floating panel snippets on the same grey backdrop (not phone-framed) -- a &quot;Total<br>Queries&quot; card with a &quot;Last 7 days&quot; dropdown and a light-blue-filled line chart (soft area fill under the<br>line, gridlines, one highlighted data point as a hollow blue-ringed dot) over date labels; and a chat<br>input bar (plus button, &quot;Type a message…&quot; placeholder, mic icon, filled dark circular waveform/voice<br>button). A separate &quot;Key Takeaways&quot; card lists three flat grey rounded rows of bullet-style text with a<br>copy icon top-right.</p>
+<h3>Why it's here</h3>
+<p>The 2x2 &quot;Quick Actions&quot; tile grid (icon + label, pastel tint circles) is a fast pattern for common<br>logging shortcuts (e.g. &quot;Log meal&quot;, &quot;Scan barcode&quot;, &quot;Log water&quot;, &quot;Repeat last&quot;). The clean area-line chart<br>with one highlighted data point is a solid reference for a 7-day calorie-trend graph, and the<br>&quot;Key Takeaways&quot; flat-row card is worth adapting for a plain-language daily nutrition summary.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="chat">chat</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="home,goals,coach">
+      <img src="entries/images/coach-winter-illustration-goal-home.jpg" alt="coach-winter-illustration-goal-home" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>&quot;Coach&quot; tab home screen, part of the same app as the orange Journal screen (matching bottom nav labels<br>Coach/Journal/Profile and identical macro-goal values of 92g/208g/264g/27g). Top area: large serif-leaning<br>bold headline in dark navy, two lines, &quot;Today is going to be a good day.&quot; with a white pill badge top-right<br>holding a small flame icon and &quot;0&quot;. Behind/below the headline, a flat vector winter landscape illustration<br>spans the width of the screen — pale pink-to-blue sky gradient, a soft orange sun/glow low on the horizon,<br>white rolling snow hills, two simple dark-green triangular pine trees on the left, a small brown A-frame<br>cabin with a lit yellow window and a wisp of white smoke from its chimney just right of centre, and one<br>more pine tree on the right — a calm, seasonal, editorial-illustration mood rather than a data-forward<br>hero.</p>
+<p>Below the illustration, on plain white background: &quot;My goal&quot; bold black section header, then a white<br>rounded card with four small ring-gauge badges in a row (same style as the Journal screen: yellow/Fat,<br>pink-red/Protein, sky-blue/Carbs, brown/Fiber), each showing &quot;0 / goal g&quot; since nothing's logged yet.</p>
+<p>Next, a white rounded row: a small blue bathroom-scale icon in a rounded square, bold &quot;My daily weigh-in&quot;<br>label, and a circular outline &quot;+&quot; button on the right — a single-purpose quick-add row.</p>
+<p>&quot;My tools&quot; section header, then two large square tiles side by side: a blush-pink tile with a salad-bowl<br>illustration icon, bold &quot;Recipes&quot; and grey &quot;More than 300 recipes&quot; subtext; a mint-green tile with a<br>clipboard/checklist icon, bold &quot;Articles&quot; and grey &quot;More than 500 articles&quot; subtext — a content-library<br>entry point rather than a logging action.</p>
+<p>Bottom nav: Coach (active), Journal, Profile.</p>
+<h3>Why it's here</h3>
+<p>The full-width seasonal illustration paired with a mood-setting headline (&quot;Today is going to be a good<br>day.&quot;) is a distinctive way to open a coaching/home tab with warmth before any data appears — worth<br>considering for Intake's zero-state or daily-open moment. The two-tile &quot;Recipes / Articles&quot; content-library<br>entry point is a reusable pattern for surfacing non-logging content without cluttering the primary<br>tracking flow.</p>
+        <div class="chips"><span class="chip" data-screen="home">home</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="coach">coach</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,goals,onboarding">
+      <img src="entries/images/fitness-activity-dashboard-flow.png" alt="fitness-activity-dashboard-flow" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three iPhone frames on light grey, showing one fitness app's flow. Screen 1 (&quot;Home&quot;): a greeting header<br>(&quot;Hello James! 👋&quot; plus a blue &quot;Pro Member&quot; pill, avatar top-left, bell and kebab icons top-right), then a<br>&quot;Today Starts / See All&quot; section with a wide white card holding a circular progress ring (grey track,<br>black/blue arc) beside a small legend list (Exercise 220/600min, Stand 140/600min). Below it, two<br>side-by-side cards: &quot;Calories 234/848kcal&quot; with a green horizontal bar-segment tracker and two stats<br>underneath (grams carbs / grams fat), and &quot;Activity Tracking 234/848kcal&quot; with a small blue outlined<br>squiggle line-chart and two stats (Done / Left). Below that, a horizontal image card (&quot;Today's Challenge&quot;,<br>a progress bar, &quot;+32%&quot; badge, &quot;Beginner&quot; pill) over a workout photo. Bottom: a pill nav bar with a<br>labelled active &quot;Home&quot; segment (icon + text in a black rounded pill) plus three unlabelled icon-only tabs.</p>
+<p>Screen 2 (&quot;Activity Plan&quot;): a horizontal date strip (dimmed dates either side of a highlighted blue<br>&quot;Today, 25 Nov&quot; pill) above a list of rounded white/pale rows, each a left icon-in-tinted-circle, two-line<br>label (title + subtitle), and a right-aligned bold number + unit -- repeated for Weight Step, Goal Step,<br>Heart Step, Muscle Step. Below, two more full-width cards (Weightlifting task-count + progress bar;<br>Steps with a big number).</p>
+<p>Screen 3 (&quot;Challenge complete&quot;): back-arrow and &quot;+&quot; circular buttons top corners, &quot;Great Work! / Your<br>Daily Challenge is Almost Done! 🔥&quot; heading, a &quot;Wellness Score&quot; row with a big circular gauge (blue/green<br>arc, chevron-navigation either side, checkmark and number badges around the ring, a bold &quot;6.5/10 Good&quot; in<br>the centre), then a &quot;Today Starts / See All&quot; row of two video-thumbnail cards with kcal/min stat overlays.</p>
+<h3>Why it's here</h3>
+<p>The paired &quot;Calories&quot; + &quot;Activity&quot; stat cards side by side (bar tracker vs line chart, each with two<br>sub-stats) is a direct, buildable template for an Intake home screen showing eaten-vs-burned at a glance.<br>The icon-in-circle list row with a trailing bold number+unit is a good pattern for a macro or nutrient<br>breakdown list, and the circular multi-metric gauge (checkmarks + numbers ringed around a central score)<br>is worth adapting for a &quot;daily nutrition score&quot; summary.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="onboarding">onboarding</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="analytics,goals,onboarding">
+      <img src="entries/images/fitness-activity-plan-composite.png" alt="fitness-activity-plan-composite" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>A single marketing composite showing three related phone screens side by side from a fitness/step-tracking<br>app (not calorie-first, but adjacent — steps, walking plans, activity goals).</p>
+<p>Left screen, &quot;Overall&quot; (share/summary card): white back-arrow and &quot;X&quot; close buttons flank a centred title<br>in the header, with a thin blue progress/step-indicator bar beneath it (a multi-step flow dot/segment<br>indicator). Below, a large full-bleed photo card — a blurred-motion running-shoe action shot in warm<br>orange/red tones — with a date overlay top-left (&quot;Tue, 16 Dec/26&quot;) and a huge bold white &quot;80&quot; with &quot;Steps&quot;<br>caption beneath, bottom-left of the photo. Under the photo, a white stat row with three columns (icon +<br>value + label): distance in miles, calories, floors. A full-width solid-blue rounded button below reads<br>&quot;Share&quot; with a small forward/share-arrow icon — this screen is a shareable end-of-activity summary card.</p>
+<p>Middle screen, a home/plan dashboard: circular avatar photo top-left, &quot;Good evening.&quot; bold greeting with<br>grey subtext &quot;tomorrow's [walking-icon] walking slot is&quot;, white bar-chart icon button top-right. Two stacked<br>full-width rounded pills, blue then orange, each showing a bold time (&quot;05:55 AM&quot;, &quot;06:55 AM&quot;) with a small<br>circular swap/refresh icon overlapping the boundary between them — presented as two alternative slot<br>options. Below, &quot;Today's Goal&quot; header with a right-aligned &quot;View Plan&quot; link, then a white card: &quot;Steady<br>Running&quot; label, small icon stats row (distance, 60min duration, 10,500 step target), and a horizontal<br>slider/progress track underneath. Below that, a full-width orange weather-style card: temperature &quot;66.8F&quot;<br>and &quot;Cloudy&quot; with icon, top-left; a circular badge with a bell icon, &quot;05:25 AM&quot; and &quot;Sunrise&quot; caption,<br>top-right; and a translucent progress strip at the bottom showing &quot;82%&quot; and a paired stat.</p>
+<p>Right screen, &quot;Plan Breakdown&quot;: white back-arrow, centred small blue-bag &quot;Plan Breakdown&quot; label pill with<br>icon, white &quot;X&quot; close button. A grey-bordered card: &quot;Week 1&quot; caption, bold &quot;Intermediate Daily Activity<br>Plan&quot; title, and a &quot;Goal:&quot; description line in grey. Below, a scrolling list of white rounded day-cards —<br>&quot;Day 1: Moderate Walk&quot;, &quot;Day 2: Power Walking Session&quot;, &quot;Day 3: Running and Walking Mix&quot;, &quot;Day 4: Active<br>Rest Day with Light Walking&quot; — each with a small icon stats row (distance/duration/step-count) and a thin<br>horizontal progress bar underneath, bar-fill length varying per day to suggest a multi-week plan overview.</p>
+<h3>Why it's here</h3>
+<p>The end-of-session shareable summary card (big number over a full-bleed photo, single clear &quot;Share&quot; CTA) is<br>a strong pattern Intake could reuse for a shareable daily/weekly nutrition recap. The two-alternative-slot<br>picker (stacked pills with a swap icon between them) and the day-by-day plan-breakdown list with per-day<br>progress bars are both transferable to a structured meal-plan or goal-plan view.</p>
+        <div class="chips"><span class="chip" data-screen="analytics">analytics</span><span class="chip" data-screen="goals">goals</span><span class="chip" data-screen="onboarding">onboarding</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,home">
+      <img src="entries/images/foodllama-mascot-ring-dashboard.jpg" alt="foodllama-mascot-ring-dashboard" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Dashboard on a plain white/very-pale-grey background, branded &quot;Foodllama&quot; in bold black top-left, with a<br>white circular person-icon button top-right. Centred below: a huge bold black calorie number &quot;2,129&quot; and<br>grey subtext &quot;82% from 2,570 calories goal&quot; — the primary metric stated as a sentence rather than a<br>labelled stat.</p>
+<p>The centrepiece is a large circular ring gauge, but instead of a plain progress arc, a soft grey rounded<br>&quot;halo&quot; arc sweeps most of the way around (roughly 300°) ending in a small water-droplet-shaped white<br>terminus icon on the right — read as the goal track. Inside the ring sits a 3D-rendered cartoon llama<br>mascot head wearing colourful rainbow sunglasses and a brown pom-pom/beanie-style wool tuft on top,<br>smiling — the mascot occupies the ring's centre in place of a numeric readout. Around the ring's edge, three<br>small circular icon badges sit at different points along the arc like satellites: a blue stopwatch/clock, a<br>yellow house/building icon, and (implied) a third — each presumably tapping into a different stat. To the<br>left of the ring, outside it, a small stat block: a black running-shoe icon, bold &quot;6d&quot;, grey &quot;streak&quot;<br>caption underneath.</p>
+<p>Below the ring, a macro-split summary as inline coloured-bold text on one line: &quot;21% protein&quot; (blue), &quot;38%<br>carbs&quot; (green), &quot;41% fat&quot; (yellow) — no bars or rings, just coloured percentage text separated by plain<br>grey connector words.</p>
+<p>Below that, a smooth filled area/stream chart (not bars) plotting the same three macros as stacked colour<br>bands (blue/green/yellow) over seven days, with a dashed horizontal goal line at &quot;2,570&quot; labelled on the<br>left in a yellow pill, and a small circular avatar marker (llama-with-sunglasses, matching the mascot)<br>pinned at the current day's peak on the line. Day labels below the chart: date number bold, weekday<br>abbreviation small below it (e.g. &quot;6 / WED&quot;), current day highlighted in a light grey rounded pill.</p>
+<p>Bottom: a floating black rounded-full toolbar, icon-only, five items — pencil (manual log), bookmark, image<br>frame, camera, and &quot;...&quot; overflow — overlapping the top of a food-entry list that's just starting to show<br>below (a small food photo thumbnail visible at the very bottom edge).</p>
+<h3>Why it's here</h3>
+<p>The character mascot living inside the progress ring instead of a number is a strong personality/mascot<br>direction — worth flagging for Intake if the product wants warmth over pure data. The smooth stacked-area<br>macro trend chart (vs. bar chart) is a softer alternative to the bar-chart pattern seen elsewhere in this<br>batch, and the floating icon-only bottom toolbar (pencil/bookmark/photo/camera/more) is a clean multi-entry-<br>method logging affordance.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="home">home</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="dashboard,profile,settings">
+      <img src="entries/images/health-dashboard-profile-cards.png" alt="health-dashboard-profile-cards" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Two iPhone frames on a soft blue-lavender gradient backdrop. Left: an &quot;Insights&quot; screen (small-caps<br>&quot;Analytics&quot; eyebrow above a large serif-ish &quot;Insights&quot; title) with two stacked white cards. The first,<br>&quot;Activity Rings&quot;, shows a line chart (two overlaid lines, one purple one orange, on a dotted-grid<br>background) with a big &quot;72 bpm avg&quot; figure top-right and hour labels (9am-9pm) along the x-axis; below<br>the chart a three-column stat row (Resting / Peak / Average, each a bold number over a small grey label).<br>The second card, &quot;Sleep Breakdown&quot;, repeats that exact pattern with a 7-day purple/orange/light-purple<br>bar chart (legend dots for Deep/REM/Light) and the same three-stat row underneath. A pill-shaped bottom<br>tab bar with four icon buttons (house, small chart, a filled black square-grid &quot;active&quot; icon, person) sits<br>at the bottom, the active tab rendered as a solid black rounded pill.</p>
+<p>Right frame: a &quot;Profile&quot; screen -- name (&quot;Tanzim Ahmed&quot;), member-since date, and a blue &quot;Premium Plan&quot;<br>badge at top. Below it, a white card with three quick stats (Height / Weight / Age) separated by thin<br>vertical dividers, then a &quot;Health Goal&quot; card with a label, percentage, and a horizontal gradient progress<br>bar (purple to orange) with a white circular handle. Below that, two grouped list sections (&quot;Health&quot; and<br>&quot;App&quot;) of white rounded rows, each with a circular icon-in-tinted-circle, a bold title, a grey subtitle,<br>and a trailing arrow-out icon. Same pill tab bar at the bottom, person tab active this time.</p>
+<h3>Why it's here</h3>
+<p>The three-stat row under a chart (bold number, small grey label, thin dividers) is a clean, reusable<br>pattern for showing calorie/macro breakdowns (e.g. &quot;Eaten / Burned / Remaining&quot;). The gradient progress<br>bar with a draggable-looking handle is a strong candidate for a daily calorie-goal indicator, and the<br>grouped icon-row list is a tidy template for a settings or profile screen.</p>
+        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="profile">profile</span><span class="chip" data-screen="settings">settings</span></div>
+      </div>
+    </article>
+
+    <article class="entry" data-screens="onboarding,dashboard,insights">
+      <img src="entries/images/health-report-fullness-slider.png" alt="health-report-fullness-slider" loading="lazy">
+      <div class="entry-body">
+        <div class="entry-meta"><span class="added">2026-08-10</span></div>
+        <h3>What it shows</h3>
+<p>Three iPhone frames on a soft pink/purple gradient. Screen 1: a near-blank splash/loading screen -- just a<br>centred gradient (purple-to-pink) heart-shaped logo mark on a pale background, no other content.</p>
+<p>Screen 2 (&quot;Home&quot;): a greeting row (&quot;Hello Jhon 👋 / How are you feeling today?&quot; with avatar and bell icon),<br>a &quot;Today's activity log / See all&quot; section of four equal square tiles in a 2x2 grid, each a<br>tinted-circle icon (alarm clock, cloud, running figure, thermometer) over a bold time and a grey caption<br>(&quot;8:00 AM / Morning walk&quot;, &quot;12:30 PM / Lunch time&quot;, etc). Below, a &quot;Today's suggestions for you&quot; section<br>with three narrower square tiles (icon, bold title, small grey description) -- &quot;Mindful moment&quot;, &quot;Community<br>insight&quot;, &quot;Download report&quot;. Bottom: a pill nav bar with a filled blue circular active icon plus three<br>outline icons.</p>
+<p>Screen 3 (&quot;Health report&quot;): a heading with bell/profile icons, a three-way segmented toggle (Weekly /<br>Monthly / Yearly, active segment a filled purple pill), then a bold state label (&quot;Satisfied / Feel<br>comfortable&quot;) above the standout element: a hand-drawn-style blue-outline stomach illustration with a<br>vertical slider track running beside it, labelled rungs from &quot;Hungry&quot; at the bottom through &quot;Satisfied&quot; to<br>&quot;Very full&quot; at the top, and a purple circular handle on the track marking the current position. A full-width<br>purple &quot;Next&quot; pill button anchors the bottom.</p>
+<h3>Why it's here</h3>
+<p>The vertical fullness/hunger slider against a stomach illustration is an extremely direct fit for Intake --<br>it's essentially a hunger-or-satiety self-report control, exactly the kind of subjective input a<br>nutrition app might want alongside objective calorie counts. The 2x2 activity-log tile grid and the<br>segmented Weekly/Monthly/Yearly toggle are both solid, reusable patterns for a history/insights screen.</p>
+        <div class="chips"><span class="chip" data-screen="onboarding">onboarding</span><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="insights">insights</span></div>
       </div>
     </article>
 
@@ -359,24 +479,6 @@
       </div>
     </article>
 
-    <article class="entry" data-screens="dashboard,home">
-      <img src="entries/images/purple-gradient-calorie-progress-home.jpg" alt="purple-gradient-calorie-progress-home" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Home dashboard on a very pale lavender background. Header row: circular profile photo, left; centred solid<br>indigo/purple pill button with a small gold crown icon and white text &quot;Go To Premium&quot;; white circular<br>notification-bell button with a red unread dot, right.</p>
-<p>Below that, a full-width white pill search bar (magnifying glass icon, grey placeholder &quot;Search&quot;) paired<br>with a small white square button holding a &quot;sliders&quot;/filter-settings icon.</p>
-<p>Main card: a large rounded rectangle filled with a purple-to-indigo diagonal gradient. Top-left: a white<br>circular badge with a compass/target icon and label &quot;Your Progress&quot;. Below, a huge bold white &quot;92%&quot;,<br>smaller white date text &quot;28 February 2025&quot; beneath it. Right side of the card: a circular ring gauge<br>(two-tone — pale lavender track, solid white arc for progress) with centred white text &quot;1480&quot; (large bold)<br>over &quot;Calories&quot; (small).</p>
-<p>Next, a white rounded row card: a small rounded-square icon badge (crown) on pale lavender, bold text<br>&quot;Completed 4 Goals&quot; with grey subtext &quot;Keep Upgrading to Get Benefits&quot; beneath.</p>
-<p>Below that, a three-column white rounded card, one column per macro (Carbs / Protein / Fat), each with a<br>label + &quot;...&quot; overflow button, a bold &quot;used/total g&quot; fraction (e.g. &quot;281 / 359g&quot;), and a thin horizontal<br>progress bar underneath in that macro's colour (green, orange, purple respectively) against a pale-grey<br>track.</p>
-<p>&quot;Planned Meal's&quot; section header with a right-aligned indigo &quot;View All&quot; link, then a list of white rounded<br>rows — square food photo thumbnail, bold label (&quot;Add Breakfast&quot;), grey subtext (&quot;Recommended | 540-715<br>Kcal&quot;), and a circular outline &quot;+&quot; button on the right of each row.</p>
-<p>Bottom: floating indigo circular FAB (stacked-lines icon) overlapping a docked white rounded-top tab bar —<br>Home (active, indigo-filled icon+label), Analytics, My Diet, Account.</p>
-<h3>Why it's here</h3>
-<p>The gradient hero card combining a headline percentage, a date, and a calorie ring all in one surface is a<br>strong &quot;today at a glance&quot; composition. The three-column macro row with inline thin progress bars<br>underneath a bold fraction is a compact, scannable macro-summary pattern worth carrying into Intake's home<br>screen, and &quot;Planned Meal's&quot; as tappable add-rows (not yet-logged placeholders) is a useful proactive-log<br>pattern.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="home">home</span></div>
-      </div>
-    </article>
-
     <article class="entry" data-screens="onboarding,dashboard">
       <img src="entries/images/serene-meditation-onboarding-dashboard.png" alt="serene-meditation-onboarding-dashboard" loading="lazy">
       <div class="entry-body">
@@ -391,20 +493,6 @@
       </div>
     </article>
 
-    <article class="entry" data-screens="onboarding,community">
-      <img src="entries/images/sisterly-community-support-app.png" alt="sisterly-community-support-app" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three iPhone frames (visible hardware buttons) over blurred warm/cool photographic backgrounds<br>(sunset flowers, mossy green light, dusty rose), for a women's support community app &quot;Sisterly&quot;. Screen 1:<br>a top progress/step indicator bar, a small logo mark, italic serif wordmark &quot;Sisterly&quot; centred, then three<br>stacked feature rows below it (icon, all-caps bold label, one-line grey description) -- &quot;Closed Groups&quot;,<br>&quot;No Judgment&quot;, &quot;Support&quot; -- all set over the blurred photo, with a full-width dark-purple rounded button<br>(&quot;Find your group&quot;) anchoring the bottom.</p>
-<p>Screen 2 (&quot;Your space / Choose what resonates now&quot;): a vertical stack of glassy translucent cards over the<br>green-toned background, each labelled with a small emoji + &quot;Group&quot; eyebrow, a large serif headline (e.g.<br>&quot;Motherhood&quot;, &quot;Moving / New country&quot;, &quot;Divorce / Separation&quot;), a one-line description, a row of overlapping<br>circular avatar thumbnails with a participant count, and a full-width translucent white &quot;Join&quot; button.<br>Bottom tab bar: three pill segments (Space / Dialogues / Profile) in mismatched accent colours.</p>
-<p>Screen 3 (a single story/post): a &quot;Back&quot; link and &quot;Published&quot; date top row, a large curly quotation mark,<br>a big serif pull-quote as the headline, an attribution line (avatar, name, age), body paragraphs in<br>regular grey text, three pill action buttons (&quot;♡ Support&quot;, &quot;Reply&quot;, &quot;Save&quot;), then a full-width dark<br>&quot;Write your story&quot; button and a small &quot;You can write anonymously&quot; caption.</p>
-<h3>Why it's here</h3>
-<p>The translucent glass-card-over-photo treatment and serif pull-quote styling give a warm, human,<br>non-clinical tone -- useful counterpoint to typical data-dense nutrition UI. The topic-card list with<br>avatar-stack + participant count + single CTA is a reusable pattern for community/challenge features if<br>Intake ever adds social or group elements.</p>
-        <div class="chips"><span class="chip" data-screen="onboarding">onboarding</span><span class="chip" data-screen="community">community</span></div>
-      </div>
-    </article>
-
     <article class="entry" data-screens="onboarding,dashboard,insights">
       <img src="entries/images/skincare-routine-checklist-insights.png" alt="skincare-routine-checklist-insights" loading="lazy">
       <div class="entry-body">
@@ -416,19 +504,6 @@
 <h3>Why it's here</h3>
 <p>The checklist-of-daily-steps card with icon-in-circle rows and a trailing checkbox is a clean pattern for<br>a &quot;log your meals today&quot; checklist. The day-strip date picker with one solid highlighted pill and the<br>dark pill-shaped icon-tab bar (five circular buttons, one accent-highlighted) are both reusable navigation<br>components worth adapting for Intake's daily log view.</p>
         <div class="chips"><span class="chip" data-screen="onboarding">onboarding</span><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="insights">insights</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard">
-      <img src="entries/images/smart-ring-skin-protection-dashboard.jpg" alt="smart-ring-skin-protection-dashboard" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Marketing-style presentation of a single &quot;Smart Ring / AI Skin Protection App&quot; dashboard screen, phone<br>mockup centred over a moody, photographic teal-and-slate background (a wet rock with small white flowers<br>growing from it, soft volumetric light streaks). Headline text (&quot;Smart Ring&quot;, &quot;AI Skin Protection App&quot;)<br>top-left, small caption labels (&quot;3 Core Metrics Tracked&quot;, &quot;24/7 Skin Monitoring&quot;) in the corners of the<br>backdrop — these are marketing annotations, not app UI.</p>
-<p>Within the phone frame: header &quot;Dashboard&quot; with a search icon top-right, on a translucent light overlay<br>over the photo background (frosted-glass card, not solid colour). Below it, a stat block: small-caps<br>label &quot;COLLAGEN INDEX&quot;, a large bold &quot;72%&quot; figure, a &quot;+18% vs yesterday&quot; caption, and a small inline<br>sparkline chart to the right tracing recent values with a single highlighted dot. Beneath, the actual<br>photographic hero image continues (the ring product sitting on the rock among flowers) framed within the<br>card as if the metric panel floats over a real-world photo. Below that, a horizontal reminder banner<br>(frosted glass pill) reading &quot;SPF 50+ Next reminder: 12 min&quot; with a &quot;Remind me&quot; button on the right.<br>Under the banner, three equal glass-morphism tiles in a row, each with a small icon, bold label (&quot;Critical<br>/ UV Index 8.6&quot;, &quot;Hydration / 62%&quot;, &quot;Barrier / Normal&quot;) and secondary caption. Bottom nav is a minimal<br>four-icon row (home, log/book, leaf, profile) with no visible labels or container, floating directly on<br>the photo.</p>
-<h3>Why it's here</h3>
-<p>The frosted-glass metric panel floating over a full-bleed photographic background (rather than a flat<br>colour dashboard) is a distinctive art direction worth considering for a hero &quot;today&quot; screen — pairs a<br>single hero number with a sparkline and a horizontal actionable reminder banner (&quot;Next reminder…&quot; +<br>button), a pattern directly reusable for meal or water reminders in Intake.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span></div>
       </div>
     </article>
 
@@ -486,36 +561,6 @@
 <h3>Why it's here</h3>
 <p>This is the closest reference in the batch to Intake's actual domain: a conversational coach flow paired<br>with a settings screen that has literal &quot;Goal Weight&quot; and &quot;Diet Preference&quot; fields. The segmented-tick<br>water-intake bar and the bar chart with one highlighted day plus a floating weight-callout are both<br>directly reusable for calorie/weight trend visualisation, and the three-tab Chat/Journey/Settings nav is a<br>plausible top-level IA for a chat-driven logging experience.</p>
         <div class="chips"><span class="chip" data-screen="chat">chat</span><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="settings">settings</span><span class="chip" data-screen="onboarding">onboarding</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,mood-check-in,health-overview">
-      <img src="entries/images/wellness-health-overview-purple.png" alt="wellness-health-overview-purple" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three-screen light-mode wellness/health app, off-white background, deep indigo/navy-purple as the primary<br>accent, with soft pastel secondary cards (light blue, cream/tan).</p>
-<p>Screen 1 (home): &quot;Good Morning, Alex / Here's your health snapshot&quot; greeting left, round avatar right, no<br>button icons. Large indigo rounded card &quot;Wellness Score&quot; with a bold &quot;82 / Very Good&quot; figure, a circular<br>ring gauge on the right (white ring on indigo, small heart icon centred) and a one-line encouragement<br>below (&quot;Keep it up! You're on the right track.&quot;). Below, a &quot;Heart Health&quot; row card with a heart icon,<br>chevron to expand, a bold &quot;72 bpm / Resting Heart Rate&quot; figure and a small multi-bar sparkline in indigo.<br>Then two square stat tiles (&quot;Sleep 7h 24m / Good&quot; with bar sparkline in purple, &quot;Steps 6,842 / Today&quot;<br>with bar sparkline in green). Bottom nav: five items (Home selected, Insights, a raised solid indigo<br>circular + FAB in the centre breaking the bar line, Care, Profile), icon-over-label style on white.</p>
-<p>Screen 2 (mood check-in): hamburger icon and bell (with red dot) top corners. Large friendly heading<br>&quot;How are you feeling today?&quot; with a soft pink circular blob graphic (heart outline) top-right, and small<br>supporting copy &quot;Track your health. Understand your body. Live better.&quot; Below, a horizontally scrollable<br>filter-pill row (All selected/filled dark, Heart, Mind, Sleep, Activity as outlined pills). Then a large<br>indigo &quot;Heart Rate&quot; card with bold &quot;68 bpm / Today, 8:30 AM&quot; and a full-width line chart (white line over<br>indigo, axis-labelled 40–120 on the right, times along the bottom). Below, two secondary rows: a light<br>blue &quot;Stress Level / Low / Calm and balanced&quot; card with a lotus icon, and a cream &quot;Energy Level / Good /<br>Keep maintaining&quot; card with a lightning icon. Same bottom nav with centre FAB.</p>
-<p>Screen 3 (Health Overview): title &quot;Health Overview&quot; with a kebab-menu icon. Segmented control (Today<br>selected/filled dark, Week, Month). A 2x2 grid of pastel stat cards: light-blue &quot;Blood Pressure 118/76<br>mmHg Normal&quot;, cream &quot;Heart Rate 68 bpm Normal&quot;, pale-blue &quot;Blood Oxygen 98% SpO2 Normal&quot;, cream<br>&quot;Temperature 36.6°C Normal&quot; — each with a small relevant icon top-right and a &quot;Normal&quot; caption in muted<br>grey beneath the value. Below, a white &quot;Heart Rate Variability&quot; card with a value (&quot;45 ms&quot;), a &quot;Balanced&quot;<br>tag, and a full-width line chart with 0/30/60 y-axis gridlines. Then a light-blue &quot;Hydration&quot; card: &quot;1.6 L<br>/ Goal: 2.5 L&quot; text on the left, a small circular progress ring (&quot;64%&quot;) on the right.</p>
-<h3>Why it's here</h3>
-<p>The filter-pill row (All/Heart/Mind/Sleep/Activity) for switching what a hero chart shows is a reusable<br>control for an Intake &quot;today&quot; screen that might toggle between calories/macros/water. The 2x2 pastel<br>metric grid with consistent icon-value-status structure, and the small ring-plus-numbers hydration card,<br>are both directly adaptable for a nutrition-overview screen with several simultaneous targets.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="mood-check-in">mood-check-in</span><span class="chip" data-screen="health-overview">health-overview</span></div>
-      </div>
-    </article>
-
-    <article class="entry" data-screens="dashboard,plan,nutrition-detail">
-      <img src="entries/images/workout-plan-calories-dark.png" alt="workout-plan-calories-dark" loading="lazy">
-      <div class="entry-body">
-        <div class="entry-meta"><span class="added">2026-08-10</span></div>
-        <h3>What it shows</h3>
-<p>Three-screen dark-mode fitness app on a near-black background with a vivid purple/violet accent.</p>
-<p>Screen 1 (home): top bar with round avatar and &quot;Good Morning! Guy Hawkins&quot; greeting left, search and bell<br>icons right. Below, a large purple rounded rectangle hero card — &quot;My Plan For Today&quot; headline, a circular<br>progress ring on the right showing &quot;25%&quot; in the centre with a thin yellow/gold arc for progress against<br>a purple track, and a small &quot;2/8 Complete&quot; caption. Then a &quot;Start new goal&quot; section: a horizontally<br>scrolling row of image cards (workout photos with a rounded white play button overlaid), each captioned<br>with exercise name, muscle groups, duration and calorie burn as small pill-like text/icon pairs<br>(clock icon + &quot;35 min&quot;, flame icon + &quot;120 cal&quot;). Below that, a &quot;Today task&quot; list of rows, each with a<br>thumbnail, exercise name, duration/calorie captions, and a circular play button on the right. Bottom tab<br>bar: Home (purple, selected), Discover, Activity, Settings, each icon over a small label, on a dark<br>rounded bar.</p>
-<p>Screen 2 (My Plan): back chevron top-left, centred title &quot;My Plan&quot;, &quot;Statics&quot; text button top-right.<br>&quot;Daily Plan&quot; heading with a 2x2 grid of colour-coded stat cards (purple &quot;Calories 720 Kcal&quot; with flame<br>icon, dark &quot;Steps 2,000&quot; with footprints icon, green &quot;Sleep 6 Hours&quot; with moon icon, blue &quot;Water 10 Cups&quot;<br>with droplet icon). Below, &quot;Goal in progress&quot; list of exercise rows identical in style to screen 1's task<br>list.</p>
-<p>Screen 3 (Calories Details): back chevron, &quot;Calories Details&quot; title. Large circular ring gauge centred,<br>gradient from white to orange, showing &quot;753 KCAL OVER&quot; in bold centre text, flanked left/right by plain<br>numeric stats &quot;3541 EATEN&quot; and &quot;854 BURNED&quot;. Below, a &quot;See stats&quot; dropdown chip, then a row of three<br>macro trackers (Carbs/Fat/Protein) each as a label, a thin horizontal progress bar in a distinct colour<br>(pink, orange, purple), and a &quot;current/target g&quot; caption. At the bottom, a dark card with a large emoji<br>face (tired/neutral), &quot;Day rating&quot; heading, a one-line coaching tip (&quot;Eat more healthy carbs to boost<br>your day rating!&quot;) and a &quot;See more&quot; pill button.</p>
-<h3>Why it's here</h3>
-<p>The &quot;Calories Details&quot; screen is close to a direct template for Intake's daily nutrition summary: a<br>single over/under ring gauge flanked by eaten/burned numbers, three colour-coded macro bars beneath, and<br>a friendly emoji + one-line coaching tip card at the bottom turning a plain number into gentle feedback.<br>The colour-coded 2x2 stat grid on the plan screen is a reusable pattern for a daily-glance dashboard.</p>
-        <div class="chips"><span class="chip" data-screen="dashboard">dashboard</span><span class="chip" data-screen="plan">plan</span><span class="chip" data-screen="nutrition-detail">nutrition-detail</span></div>
       </div>
     </article>
 

@@ -1,6 +1,6 @@
 ---
 image: images/lavender-plans-weekly-macro-chart.jpg
-direction: null
+direction: lavender-indigo-docked-fab
 screens: [analytics, goals]
 added: 2026-08-10
 ---

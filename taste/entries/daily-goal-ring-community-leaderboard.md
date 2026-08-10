@@ -1,6 +1,6 @@
 ---
 image: images/daily-goal-ring-community-leaderboard.png
-direction: null
+direction: dark-purple-ring-gauge
 screens: [dashboard, community, leaderboard]
 added: 2026-08-10
 ---

@@ -1,6 +1,6 @@
 ---
 image: images/meal-balance-score-breakdown.png
-direction: null
+direction: cream-serif-log-flow
 screens: [meal-detail, log-confirmation]
 added: 2026-08-10
 ---

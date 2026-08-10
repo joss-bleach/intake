@@ -1,6 +1,6 @@
 ---
 image: images/sisterly-community-support-app.png
-direction: null
+direction: frosted-glass-over-photo
 screens: [onboarding, community]
 added: 2026-08-10
 ---

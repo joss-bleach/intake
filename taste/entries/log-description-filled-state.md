@@ -1,6 +1,6 @@
 ---
 image: images/log-description-filled-state.png
-direction: null
+direction: cream-serif-log-flow
 screens: [log-description]
 added: 2026-08-10
 ---

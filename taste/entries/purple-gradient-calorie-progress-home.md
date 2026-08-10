@@ -1,6 +1,6 @@
 ---
 image: images/purple-gradient-calorie-progress-home.jpg
-direction: null
+direction: lavender-indigo-docked-fab
 screens: [dashboard, home]
 added: 2026-08-10
 ---
