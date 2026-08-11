@@ -405,7 +405,18 @@ const MOCK = {
       const byAnswer = { whole: "c4", oat: "c5", skimmed: "c6" };
 
       if (strategy === "clarify" && latte.clarifiedAnswer) {
-        return [resolved(latte, "matched", "confident", "database", candidates, byAnswer[latte.clarifiedAnswer])];
+        const knownId = byAnswer[latte.clarifiedAnswer];
+        if (knownId) {
+          return [resolved(latte, "matched", "confident", "database", candidates, knownId)];
+        }
+        // free-text answer, not one of the offered chips — search the OFF cache/CoFID with it.
+        const text = latte.clarifiedAnswer.toLowerCase();
+        if (text.includes("soy")) {
+          const soy = cand("c7", "Latte, soy milk, regular (OFF cache)", { kcal: 170, protein: 9, carbs: 15, fat: 7 });
+          return [resolved(latte, "matched", "confident", "database", [...candidates, soy], "c7")];
+        }
+        // no match for the custom term either — same total-gap LLM-estimate fallback as #14 promises elsewhere.
+        return [{ ...latte, resolution: "fallback", identityConfidence: "needs_review", source: "llm_estimate_fallback", candidates: [], selectedCandidateId: null, nutrition: { kcal: 180, protein: 6, carbs: 17, fat: 8 } }];
       }
       if (strategy === "bestguess") {
         // "whole milk" is the most common order — pre-fill it as a working number,
@@ -437,6 +448,7 @@ function resolved(base, resolution, identityConfidence, source, candidates, sele
 }
 
 let session = initialSession();
+let customInputOpen = {}; // page-only UI state: which ingredient's "something else" box is open — not domain state
 function dispatch(action) {
   session = reduce(session, action);
   render();
@@ -520,6 +532,19 @@ const SCENARIOS = [
     ],
   },
   {
+    title: "Ambiguous — C: something else",
+    desc: "Same clarifying chip, but none of the offered options are right — the chip set can't cover everything. Type a free-text answer instead; it's searched against the database like any other resolution, and still degrades to the LLM-estimate fallback (not a dead end) if nothing matches.",
+    steps: [
+      { label: "Submit \"A latte\"", run: () => submitAndParse("A latte") },
+      { label: "Open \"Something else…\"", run: () => { customInputOpen["latte"] = true; render(); } },
+      { label: "Type \"soy milk\" and use it", run: () => {
+          dispatch({ type: "ANSWER_CLARIFICATION", ingredientId: "latte", answer: "soy milk" });
+        } },
+      { label: "Resolve against database (strategy: clarify)", run: () => resolveAgainstDatabase("clarify") },
+      { label: "Save (matched a new candidate found by the free-text search)", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+  {
     title: "Total database gap",
     desc: "Neither the OFF cache nor CoFID has this dish. The LLM estimates directly and it's flagged low-confidence — the fallback the food-database strategy (#14) promised.",
     steps: [
@@ -553,6 +578,7 @@ function renderTabs() {
       activeScenario = i;
       completedSteps = 0;
       session = initialSession();
+      customInputOpen = {};
       renderTabs();
       renderScenario();
       render();
@@ -593,6 +619,7 @@ document.getElementById("fp-resolve").onclick = () => resolveAgainstDatabase(doc
 document.getElementById("fp-save").onclick = () => dispatch({ type: "SAVE" });
 document.getElementById("fp-reset").onclick = () => {
   session = initialSession();
+  customInputOpen = {};
   render();
 };
 
@@ -641,13 +668,24 @@ function render() {
         }
         let clarifyHtml = "";
         if (session.phase === "parsed" && i.clarifyOptions) {
+          const knownOption = i.clarifyOptions.find((o) => o.value === i.clarifiedAnswer);
           if (i.clarifiedAnswer) {
-            clarifyHtml = `<div class="clarify"><span class="clarify-q">Answered: ${i.clarifyOptions.find((o) => o.value === i.clarifiedAnswer).label}</span></div>`;
+            clarifyHtml = `<div class="clarify"><span class="clarify-q">Answered: ${knownOption ? knownOption.label : `"${i.clarifiedAnswer}" (not on the list — searched instead)`}</span></div>`;
+          } else if (customInputOpen[i.id]) {
+            clarifyHtml = `<div class="clarify">
+              <div class="clarify-q">Not on the list? Type what it actually was.</div>
+              <div class="edit-row">
+                <input type="text" data-custom-ing="${i.id}" placeholder="e.g. soy milk" style="width:180px" />
+                <button class="action secondary" data-apply-custom="${i.id}">Use this</button>
+                <button class="chip-btn skip" data-clarify-cancel-custom="${i.id}">Back to options</button>
+              </div>
+            </div>`;
           } else {
             clarifyHtml = `<div class="clarify">
               <div class="clarify-q">Which milk?</div>
               <div class="clarify-chips">
                 ${i.clarifyOptions.map((o) => `<button class="chip-btn" data-clarify-ing="${i.id}" data-clarify-answer="${o.value}">${o.label}</button>`).join("")}
+                <button class="chip-btn" data-open-custom="${i.id}">Something else…</button>
                 <button class="chip-btn skip" data-clarify-ing="${i.id}" data-clarify-answer="">Not sure, skip</button>
               </div>
             </div>`;
@@ -698,6 +736,25 @@ function render() {
   });
   panel.querySelectorAll("[data-clarify-ing]").forEach((b) => {
     b.onclick = () => dispatch({ type: "ANSWER_CLARIFICATION", ingredientId: b.dataset.clarifyIng, answer: b.dataset.clarifyAnswer || null });
+  });
+  panel.querySelectorAll("[data-open-custom]").forEach((b) => {
+    b.onclick = () => {
+      customInputOpen[b.dataset.openCustom] = true;
+      render();
+    };
+  });
+  panel.querySelectorAll("[data-clarify-cancel-custom]").forEach((b) => {
+    b.onclick = () => {
+      customInputOpen[b.dataset.clarifyCancelCustom] = false;
+      render();
+    };
+  });
+  panel.querySelectorAll("[data-apply-custom]").forEach((b) => {
+    b.onclick = () => {
+      const input = panel.querySelector(`[data-custom-ing="${b.dataset.applyCustom}"]`);
+      customInputOpen[b.dataset.applyCustom] = false;
+      dispatch({ type: "ANSWER_CLARIFICATION", ingredientId: b.dataset.applyCustom, answer: input.value.trim() });
+    };
   });
   panel.querySelectorAll("[data-apply-qty]").forEach((b) => {
     b.onclick = () => {
