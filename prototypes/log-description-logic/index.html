@@ -154,6 +154,19 @@
   }
   .candidate-btn.selected { border-color: var(--green); background: var(--green-bg); }
   .edit-row { margin-top: 8px; display: flex; gap: 6px; align-items: center; }
+  .clarify { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+  .clarify-q { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+  .clarify-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip-btn {
+    border: 1px solid var(--accent);
+    background: var(--paper);
+    color: var(--accent);
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .chip-btn.skip { border-color: var(--line); color: var(--muted); }
   .audit { font-size: 11.5px; color: var(--muted); margin-top: 6px; font-style: italic; }
   .empty { color: var(--muted); font-size: 13.5px; font-style: italic; }
   .hard-fail-note {
@@ -174,6 +187,9 @@
     blocking a save? This is the <b>logic</b> branch of <code>/prototype</code> — the look/visual structure is
     settled separately in <a href="https://github.com/joss-bleach/intake/issues/30" target="_blank">#30</a>.
     Press buttons below; the state panel re-renders after every action.
+    <b>Update:</b> the three "Ambiguous match" tabs below now compare three different ways to clear up
+    an ambiguous match ("latte" → which milk?) for the same input, since #2's reaction asked to see
+    alternatives rather than just the pick-from-a-list default.
   </div>
 
   <h2>Guided walkthroughs</h2>
@@ -189,6 +205,11 @@
     <button class="action" id="fp-submit">Submit description</button>
   </div>
   <div class="freeplay">
+    <select id="fp-strategy">
+      <option value="list">Ambiguity strategy: pick from list</option>
+      <option value="bestguess">Ambiguity strategy: best-guess prefilled</option>
+      <option value="clarify">Ambiguity strategy: clarify up front</option>
+    </select>
     <button class="action secondary" id="fp-resolve">Resolve against database</button>
     <button class="action secondary" id="fp-save">Save</button>
     <button class="action secondary" id="fp-reset">New description</button>
@@ -243,6 +264,19 @@ function reduce(session, action) {
       return withLog(
         { ...session, phase: "hard_failed" },
         "ParseFailure again after retry — hard failure. Nothing is trusted; save is blocked until the description is rephrased."
+      );
+    }
+
+    case "ANSWER_CLARIFICATION": {
+      const ing = session.ingredients.find((i) => i.id === action.ingredientId);
+      return withLog(
+        {
+          ...session,
+          ingredients: session.ingredients.map((i) => (i.id === action.ingredientId ? { ...i, clarifiedAnswer: action.answer } : i)),
+        },
+        action.answer
+          ? `Answered the clarifying question for "${ing.name}": ${action.answer}. Carried into Stage 3 resolution.`
+          : `Skipped the clarifying question for "${ing.name}" — falls through to ambiguous, same as not asking at all.`
       );
     }
 
@@ -351,14 +385,36 @@ const MOCK = {
     ],
   },
   "A latte": {
-    parse: [ing("latte", "Latte", 350, "ml", "confident")],
-    resolve: (ings) => [
-      resolved(ings[0], "ambiguous", "needs_review", "database", [
+    parse: [
+      ing("latte", "Latte", 350, "ml", "confident", [
+        { value: "whole", label: "Whole milk" },
+        { value: "oat", label: "Oat milk" },
+        { value: "skimmed", label: "Skimmed milk" },
+      ]),
+    ],
+    // strategy: "list" (show all candidates, resolve anytime) | "bestguess" (pre-fill the
+    // most common candidate, still flagged) | "clarify" (ask at parse time; unanswered
+    // falls through to "list" behaviour — the never-block rule still holds either way)
+    resolve: (ings, strategy) => {
+      const latte = ings[0];
+      const candidates = [
         cand("c4", "Latte, whole milk, regular (OFF cache)", { kcal: 210, protein: 11, carbs: 16, fat: 11 }),
         cand("c5", "Latte, oat milk, regular (OFF cache)", { kcal: 150, protein: 4, carbs: 18, fat: 6 }),
         cand("c6", "Latte, skimmed milk, regular (OFF cache)", { kcal: 130, protein: 12, carbs: 17, fat: 1 }),
-      ], null),
-    ],
+      ];
+      const byAnswer = { whole: "c4", oat: "c5", skimmed: "c6" };
+
+      if (strategy === "clarify" && latte.clarifiedAnswer) {
+        return [resolved(latte, "matched", "confident", "database", candidates, byAnswer[latte.clarifiedAnswer])];
+      }
+      if (strategy === "bestguess") {
+        // "whole milk" is the most common order — pre-fill it as a working number,
+        // still flagged needs_review since it's an assumption, not a confirmation.
+        return [resolved(latte, "ambiguous", "needs_review", "database", candidates, "c4")];
+      }
+      // "list" strategy, and "clarify" with no answer given — same non-blocking shape.
+      return [resolved(latte, "ambiguous", "needs_review", "database", candidates, null)];
+    },
   },
   "Dragon fruit protein smoothie from that new place": {
     parse: [ing("smoothie", "Dragon fruit protein smoothie", 500, "ml", "needs_review")],
@@ -369,8 +425,8 @@ const MOCK = {
   "asdkjfh q98q3rkj not real food words": { parseFails: true },
 };
 
-function ing(id, name, value, unit, quantityConfidence) {
-  return { id, name, quantity: { value, unit }, quantityConfidence, resolution: "pending", identityConfidence: "confident", source: "database", candidates: [], selectedCandidateId: null, nutrition: null, correctedFrom: null };
+function ing(id, name, value, unit, quantityConfidence, clarifyOptions) {
+  return { id, name, quantity: { value, unit }, quantityConfidence, resolution: "pending", identityConfidence: "confident", source: "database", candidates: [], selectedCandidateId: null, nutrition: null, correctedFrom: null, clarifyOptions: clarifyOptions || null, clarifiedAnswer: null };
 }
 function cand(id, label, nutrition) {
   return { id, label, nutrition };
@@ -402,13 +458,13 @@ function submitAndParse(text) {
     dispatch({ type: "PARSE_SUCCESS", ingredients: mock.parse });
   }, 400);
 }
-function resolveAgainstDatabase() {
+function resolveAgainstDatabase(strategy) {
   if (session.phase !== "parsed") return;
   const text = session.description;
   const mock = MOCK[text];
   dispatch({ type: "RESOLVE_START" });
   setTimeout(() => {
-    dispatch({ type: "RESOLVE_SUCCESS", ingredients: mock.resolve(session.ingredients) });
+    dispatch({ type: "RESOLVE_SUCCESS", ingredients: mock.resolve(session.ingredients, strategy || "list") });
   }, 400);
 }
 
@@ -434,13 +490,33 @@ const SCENARIOS = [
     ],
   },
   {
-    title: "Ambiguous match — save without resolving",
-    desc: "\"A latte\" matches three plausible database entries. Per ADR 0001, needs_review must NOT block save — watch it save while still ambiguous, then get disambiguated afterward.",
+    title: "Ambiguous — A: pick from list",
+    desc: "\"A latte\" matches three plausible database entries. Per ADR 0001, needs_review must NOT block save — watch it save while still ambiguous (no number shown yet), then get disambiguated afterward from a plain candidate list.",
     steps: [
       { label: "Submit \"A latte\"", run: () => submitAndParse("A latte") },
-      { label: "Resolve against database", run: resolveAgainstDatabase },
+      { label: "Resolve against database (strategy: list)", run: () => resolveAgainstDatabase("list") },
       { label: "Save (while still ambiguous — should be allowed)", run: () => dispatch({ type: "SAVE" }) },
       { label: "Now disambiguate: pick \"oat milk, regular\"", run: () => dispatch({ type: "SELECT_CANDIDATE", ingredientId: "latte", candidateId: "c5" }) },
+    ],
+  },
+  {
+    title: "Ambiguous — B: best-guess prefilled",
+    desc: "Same \"A latte\", different strategy: resolve pre-fills the most common candidate (whole milk) so a working kcal number is visible immediately — still flagged needs_review since it's an assumption, not a confirmation. Save is still allowed either way; swapping the assumption is just picking a different candidate.",
+    steps: [
+      { label: "Submit \"A latte\"", run: () => submitAndParse("A latte") },
+      { label: "Resolve against database (strategy: best-guess)", run: () => resolveAgainstDatabase("bestguess") },
+      { label: "Swap the assumption: pick \"oat milk, regular\" instead", run: () => dispatch({ type: "SELECT_CANDIDATE", ingredientId: "latte", candidateId: "c5" }) },
+      { label: "Save", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+  {
+    title: "Ambiguous — C: clarify up front",
+    desc: "Same \"A latte\", third strategy: Stage 2 itself surfaces a quick clarifying chip (\"which milk?\") right after parsing, before any database call — answer it and Stage 3 resolves straight to a confident match, no ambiguity ever surfaces. Skipping the chip degrades to the same non-blocking \"ambiguous\" shape as strategy A.",
+    steps: [
+      { label: "Submit \"A latte\"", run: () => submitAndParse("A latte") },
+      { label: "Answer the clarifying chip: Oat milk", run: () => dispatch({ type: "ANSWER_CLARIFICATION", ingredientId: "latte", answer: "oat" }) },
+      { label: "Resolve against database (strategy: clarify)", run: () => resolveAgainstDatabase("clarify") },
+      { label: "Save (already confident, nothing to disambiguate)", run: () => dispatch({ type: "SAVE" }) },
     ],
   },
   {
@@ -513,7 +589,7 @@ Object.keys(MOCK).forEach((text) => {
   fpSelect.appendChild(o);
 });
 document.getElementById("fp-submit").onclick = () => submitAndParse(fpSelect.value);
-document.getElementById("fp-resolve").onclick = resolveAgainstDatabase;
+document.getElementById("fp-resolve").onclick = () => resolveAgainstDatabase(document.getElementById("fp-strategy").value);
 document.getElementById("fp-save").onclick = () => dispatch({ type: "SAVE" });
 document.getElementById("fp-reset").onclick = () => {
   session = initialSession();
@@ -563,6 +639,20 @@ function render() {
             .map((c) => `<button class="candidate-btn${c.id === i.selectedCandidateId ? " selected" : ""}" data-ing="${i.id}" data-cand="${c.id}">${c.label} — ${c.nutrition.kcal} kcal</button>`)
             .join("")}</div>`;
         }
+        let clarifyHtml = "";
+        if (session.phase === "parsed" && i.clarifyOptions) {
+          if (i.clarifiedAnswer) {
+            clarifyHtml = `<div class="clarify"><span class="clarify-q">Answered: ${i.clarifyOptions.find((o) => o.value === i.clarifiedAnswer).label}</span></div>`;
+          } else {
+            clarifyHtml = `<div class="clarify">
+              <div class="clarify-q">Which milk?</div>
+              <div class="clarify-chips">
+                ${i.clarifyOptions.map((o) => `<button class="chip-btn" data-clarify-ing="${i.id}" data-clarify-answer="${o.value}">${o.label}</button>`).join("")}
+                <button class="chip-btn skip" data-clarify-ing="${i.id}" data-clarify-answer="">Not sure, skip</button>
+              </div>
+            </div>`;
+          }
+        }
         let editHtml = "";
         if (session.phase === "ready" || session.phase === "saved") {
           if (i.resolution !== "pending") {
@@ -591,6 +681,7 @@ function render() {
             ${i.nutrition ? `<span>${i.nutrition.kcal} kcal</span>` : ""}
           </div>
           ${candidatesHtml}
+          ${clarifyHtml}
           ${editHtml}
           ${i.correctedFrom ? `<div class="audit">Original (kept for audit): ${i.correctedFrom.quantity ? `${i.correctedFrom.quantity.value}${i.correctedFrom.quantity.unit}` : `${i.correctedFrom.nutrition.kcal} kcal`}, source: ${i.correctedFrom.source}</div>` : ""}
         </div>`;
@@ -604,6 +695,9 @@ function render() {
 
   panel.querySelectorAll("[data-cand]").forEach((b) => {
     b.onclick = () => dispatch({ type: "SELECT_CANDIDATE", ingredientId: b.dataset.ing, candidateId: b.dataset.cand });
+  });
+  panel.querySelectorAll("[data-clarify-ing]").forEach((b) => {
+    b.onclick = () => dispatch({ type: "ANSWER_CLARIFICATION", ingredientId: b.dataset.clarifyIng, answer: b.dataset.clarifyAnswer || null });
   });
   panel.querySelectorAll("[data-apply-qty]").forEach((b) => {
     b.onclick = () => {
