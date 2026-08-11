@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PROTOTYPE — description pipeline logic (wipe me)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --ink: #1c1b2e;
+    --muted: #6b6a80;
+    --line: #e4e2ee;
+    --paper: #fdfcfe;
+    --panel: #f6f5fb;
+    --accent: #5b4fe0;
+    --accent-ink: #ffffff;
+    --amber: #b8860b;
+    --amber-bg: #fdf3dd;
+    --red: #b8442f;
+    --red-bg: #fdeceb;
+    --green: #2f8f5b;
+    --green-bg: #eaf7ef;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 32px 24px 96px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .intro {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin: 16px 0 28px;
+    font-size: 14.5px;
+    color: var(--muted);
+  }
+  .intro b { color: var(--ink); }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 32px 0 10px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+  }
+  .tab.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .scenario-box {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+    background: var(--panel);
+  }
+  .scenario-box p { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+  .steps { display: flex; flex-direction: column; gap: 6px; }
+  .step-btn {
+    text-align: left;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+    color: var(--ink);
+  }
+  .step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .step-btn.done { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .freeplay { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+  button.action {
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  button.action.secondary { background: var(--paper); color: var(--accent); }
+  button.action:disabled { opacity: 0.35; cursor: not-allowed; }
+  select, input[type=text], input[type=number] {
+    font-size: 14px;
+    padding: 7px 9px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+  }
+  .state-panel {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+    background: var(--panel);
+  }
+  .phase-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .phase-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+  .phase-pill.fail { background: var(--red); }
+  .phase-pill.ok { background: var(--green); }
+  .desc-line { font-size: 14px; color: var(--muted); }
+  .log {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 10px 0 16px;
+    max-height: 90px;
+    overflow-y: auto;
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+  }
+  .ingredient {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: var(--paper);
+  }
+  .ingredient-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .ingredient-name { font-weight: 600; font-size: 14.5px; }
+  .badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.needs_review { background: var(--amber-bg); color: var(--amber); }
+  .badge.confident { background: var(--green-bg); color: var(--green); }
+  .badge.fallback { background: var(--amber-bg); color: var(--amber); }
+  .badge.corrected { background: #e9e6fb; color: var(--accent); }
+  .field-row { font-size: 13px; color: var(--muted); margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .field-row b { color: var(--ink); font-weight: 600; }
+  .candidates { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .candidate-btn {
+    text-align: left;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 6px 10px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .candidate-btn.selected { border-color: var(--green); background: var(--green-bg); }
+  .edit-row { margin-top: 8px; display: flex; gap: 6px; align-items: center; }
+  .audit { font-size: 11.5px; color: var(--muted); margin-top: 6px; font-style: italic; }
+  .empty { color: var(--muted); font-size: 13.5px; font-style: italic; }
+  .hard-fail-note {
+    background: var(--red-bg); color: var(--red); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Description-to-log pipeline — logic prototype</h1>
+  <div class="intro">
+    <b>Question this answers:</b> for issue
+    <a href="https://github.com/joss-bleach/intake/issues/2" target="_blank">#2 — AI logging pipeline, description path</a>,
+    does the parse → resolve → correct → save state model actually hold together? Specifically: does the
+    Stage&nbsp;2/Stage&nbsp;3 split from <a href="https://github.com/joss-bleach/intake/blob/wayfinder/adr-0001-llm-output-contract/docs/adr/0001-shared-llm-output-contract.md" target="_blank">ADR&nbsp;0001</a>
+    survive contact with real cases — an estimated quantity, an ambiguous ingredient match, a total database
+    gap, a malformed parse — without ever silently guessing, and without <code>needs_review</code> ever
+    blocking a save? This is the <b>logic</b> branch of <code>/prototype</code> — the look/visual structure is
+    settled separately in <a href="https://github.com/joss-bleach/intake/issues/30" target="_blank">#30</a>.
+    Press buttons below; the state panel re-renders after every action.
+  </div>
+
+  <h2>Guided walkthroughs</h2>
+  <div class="tabs" id="tabs"></div>
+  <div class="scenario-box">
+    <p id="scenario-desc"></p>
+    <div class="steps" id="scenario-steps"></div>
+  </div>
+
+  <h2>Free play</h2>
+  <div class="freeplay">
+    <select id="fp-description"></select>
+    <button class="action" id="fp-submit">Submit description</button>
+  </div>
+  <div class="freeplay">
+    <button class="action secondary" id="fp-resolve">Resolve against database</button>
+    <button class="action secondary" id="fp-save">Save</button>
+    <button class="action secondary" id="fp-reset">New description</button>
+  </div>
+
+  <h2>Current state</h2>
+  <div class="state-panel" id="state-panel"></div>
+</div>
+
+<script>
+// =====================================================================
+// PURE MODULE — this is the part liftable into the real codebase.
+// No DOM access below this line until "PAGE SHELL".
+// =====================================================================
+
+function initialSession() {
+  return {
+    phase: "idle", // idle | parsing | hard_failed | parsed | resolving | ready | saved
+    description: "",
+    retryCount: 0,
+    ingredients: [],
+    log: [],
+  };
+}
+
+function withLog(session, message) {
+  return { ...session, log: [...session.log, message] };
+}
+
+// action creators are plain objects: { type, ...payload }
+function reduce(session, action) {
+  switch (action.type) {
+    case "SUBMIT_DESCRIPTION":
+      return withLog(
+        { ...initialSession(), phase: "parsing", description: action.text },
+        `Submitted: "${action.text}" — Stage 1 raw model call in flight.`
+      );
+
+    case "PARSE_SUCCESS":
+      return withLog(
+        { ...session, phase: "parsed", ingredients: action.ingredients, retryCount: 0 },
+        `Stage 2 succeeded — ${action.ingredients.length} ingredient guess(es), Effect-Schema validated as ParsedDescription.`
+      );
+
+    case "PARSE_FAILURE": {
+      if (session.retryCount < 1) {
+        return withLog(
+          { ...session, phase: "parsing", retryCount: session.retryCount + 1 },
+          "ParseFailure — malformed Stage 2 output. Retrying once against the fallback model (policy: never silently accepted)."
+        );
+      }
+      return withLog(
+        { ...session, phase: "hard_failed" },
+        "ParseFailure again after retry — hard failure. Nothing is trusted; save is blocked until the description is rephrased."
+      );
+    }
+
+    case "RESOLVE_START":
+      if (session.phase !== "parsed") return session;
+      return withLog({ ...session, phase: "resolving" }, "Stage 3: resolving each ingredient against OFF cache + CoFID + LLM fallback.");
+
+    case "RESOLVE_SUCCESS":
+      return withLog(
+        { ...session, phase: "ready", ingredients: action.ingredients },
+        "Stage 3 resolved. needs_review items are a normal success state — they do not block save."
+      );
+
+    case "SELECT_CANDIDATE":
+      return withLog(
+        {
+          ...session,
+          ingredients: session.ingredients.map((ing) =>
+            ing.id === action.ingredientId
+              ? {
+                  ...ing,
+                  resolution: "matched",
+                  identityConfidence: "confident",
+                  selectedCandidateId: action.candidateId,
+                  nutrition: ing.candidates.find((c) => c.id === action.candidateId).nutrition,
+                }
+              : ing
+          ),
+        },
+        `Disambiguated "${session.ingredients.find((i) => i.id === action.ingredientId).name}" — candidate confirmed, identity now confident.`
+      );
+
+    case "EDIT_QUANTITY": {
+      const ing = session.ingredients.find((i) => i.id === action.ingredientId);
+      return withLog(
+        {
+          ...session,
+          ingredients: session.ingredients.map((i) =>
+            i.id === action.ingredientId
+              ? {
+                  ...i,
+                  quantity: { value: action.value, unit: i.quantity.unit },
+                  quantityConfidence: "confident",
+                  source: "user_corrected",
+                  correctedFrom: i.correctedFrom || { quantity: i.quantity, source: i.source },
+                }
+              : i
+          ),
+        },
+        `Corrected quantity for "${ing.name}": ${ing.quantity.value}${ing.quantity.unit} → ${action.value}${ing.quantity.unit}. Original kept for the audit trail; a new Stage 3 record with source: user_corrected.`
+      );
+    }
+
+    case "EDIT_NUTRITION": {
+      const ing = session.ingredients.find((i) => i.id === action.ingredientId);
+      return withLog(
+        {
+          ...session,
+          ingredients: session.ingredients.map((i) =>
+            i.id === action.ingredientId
+              ? {
+                  ...i,
+                  nutrition: action.nutrition,
+                  identityConfidence: "confident",
+                  source: "user_corrected",
+                  correctedFrom: i.correctedFrom || { nutrition: i.nutrition, source: i.source },
+                }
+              : i
+          ),
+        },
+        `Corrected estimated nutrition for "${ing.name}" directly. Original LLM estimate kept for the audit trail.`
+      );
+    }
+
+    case "SAVE":
+      if (session.phase !== "ready") return session; // illegal: nothing to persist yet, or mid-flight, or hard-failed
+      return withLog({ ...session, phase: "saved" }, "Saved. All items persisted as-is — remaining needs_review flags travel with the record for later review, they never blocked this save.");
+
+    default:
+      return session;
+  }
+}
+
+// =====================================================================
+// PAGE SHELL — everything below is throwaway, wires buttons to reduce()
+// =====================================================================
+
+// canned "AI + database" responses, keyed by exact description text.
+// A real integration replaces this whole object with actual pipeline calls;
+// the reduce() function above does not change.
+const MOCK = {
+  "Grilled chicken breast, 150g, with steamed broccoli, 100g": {
+    parse: [
+      ing("chicken", "Grilled chicken breast", 150, "g", "confident"),
+      ing("broccoli", "Steamed broccoli", 100, "g", "confident"),
+    ],
+    resolve: (ings) => [
+      resolved(ings[0], "matched", "confident", "database", [cand("c1", "Chicken breast, grilled, skinless (CoFID)", { kcal: 248, protein: 46, carbs: 0, fat: 5 })], "c1"),
+      resolved(ings[1], "matched", "confident", "database", [cand("c2", "Broccoli, boiled (CoFID)", { kcal: 34, protein: 3, carbs: 2, fat: 1 })], "c2"),
+    ],
+  },
+  "A splash of oat milk in my coffee": {
+    parse: [ing("oatmilk", "Oat milk", 30, "ml", "needs_review")],
+    resolve: (ings) => [
+      resolved(ings[0], "matched", "confident", "database", [cand("c3", "Oat milk, unsweetened (OFF cache)", { kcal: 14, protein: 0.3, carbs: 2, fat: 0.5 })], "c3"),
+    ],
+  },
+  "A latte": {
+    parse: [ing("latte", "Latte", 350, "ml", "confident")],
+    resolve: (ings) => [
+      resolved(ings[0], "ambiguous", "needs_review", "database", [
+        cand("c4", "Latte, whole milk, regular (OFF cache)", { kcal: 210, protein: 11, carbs: 16, fat: 11 }),
+        cand("c5", "Latte, oat milk, regular (OFF cache)", { kcal: 150, protein: 4, carbs: 18, fat: 6 }),
+        cand("c6", "Latte, skimmed milk, regular (OFF cache)", { kcal: 130, protein: 12, carbs: 17, fat: 1 }),
+      ], null),
+    ],
+  },
+  "Dragon fruit protein smoothie from that new place": {
+    parse: [ing("smoothie", "Dragon fruit protein smoothie", 500, "ml", "needs_review")],
+    resolve: (ings) => [
+      resolved(ings[0], "fallback", "needs_review", "llm_estimate_fallback", [], null, { kcal: 320, protein: 22, carbs: 45, fat: 4 }),
+    ],
+  },
+  "asdkjfh q98q3rkj not real food words": { parseFails: true },
+};
+
+function ing(id, name, value, unit, quantityConfidence) {
+  return { id, name, quantity: { value, unit }, quantityConfidence, resolution: "pending", identityConfidence: "confident", source: "database", candidates: [], selectedCandidateId: null, nutrition: null, correctedFrom: null };
+}
+function cand(id, label, nutrition) {
+  return { id, label, nutrition };
+}
+function resolved(base, resolution, identityConfidence, source, candidates, selectedCandidateId, fallbackNutrition) {
+  const nutrition = fallbackNutrition || (candidates.find((c) => c.id === selectedCandidateId) || {}).nutrition || null;
+  return { ...base, resolution, identityConfidence, source, candidates, selectedCandidateId, nutrition };
+}
+
+let session = initialSession();
+function dispatch(action) {
+  session = reduce(session, action);
+  render();
+}
+
+// simulate the async parse+resolve calls the mock backend stands in for
+function submitAndParse(text) {
+  dispatch({ type: "SUBMIT_DESCRIPTION", text });
+  const mock = MOCK[text];
+  setTimeout(() => {
+    if (!mock || mock.parseFails) {
+      dispatch({ type: "PARSE_FAILURE" });
+      if (session.phase === "parsing") {
+        // second attempt (the retry) — same mock always fails for the gibberish case
+        setTimeout(() => dispatch({ type: "PARSE_FAILURE" }), 400);
+      }
+      return;
+    }
+    dispatch({ type: "PARSE_SUCCESS", ingredients: mock.parse });
+  }, 400);
+}
+function resolveAgainstDatabase() {
+  if (session.phase !== "parsed") return;
+  const text = session.description;
+  const mock = MOCK[text];
+  dispatch({ type: "RESOLVE_START" });
+  setTimeout(() => {
+    dispatch({ type: "RESOLVE_SUCCESS", ingredients: mock.resolve(session.ingredients) });
+  }, 400);
+}
+
+// ---- guided walkthroughs ----
+const SCENARIOS = [
+  {
+    title: "Happy path",
+    desc: "Everything parses cleanly and matches the database on the first try — nothing to flag, nothing to correct.",
+    steps: [
+      { label: "Submit \"Grilled chicken breast, 150g, with steamed broccoli, 100g\"", run: () => submitAndParse("Grilled chicken breast, 150g, with steamed broccoli, 100g") },
+      { label: "Resolve against database", run: resolveAgainstDatabase },
+      { label: "Save", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+  {
+    title: "Estimated quantity",
+    desc: "\"A splash\" has no fixed size — the LLM guesses a quantity and flags it needs_review. Watch it not block anything, then correct it.",
+    steps: [
+      { label: "Submit \"A splash of oat milk in my coffee\"", run: () => submitAndParse("A splash of oat milk in my coffee") },
+      { label: "Resolve against database", run: resolveAgainstDatabase },
+      { label: "Correct quantity to 50ml", run: () => dispatch({ type: "EDIT_QUANTITY", ingredientId: "oatmilk", value: 50 }) },
+      { label: "Save", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+  {
+    title: "Ambiguous match — save without resolving",
+    desc: "\"A latte\" matches three plausible database entries. Per ADR 0001, needs_review must NOT block save — watch it save while still ambiguous, then get disambiguated afterward.",
+    steps: [
+      { label: "Submit \"A latte\"", run: () => submitAndParse("A latte") },
+      { label: "Resolve against database", run: resolveAgainstDatabase },
+      { label: "Save (while still ambiguous — should be allowed)", run: () => dispatch({ type: "SAVE" }) },
+      { label: "Now disambiguate: pick \"oat milk, regular\"", run: () => dispatch({ type: "SELECT_CANDIDATE", ingredientId: "latte", candidateId: "c5" }) },
+    ],
+  },
+  {
+    title: "Total database gap",
+    desc: "Neither the OFF cache nor CoFID has this dish. The LLM estimates directly and it's flagged low-confidence — the fallback the food-database strategy (#14) promised.",
+    steps: [
+      { label: "Submit \"Dragon fruit protein smoothie from that new place\"", run: () => submitAndParse("Dragon fruit protein smoothie from that new place") },
+      { label: "Resolve against database", run: resolveAgainstDatabase },
+      { label: "Correct the estimated calories to 280 kcal", run: () => dispatch({ type: "EDIT_NUTRITION", ingredientId: "smoothie", nutrition: { kcal: 280, protein: 22, carbs: 45, fat: 4 } }) },
+      { label: "Save", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+  {
+    title: "Illegal action — hard failure blocks save",
+    desc: "A malformed parse retries once against the fallback model. If that fails too, nothing is trusted — try to save anyway and watch it get refused.",
+    steps: [
+      { label: "Submit \"asdkjfh q98q3rkj not real food words\"", run: () => submitAndParse("asdkjfh q98q3rkj not real food words") },
+      { label: "Try to Save anyway (should be refused — nothing parsed)", run: () => dispatch({ type: "SAVE" }) },
+    ],
+  },
+];
+
+let activeScenario = 0;
+let completedSteps = 0;
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  SCENARIOS.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.className = "tab" + (i === activeScenario ? " active" : "");
+    b.textContent = s.title;
+    b.onclick = () => {
+      activeScenario = i;
+      completedSteps = 0;
+      session = initialSession();
+      renderTabs();
+      renderScenario();
+      render();
+    };
+    tabs.appendChild(b);
+  });
+}
+
+function renderScenario() {
+  const s = SCENARIOS[activeScenario];
+  document.getElementById("scenario-desc").textContent = s.desc;
+  const stepsEl = document.getElementById("scenario-steps");
+  stepsEl.innerHTML = "";
+  s.steps.forEach((step, i) => {
+    const b = document.createElement("button");
+    b.className = "step-btn" + (i < completedSteps ? " done" : "");
+    b.textContent = `${i + 1}. ${step.label}`;
+    b.disabled = i !== completedSteps;
+    b.onclick = () => {
+      step.run();
+      completedSteps = i + 1;
+      renderScenario();
+    };
+    stepsEl.appendChild(b);
+  });
+}
+
+// ---- free play ----
+const fpSelect = document.getElementById("fp-description");
+Object.keys(MOCK).forEach((text) => {
+  const o = document.createElement("option");
+  o.value = text;
+  o.textContent = text;
+  fpSelect.appendChild(o);
+});
+document.getElementById("fp-submit").onclick = () => submitAndParse(fpSelect.value);
+document.getElementById("fp-resolve").onclick = resolveAgainstDatabase;
+document.getElementById("fp-save").onclick = () => dispatch({ type: "SAVE" });
+document.getElementById("fp-reset").onclick = () => {
+  session = initialSession();
+  render();
+};
+
+// ---- state rendering ----
+function phaseLabel(phase) {
+  return {
+    idle: "idle — no description submitted",
+    parsing: "parsing — Stage 1/2 call in flight",
+    hard_failed: "hard failed — ParseFailure survived the retry",
+    parsed: "parsed — Stage 2 ParsedDescription ready",
+    resolving: "resolving — Stage 3 database lookup in flight",
+    ready: "ready — Stage 3 NutritionFact resolved, save is legal",
+    saved: "saved",
+  }[phase];
+}
+
+function render() {
+  const panel = document.getElementById("state-panel");
+  const s = session;
+  const pillClass = s.phase === "hard_failed" ? "fail" : s.phase === "saved" || s.phase === "ready" ? "ok" : "";
+
+  let html = `
+    <div class="phase-row">
+      <span class="phase-pill ${pillClass}">${s.phase}</span>
+      <span class="desc-line">${phaseLabel(s.phase)}</span>
+    </div>
+    ${s.description ? `<div class="desc-line">Description: "${s.description}"${s.retryCount ? ` (retry ${s.retryCount}/1 used)` : ""}</div>` : ""}
+    <div class="log">${s.log.map((l) => `<div>· ${l}</div>`).join("") || '<div class="empty">Nothing happened yet.</div>'}</div>
+  `;
+
+  if (s.phase === "hard_failed") {
+    html += `<div class="hard-fail-note">Nothing was trusted. Save is blocked. The user must rephrase and resubmit — no silent guess is ever persisted.</div>`;
+  }
+
+  if (s.ingredients.length) {
+    html += s.ingredients
+      .map((i) => {
+        const needsReview = i.quantityConfidence === "needs_review" || i.identityConfidence === "needs_review";
+        const sourceBadge =
+          i.source === "user_corrected" ? '<span class="badge corrected">user_corrected</span>' : i.source === "llm_estimate_fallback" ? '<span class="badge fallback">llm_estimate_fallback</span>' : '<span class="badge confident">database</span>';
+        let candidatesHtml = "";
+        if (i.resolution === "ambiguous") {
+          candidatesHtml = `<div class="candidates">${i.candidates
+            .map((c) => `<button class="candidate-btn${c.id === i.selectedCandidateId ? " selected" : ""}" data-ing="${i.id}" data-cand="${c.id}">${c.label} — ${c.nutrition.kcal} kcal</button>`)
+            .join("")}</div>`;
+        }
+        let editHtml = "";
+        if (session.phase === "ready" || session.phase === "saved") {
+          if (i.resolution !== "pending") {
+            editHtml = `<div class="edit-row">
+              <input type="number" data-qty-ing="${i.id}" value="${i.quantity.value}" style="width:70px" />
+              <span>${i.quantity.unit}</span>
+              <button class="action secondary" data-apply-qty="${i.id}">Correct quantity</button>
+            </div>`;
+          }
+          if (i.source === "llm_estimate_fallback") {
+            editHtml += `<div class="edit-row">
+              <input type="number" data-kcal-ing="${i.id}" value="${i.nutrition ? i.nutrition.kcal : ""}" style="width:70px" />
+              <span>kcal</span>
+              <button class="action secondary" data-apply-kcal="${i.id}">Correct estimate</button>
+            </div>`;
+          }
+        }
+        return `<div class="ingredient">
+          <div class="ingredient-head">
+            <span class="ingredient-name">${i.name}</span>
+            ${sourceBadge}
+          </div>
+          <div class="field-row">
+            <span>Quantity: <b>${i.quantity.value}${i.quantity.unit}</b> ${i.quantityConfidence === "needs_review" ? '<span class="badge needs_review">estimated</span>' : ""}</span>
+            ${i.resolution !== "pending" ? `<span>Identity: <b>${i.resolution === "ambiguous" ? "ambiguous" : "matched"}</b> ${i.identityConfidence === "needs_review" ? '<span class="badge needs_review">needs review</span>' : ""}</span>` : ""}
+            ${i.nutrition ? `<span>${i.nutrition.kcal} kcal</span>` : ""}
+          </div>
+          ${candidatesHtml}
+          ${editHtml}
+          ${i.correctedFrom ? `<div class="audit">Original (kept for audit): ${i.correctedFrom.quantity ? `${i.correctedFrom.quantity.value}${i.correctedFrom.quantity.unit}` : `${i.correctedFrom.nutrition.kcal} kcal`}, source: ${i.correctedFrom.source}</div>` : ""}
+        </div>`;
+      })
+      .join("");
+  } else if (s.phase !== "idle" && s.phase !== "parsing" && s.phase !== "hard_failed") {
+    html += `<div class="empty">No ingredients yet.</div>`;
+  }
+
+  panel.innerHTML = html;
+
+  panel.querySelectorAll("[data-cand]").forEach((b) => {
+    b.onclick = () => dispatch({ type: "SELECT_CANDIDATE", ingredientId: b.dataset.ing, candidateId: b.dataset.cand });
+  });
+  panel.querySelectorAll("[data-apply-qty]").forEach((b) => {
+    b.onclick = () => {
+      const input = panel.querySelector(`[data-qty-ing="${b.dataset.applyQty}"]`);
+      dispatch({ type: "EDIT_QUANTITY", ingredientId: b.dataset.applyQty, value: Number(input.value) });
+    };
+  });
+  panel.querySelectorAll("[data-apply-kcal]").forEach((b) => {
+    b.onclick = () => {
+      const input = panel.querySelector(`[data-kcal-ing="${b.dataset.applyKcal}"]`);
+      const ing = session.ingredients.find((i) => i.id === b.dataset.applyKcal);
+      dispatch({ type: "EDIT_NUTRITION", ingredientId: b.dataset.applyKcal, nutrition: { ...ing.nutrition, kcal: Number(input.value) } });
+    };
+  });
+
+  // free-play buttons legality
+  document.getElementById("fp-resolve").disabled = s.phase !== "parsed";
+  document.getElementById("fp-save").disabled = s.phase !== "ready";
+}
+
+renderTabs();
+renderScenario();
+render();
+</script>
+</body>
+</html>
