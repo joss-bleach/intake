@@ -53,7 +53,7 @@ function NavIcon({
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
-        active ? theme.navActiveClass : "text-[#726a89] hover:text-[#4a4360]"
+        active ? theme.navActiveClass : theme.navInactiveClass
       }`}
     >
       <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 2} />

@@ -5,12 +5,13 @@
 // any screen dropping into <AppShell> reads its colours off this object
 // rather than re-deriving them.
 export const theme = {
-  pageBg: "bg-[#f5f4fa]",
+  pageBg: "bg-[var(--shell-page-bg)]",
   blobs: ["bg-slate-300/50", "bg-violet-300/60", "bg-indigo-200/50"] as const,
   barGradient: "from-purple-600 via-violet-400 to-cyan-400",
   accentClass: "text-purple-600",
   accentGradient: "from-purple-600 to-cyan-500",
   navActiveClass: "text-purple-600",
+  navInactiveClass: "text-[#726a89] hover:text-[#4a4360]",
   navButtonGradient: "from-purple-600 to-cyan-500",
   text: {
     heading: "var(--shell-text-heading)",
