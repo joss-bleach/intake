@@ -1,5 +1,14 @@
 import { Cause, Effect, Exit } from "effect";
 import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+
+// Tagged-error-ish shape (Effect's Data.TaggedError, or any plain object with
+// `_tag`/`message`). Parsed rather than typeof-narrowed, per anti-slop's
+// "decode unknown at the I/O boundary" rule — see tools/oxlint/anti-slop.
+const taggedErrorLike = z.object({
+  _tag: z.string().optional(),
+  message: z.string().optional(),
+});
 
 /**
  * Runs an Effect program to completion inside a tRPC procedure, translating
@@ -31,23 +40,20 @@ export const runEffect = async <A, E>(
   });
 };
 
-const toTRPCError = (error: unknown): TRPCError => {
-  if (error instanceof TRPCError) {
-    return error;
+const toTRPCError = (cause: unknown): TRPCError => {
+  if (cause instanceof TRPCError) {
+    return cause;
   }
 
-  const tag =
-    typeof error === "object" && error !== null && "_tag" in error
-      ? String((error as { _tag: unknown })._tag)
-      : "UnknownError";
+  const parsed = taggedErrorLike.safeParse(cause);
+  const tag = (parsed.success && parsed.data._tag) || "UnknownError";
   const message =
-    typeof error === "object" && error !== null && "message" in error
-      ? String((error as { message: unknown }).message)
-      : `Effect failed with tagged error: ${tag}`;
+    (parsed.success && parsed.data.message) ||
+    `Effect failed with tagged error: ${tag}`;
 
   return new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
     message,
-    cause: error,
+    cause,
   });
 };

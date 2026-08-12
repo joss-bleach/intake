@@ -2,8 +2,7 @@ import { createHTTPServer } from "@trpc/server/adapters/standalone";
 import cors from "cors";
 import { appRouter } from "./router";
 import { createContext } from "./context";
-
-const port = Number(process.env.PORT ?? 3001);
+import { env } from "./env";
 
 const server = createHTTPServer({
   router: appRouter,
@@ -11,6 +10,6 @@ const server = createHTTPServer({
   middleware: cors(),
 });
 
-server.listen(port);
+server.listen(env.PORT);
 
-console.log(`tRPC server listening on http://localhost:${port}`);
+console.log(`tRPC server listening on http://localhost:${env.PORT}`);

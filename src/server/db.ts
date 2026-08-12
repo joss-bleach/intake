@@ -1,4 +1,5 @@
 import pg from "pg";
+import { env } from "./env";
 
 const { Pool } = pg;
 
@@ -7,7 +8,5 @@ const { Pool } = pg;
 // `postgres` service). No queries are issued yet at this scaffold stage —
 // later tickets add the schema and query layer.
 export const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ??
-    "postgres://intake:intake@localhost:5432/intake",
+  connectionString: env.DATABASE_URL,
 });

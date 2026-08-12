@@ -15,7 +15,7 @@ pnpm dev        # client (Vite) on :5173, tRPC server on :3001
 Other scripts:
 
 - `pnpm typecheck` — `tsc --noEmit`
-- `pnpm lint` — ESLint
+- `pnpm lint` — [Oxlint](https://oxc.rs) (config: `.oxlintrc.json`), including the vendored [anti-slop](https://github.com/dmmulroy/anti-slop) rule plugin in `tools/oxlint/anti-slop/`
 - `pnpm test` / `pnpm test:watch` — unit tests (Vitest)
 - `pnpm test:e2e` — end-to-end tests (Playwright); boots the dev servers itself
 - `pnpm build` — typecheck + client production build
