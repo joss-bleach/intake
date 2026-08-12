@@ -47,6 +47,15 @@ const toHit = (product: z.infer<typeof offProduct>): OffLiveHit | null => {
   const name = product.product_name;
   if (!name) return null;
 
+  // Same bar the pre-warm holds products to (see off-ingest.ts): a product
+  // with none of the nutriments this app tracks isn't a usable food. Letting
+  // one through would be worse here than on the bulk path — resolveFood
+  // writes live hits back to the cache, so a nutrientless hit would both
+  // prune whatever nutrients the food already had and turn every later
+  // lookup for that name into a cache hit that never retries OFF.
+  const nutrients = toOffNutrientRows(product.nutriments);
+  if (nutrients.length === 0) return null;
+
   return {
     externalId: product.code,
     name,
@@ -56,7 +65,7 @@ const toHit = (product: z.infer<typeof offProduct>): OffLiveHit | null => {
       product.serving_quantity === null || product.serving_quantity === undefined
         ? null
         : String(product.serving_quantity),
-    nutrients: toOffNutrientRows(product.nutriments).map((nutrient) => ({
+    nutrients: nutrients.map((nutrient) => ({
       code: nutrient.code,
       value: String(nutrient.value),
       unit: nutrient.unit,
