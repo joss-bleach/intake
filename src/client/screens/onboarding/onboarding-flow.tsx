@@ -31,8 +31,12 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     useState<ProteinOverrideInput>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const profileMutation = useMutation(trpc.profile.upsert.mutationOptions());
-  const goalsMutation = useMutation(trpc.goals.upsert.mutationOptions());
+  // One mutation, not a profile write followed by a goals write: the two are
+  // saved in a single transaction server-side so a failure can't leave
+  // bodyweight committed and goals not (see goals.upsertWithProfile).
+  const saveMutation = useMutation(
+    trpc.goals.upsertWithProfile.mutationOptions(),
+  );
 
   const parsedCalorieGoal = Number(calorieGoal);
   const calorieGoalIsValid =
@@ -53,13 +57,13 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   const finish = async () => {
     setSubmitError(null);
     try {
-      await profileMutation.mutateAsync({
-        currentWeightKg: bodyweightSkipped ? null : parsedCurrentWeight,
-        targetWeightKg: bodyweightSkipped ? null : parsedTargetWeight,
-      });
-      await goalsMutation.mutateAsync({
+      await saveMutation.mutateAsync({
         calorieGoal: Math.round(parsedCalorieGoal),
         macroRatio: { preset, proteinOverride },
+        profile: {
+          currentWeightKg: bodyweightSkipped ? null : parsedCurrentWeight,
+          targetWeightKg: bodyweightSkipped ? null : parsedTargetWeight,
+        },
       });
       onComplete();
     } catch (error) {
@@ -69,7 +73,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
     }
   };
 
-  const isSubmitting = profileMutation.isPending || goalsMutation.isPending;
+  const isSubmitting = saveMutation.isPending;
 
   return (
     <AppShell showNav={false}>

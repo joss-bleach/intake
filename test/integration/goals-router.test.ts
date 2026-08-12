@@ -118,6 +118,62 @@ describe("goals & profile routers", () => {
     });
   });
 
+  it("saves bodyweight and goals together in one call", async () => {
+    const result = await caller.goals.upsertWithProfile({
+      calorieGoal: 2200,
+      macroRatio: {
+        preset: "high_protein",
+        proteinOverride: {
+          type: "per_kg_bodyweight",
+          gramsPerKg: 2,
+          weightSource: "current",
+        },
+      },
+      profile: { currentWeightKg: 80, targetWeightKg: 70 },
+    });
+
+    // The override resolves against the bodyweight written by this same
+    // call — onboarding sets both for the first time in one go.
+    expect(result.goals.macros.proteinGrams).toBe(160);
+    expect(result.profile).toMatchObject({
+      currentWeightKg: 80,
+      targetWeightKg: 70,
+    });
+    await expect(caller.goals.get()).resolves.toMatchObject({
+      calorieGoal: 2200,
+    });
+    await expect(caller.profile.get()).resolves.toMatchObject({
+      currentWeightKg: 80,
+    });
+  });
+
+  it("rolls the bodyweight write back when the goals write is rejected", async () => {
+    await caller.profile.upsert({ currentWeightKg: 80, targetWeightKg: 70 });
+
+    await expect(
+      caller.goals.upsertWithProfile({
+        calorieGoal: 2200,
+        macroRatio: {
+          preset: "high_protein",
+          proteinOverride: {
+            type: "per_kg_bodyweight",
+            gramsPerKg: 2,
+            weightSource: "target",
+          },
+        },
+        // Clearing the target weight invalidates the override above, so the
+        // whole transaction must fail rather than commit the clear.
+        profile: { currentWeightKg: 90, targetWeightKg: null },
+      }),
+    ).rejects.toMatchObject({ constructor: TRPCError, code: "BAD_REQUEST" });
+
+    await expect(caller.profile.get()).resolves.toMatchObject({
+      currentWeightKg: 80,
+      targetWeightKg: 70,
+    });
+    await expect(caller.goals.get()).resolves.toBeNull();
+  });
+
   it("overrides protein with a direct gram value", async () => {
     const snapshot = await caller.goals.upsert({
       calorieGoal: 2000,

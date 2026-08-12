@@ -33,10 +33,16 @@ export function ProfileScreen({
   const [seeded, setSeeded] = useState(false);
 
   // Seeds the form from whatever's already saved, once both queries have
-  // resolved — not on every refetch, so mid-edit values aren't clobbered by
-  // the query this same screen's own save triggers.
+  // delivered data — not on every refetch, so mid-edit values aren't clobbered
+  // by the query this same screen's own save triggers. Waiting for data rather
+  // than for "no longer pending" matters: a failed query is also not pending,
+  // and seeding from it would leave the form holding defaults that a save
+  // would then write over the user's real values.
   useEffect(() => {
-    if (seeded || goalsQuery.isPending || profileQuery.isPending) return;
+    if (seeded) return;
+    if (goalsQuery.data === undefined || profileQuery.data === undefined) {
+      return;
+    }
 
     if (goalsQuery.data) {
       setCalorieGoal(String(goalsQuery.data.calorieGoal));
@@ -56,10 +62,13 @@ export function ProfileScreen({
       );
     }
     setSeeded(true);
-  }, [seeded, goalsQuery.isPending, goalsQuery.data, profileQuery.isPending, profileQuery.data]);
+  }, [seeded, goalsQuery.data, profileQuery.data]);
 
-  const profileMutation = useMutation(trpc.profile.upsert.mutationOptions());
-  const goalsMutation = useMutation(trpc.goals.upsert.mutationOptions());
+  // Bodyweight and goals go up as one transactional write, so a failure can't
+  // commit half of the form (see goals.upsertWithProfile).
+  const saveMutation = useMutation(
+    trpc.goals.upsertWithProfile.mutationOptions(),
+  );
 
   const parsedCalorieGoal = Number(calorieGoal);
   const calorieGoalIsValid =
@@ -73,18 +82,18 @@ export function ProfileScreen({
     ? Number(targetWeightKg)
     : null;
 
-  const isSubmitting = profileMutation.isPending || goalsMutation.isPending;
+  const isSubmitting = saveMutation.isPending;
 
   const save = async () => {
     setSaveError(null);
     try {
-      await profileMutation.mutateAsync({
-        currentWeightKg: parsedCurrentWeight,
-        targetWeightKg: parsedTargetWeight,
-      });
-      await goalsMutation.mutateAsync({
+      await saveMutation.mutateAsync({
         calorieGoal: Math.round(parsedCalorieGoal),
         macroRatio: { preset, proteinOverride },
+        profile: {
+          currentWeightKg: parsedCurrentWeight,
+          targetWeightKg: parsedTargetWeight,
+        },
       });
       onSaved();
     } catch (error) {
@@ -93,6 +102,40 @@ export function ProfileScreen({
       );
     }
   };
+
+  // A failed load must not fall through to the form. Every field here is
+  // write-through: rendering it unseeded would show defaults and empty weight
+  // inputs, and saving that would overwrite the stored goal and clear a
+  // bodyweight the user never touched. Checked as "errored with nothing
+  // cached" rather than plain `isError` so a failed background refetch over
+  // usable data doesn't tear down a half-edited form.
+  const failedQueries = [goalsQuery, profileQuery].filter(
+    (query) => query.isError && query.data === undefined,
+  );
+
+  if (failedQueries.length > 0) {
+    return (
+      <AppShell activeTab="profile" onProfile={onBack}>
+        <GlassPanel className="mt-14 flex flex-col items-start gap-4">
+          <p className="text-sm" style={{ color: theme.text.body }}>
+            Couldn't load your profile: {failedQueries[0].error?.message}
+          </p>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                for (const query of failedQueries) query.refetch();
+              }}
+            >
+              Retry
+            </Button>
+            <Button variant="ghost" onClick={onBack}>
+              Back
+            </Button>
+          </div>
+        </GlassPanel>
+      </AppShell>
+    );
+  }
 
   if (goalsQuery.isPending || profileQuery.isPending) {
     return (
