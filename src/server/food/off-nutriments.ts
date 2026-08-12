@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { NUTRIENT_CODES, type NutrientCode } from "./nutrient-codes";
+import {
+  NUTRIENT_CODES,
+  type NutrientCode,
+  type NutrientUnit,
+  unitForNutrient,
+} from "./nutrient-codes";
 
 // Shared between off-ingest.ts (the bulk dump pre-warm) and off-client.ts
 // (the rare live-lookup fallback) — both read the same OFF product shape and
@@ -33,7 +38,7 @@ const FIELD_TO_CODE: ReadonlyArray<[OffNutrimentField, NutrientCode]> = [
 export interface OffNutrientRow {
   readonly code: NutrientCode;
   readonly value: number;
-  readonly unit: "g";
+  readonly unit: NutrientUnit;
 }
 
 /** Every OFF nutriment field this app tracks, mapped to `NUTRIENT_CODES` — fields absent from `nutriments` are omitted, not zeroed. */
@@ -44,6 +49,8 @@ export const toOffNutrientRows = (
 
   return FIELD_TO_CODE.flatMap(([field, code]) => {
     const value = nutriments[field];
-    return value === undefined ? [] : [{ code, value, unit: "g" as const }];
+    return value === undefined
+      ? []
+      : [{ code, value, unit: unitForNutrient(code) }];
   });
 };

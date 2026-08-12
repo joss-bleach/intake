@@ -1,6 +1,6 @@
 import { Data, Effect } from "effect";
 import { z } from "zod";
-import type { NutrientCode } from "./nutrient-codes";
+import type { NutrientCode, NutrientUnit } from "./nutrient-codes";
 import { offNutriments, toOffNutrientRows } from "./off-nutriments";
 
 // The rare live-lookup fallback resolveFood reaches for on a cache miss,
@@ -18,7 +18,7 @@ export interface OffLiveHit {
   readonly nutrients: ReadonlyArray<{
     readonly code: NutrientCode;
     readonly value: string;
-    readonly unit: string;
+    readonly unit: NutrientUnit;
   }>;
 }
 

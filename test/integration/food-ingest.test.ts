@@ -55,6 +55,44 @@ describe("food ingestion", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("drops nutrients a newer dump no longer reports", async () => {
+    await ingestOffDump(path.join(fixturesDir, "off-sample.jsonl"));
+    // Same product, re-published without its fibre and salt figures — a
+    // refresh has to retire those rows, not keep serving the old ones.
+    await ingestOffDump(path.join(fixturesDir, "off-sample-refresh.jsonl"));
+
+    const [cheese] = await db
+      .select()
+      .from(foods)
+      .where(eq(foods.externalId, "5000112548167"));
+
+    const codes = (
+      await db
+        .select()
+        .from(nutrientValues)
+        .where(eq(nutrientValues.foodId, cheese.id))
+    ).map((value) => value.code);
+
+    expect(codes).not.toContain("fibre_g");
+    expect(codes).not.toContain("salt_g");
+    expect(codes).toContain("protein_g");
+  });
+
+  it("stores energy in kcal, not grams", async () => {
+    await ingestOffDump(path.join(fixturesDir, "off-sample.jsonl"));
+    await ingestCofidCsv(path.join(fixturesDir, "cofid-sample.csv"));
+
+    const energyRows = await db
+      .select()
+      .from(nutrientValues)
+      .where(eq(nutrientValues.code, "energy_kcal"));
+
+    expect(energyRows.length).toBeGreaterThan(0);
+    for (const row of energyRows) {
+      expect(row.unit).toBe("kcal");
+    }
+  });
+
   it("ingests CoFID rows into foods/nutrient_values, source-tagged cofid", async () => {
     const summary = await ingestCofidCsv(
       path.join(fixturesDir, "cofid-sample.csv"),

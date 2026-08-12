@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { db } from "../db";
 import { foods, nutrientValues } from "../db/schema";
 import { FoodNotFoundError, type RateLimitExceededError } from "./errors";
+import { writeFoodNutrients } from "./nutrient-values";
 import { FoodLookupRateLimiter } from "./rate-limiter";
 import { OffLiveClient, type OffLiveHit } from "./off-client";
 
@@ -64,29 +65,7 @@ const cacheLiveHit = (
       })
       .returning();
 
-    // One row at a time rather than a single batched insert: each nutrient
-    // needs its own `excluded`-referencing upsert against the (foodId, code)
-    // unique index, and a batched insert can't express a different `set`
-    // per conflicting row.
-    for (const nutrient of hit.nutrients) {
-      await db
-        .insert(nutrientValues)
-        .values({
-          foodId: food.id,
-          code: nutrient.code,
-          value: nutrient.value,
-          unit: nutrient.unit,
-          provenance: "database",
-        })
-        .onConflictDoUpdate({
-          target: [nutrientValues.foodId, nutrientValues.code],
-          targetWhere: sql`${nutrientValues.foodId} is not null`,
-          set: {
-            value: sql`excluded.value`,
-            unit: sql`excluded.unit`,
-          },
-        });
-    }
+    await writeFoodNutrients(food.id, hit.nutrients);
 
     const values = await db
       .select()

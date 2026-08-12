@@ -2,8 +2,13 @@ import { createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { sql } from "drizzle-orm";
 import { db, pool } from "../db";
-import { foods, nutrientValues } from "../db/schema";
-import { NUTRIENT_CODES, type NutrientCode } from "./nutrient-codes";
+import { foods } from "../db/schema";
+import {
+  NUTRIENT_CODES,
+  type NutrientCode,
+  unitForNutrient,
+} from "./nutrient-codes";
+import { type FoodNutrientRow, writeFoodNutrients } from "./nutrient-values";
 
 // One-time load of the UK's CoFID (~3,200 generic foods, gov.uk) into the
 // same foods/nutrient_values tables OFF pre-warms, source-tagged `cofid`.
@@ -129,26 +134,26 @@ export const ingestCofidCsv = async (
       [CSV_COLUMNS.fibre, NUTRIENT_CODES.fibre],
     ];
 
-    const nutrients: Array<{ code: NutrientCode; value: number; unit: string }> =
-      columnToCode
-        .map(([csvColumn, nutrientCode]) => {
-          const value = parseNumericCell(row[csvColumn] ?? "");
-          return value === null
-            ? null
-            : { code: nutrientCode, value, unit: "g" };
-        })
-        .filter(
-          (
-            nutrient,
-          ): nutrient is { code: NutrientCode; value: number; unit: string } =>
-            nutrient !== null,
-        );
+    const nutrients: FoodNutrientRow[] = columnToCode.flatMap(
+      ([csvColumn, nutrientCode]) => {
+        const value = parseNumericCell(row[csvColumn] ?? "");
+        return value === null
+          ? []
+          : [
+              {
+                code: nutrientCode,
+                value: String(value),
+                unit: unitForNutrient(nutrientCode),
+              },
+            ];
+      },
+    );
 
     if (sodiumMg !== null) {
       nutrients.push({
         code: NUTRIENT_CODES.salt,
-        value: sodiumMg * SODIUM_TO_SALT_FACTOR,
-        unit: "g",
+        value: String(sodiumMg * SODIUM_TO_SALT_FACTOR),
+        unit: unitForNutrient(NUTRIENT_CODES.salt),
       });
     }
 
@@ -172,22 +177,7 @@ export const ingestCofidCsv = async (
       })
       .returning();
 
-    for (const nutrient of nutrients) {
-      await db
-        .insert(nutrientValues)
-        .values({
-          foodId: food.id,
-          code: nutrient.code,
-          value: String(nutrient.value),
-          unit: nutrient.unit,
-          provenance: "database",
-        })
-        .onConflictDoUpdate({
-          target: [nutrientValues.foodId, nutrientValues.code],
-          targetWhere: sql`${nutrientValues.foodId} is not null`,
-          set: { value: String(nutrient.value) },
-        });
-    }
+    await writeFoodNutrients(food.id, nutrients);
 
     upserted += 1;
   }

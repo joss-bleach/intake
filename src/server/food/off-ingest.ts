@@ -3,7 +3,8 @@ import { createInterface } from "node:readline";
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, pool } from "../db";
-import { foods, nutrientValues } from "../db/schema";
+import { foods } from "../db/schema";
+import { writeFoodNutrients } from "./nutrient-values";
 import { offNutriments, toOffNutrientRows } from "./off-nutriments";
 
 // Pre-warms the local cache from Open Food Facts' full JSONL export
@@ -74,22 +75,14 @@ const upsertProduct = async (product: OffDumpProduct): Promise<boolean> => {
     })
     .returning();
 
-  for (const nutrient of nutrients) {
-    await db
-      .insert(nutrientValues)
-      .values({
-        foodId: food.id,
-        code: nutrient.code,
-        value: String(nutrient.value),
-        unit: nutrient.unit,
-        provenance: "database",
-      })
-      .onConflictDoUpdate({
-        target: [nutrientValues.foodId, nutrientValues.code],
-        targetWhere: sql`${nutrientValues.foodId} is not null`,
-        set: { value: String(nutrient.value) },
-      });
-  }
+  await writeFoodNutrients(
+    food.id,
+    nutrients.map((nutrient) => ({
+      code: nutrient.code,
+      value: String(nutrient.value),
+      unit: nutrient.unit,
+    })),
+  );
 
   return true;
 };
