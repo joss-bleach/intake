@@ -12,6 +12,12 @@ export const env = createEnv({
       .url()
       .default("postgres://intake:intake@localhost:5432/intake"),
     PORT: z.coerce.number().int().positive().default(3001),
+    // Optional: AI pipelines (src/ai/effect-ai-sdk.ts) fail with AiSdkError
+    // when a call is attempted without one. No default — unlike ADR 0005's
+    // model choices, a key isn't something the app can pick for itself, and
+    // CI intentionally runs without one (no OpenRouter account provisioned
+    // yet), which is why the ADR 0001 real-round-trip test is skipped there.
+    OPENROUTER_API_KEY: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
