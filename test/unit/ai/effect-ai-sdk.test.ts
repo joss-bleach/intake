@@ -1,10 +1,12 @@
-import { Cause, Effect, Exit, Schema } from "effect";
+import { Cause, Effect, Exit, Schema, Stream } from "effect";
 import { describe, expect, it } from "vitest";
 import {
   AiSdkError,
   generateObjectEffect,
   generateObjectWithFallbackEffect,
   generateTextEffect,
+  streamObjectEffect,
+  streamTextEffect,
 } from "../../../src/ai/effect-ai-sdk";
 
 const failureValue = (exit: Exit.Exit<unknown, unknown>): unknown => {
@@ -43,6 +45,32 @@ describe("generateTextEffect / generateObjectEffect", () => {
   });
 });
 
+describe("streamTextEffect / streamObjectEffect", () => {
+  it("streamTextEffect doesn't call the AI SDK until the stream is actually run", async () => {
+    // Constructing the stream must not throw or start the call — Stream.unwrap
+    // defers streamText() until something runs the returned Stream.
+    const stream = streamTextEffect({ model: "test/model", prompt: "hi" });
+
+    const exit = await Effect.runPromiseExit(Stream.runCollect(stream));
+
+    expect(Exit.isFailure(exit)).toBe(true);
+    expect(failureValue(exit)).toBeInstanceOf(AiSdkError);
+  });
+
+  it("streamObjectEffect fails the same way, with the schema wired through", async () => {
+    const TrivialSchema = Schema.Struct({ greeting: Schema.String });
+    const stream = streamObjectEffect({
+      model: "test/model",
+      prompt: "say hi",
+      schema: TrivialSchema,
+    });
+
+    const exit = await Effect.runPromiseExit(Stream.runCollect(stream));
+
+    expect(failureValue(exit)).toBeInstanceOf(AiSdkError);
+  });
+});
+
 describe("generateObjectWithFallbackEffect", () => {
   const TrivialSchema = Schema.Struct({ greeting: Schema.String });
   const params = {
@@ -55,8 +83,13 @@ describe("generateObjectWithFallbackEffect", () => {
   // A fake `attempt`, generic like the real generateObjectEffect it
   // replaces (the DI seam effect-ai-sdk.ts documents), so this proves the
   // retry *order* without a network call: succeeds only once called with
-  // the fallback model.
-  const makeAttempt = (succeedsFor: string, attempts: string[]) =>
+  // the fallback model. `failReason` defaults to "parse_failure" — the only
+  // reason ADR 0001 says should trigger the fallback retry at all.
+  const makeAttempt = (
+    succeedsFor: string,
+    attempts: string[],
+    failReason: AiSdkError["reason"] = "parse_failure",
+  ) =>
     <A, I>(call: {
       readonly model: string;
       readonly prompt: string;
@@ -64,11 +97,22 @@ describe("generateObjectWithFallbackEffect", () => {
     }): Effect.Effect<A, AiSdkError> => {
       attempts.push(call.model);
       if (call.model !== succeedsFor) {
-        return Effect.fail(new AiSdkError({ message: "malformed", cause: undefined }));
+        return Effect.fail(
+          new AiSdkError({
+            message: "malformed",
+            cause: undefined,
+            reason: failReason,
+          }),
+        );
       }
       return Schema.decodeUnknown(call.schema)({ greeting: "hi" }).pipe(
         Effect.mapError(
-          (cause) => new AiSdkError({ message: "test fake decode failed", cause }),
+          (cause) =>
+            new AiSdkError({
+              message: "test fake decode failed",
+              cause,
+              reason: "call_failed",
+            }),
         ),
       );
     };
@@ -107,5 +151,21 @@ describe("generateObjectWithFallbackEffect", () => {
 
     expect(attempts).toEqual([params.model]);
     expect(result).toEqual({ greeting: "hi" });
+  });
+
+  it("never retries a call_failed error (e.g. auth/network) against the fallback", async () => {
+    const attempts: string[] = [];
+
+    const exit = await Effect.runPromiseExit(
+      generateObjectWithFallbackEffect(
+        params,
+        makeAttempt("nothing", attempts, "call_failed"),
+      ),
+    );
+
+    // Only the primary was ever tried — a call_failed reason means the
+    // fallback model can't help, so it's never worth the extra call.
+    expect(attempts).toEqual([params.model]);
+    expect(failureValue(exit)).toBeInstanceOf(AiSdkError);
   });
 });
