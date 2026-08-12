@@ -1,1 +1,36 @@
 brief-1.md
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+*.local
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Testing
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+coverage
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Alchemy local state
+.alchemy
