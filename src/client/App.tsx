@@ -1,45 +1,71 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { AppShell, GlassPanel } from "@/components/shell";
+import { Button } from "@/components/ui/button";
+import { OnboardingFlow } from "@/screens/onboarding/onboarding-flow";
+import { DashboardScreen } from "@/screens/dashboard/dashboard-screen";
+import { ProfileScreen } from "@/screens/profile/profile-screen";
 import { theme } from "@/lib/theme";
-import { trpc } from "@/lib/trpc";
+import { trpc, queryClient } from "@/lib/trpc";
 
-// Blank placeholder route — the app shell with nothing but a server-connectivity
-// check dropped in, standing in for a real screen (dashboard, log flow, …)
-// until #46/#47/#53 land. Visual system baseline only: blobs, glass, font,
-// nav — see #42.
+type Route = "dashboard" | "profile";
+
+// Top-level screen switch, driven by whether a goal has been set (#45):
+// no `user_goals` row means onboarding hasn't run yet, so that's shown
+// instead of the dashboard until it completes. No router library — the app
+// only has these three destinations so far; #53 can graduate this once
+// there's enough surface to need one.
 function App() {
-  const ping = useQuery(trpc.ping.queryOptions());
+  const goalsQuery = useQuery(trpc.goals.get.queryOptions());
+  const [route, setRoute] = useState<Route>("dashboard");
+
+  if (goalsQuery.isPending) {
+    return null;
+  }
+
+  // A failed fetch must not be read as "no goal set" — that would drop an
+  // existing user with a saved goal back into onboarding on a transient
+  // network/DB error, instead of surfacing the failure.
+  if (goalsQuery.isError) {
+    return (
+      <AppShell showNav={false}>
+        <GlassPanel className="mt-14 flex flex-col items-start gap-4">
+          <p className="text-sm" style={{ color: theme.text.body }}>
+            Couldn't load your goals: {goalsQuery.error.message}
+          </p>
+          <Button onClick={() => goalsQuery.refetch()}>Retry</Button>
+        </GlassPanel>
+      </AppShell>
+    );
+  }
+
+  if (!goalsQuery.data) {
+    return (
+      <OnboardingFlow
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: trpc.goals.get.queryKey() });
+        }}
+      />
+    );
+  }
+
+  if (route === "profile") {
+    return (
+      <ProfileScreen
+        onBack={() => setRoute("dashboard")}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: trpc.goals.get.queryKey() });
+          setRoute("dashboard");
+        }}
+      />
+    );
+  }
 
   return (
-    <AppShell>
-      <h1
-        className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
-        style={{ color: theme.text.heading }}
-      >
-        Intake
-      </h1>
-
-      <GlassPanel className="mt-7 flex flex-col items-start gap-4">
-        <p className="text-sm" style={{ color: theme.text.label }}>
-          Placeholder route — screens drop in here.
-        </p>
-
-        <Button onClick={() => ping.refetch()} disabled={ping.isFetching}>
-          {ping.isFetching ? "Pinging…" : "Ping the server"}
-        </Button>
-
-        {ping.data && (
-          <p className="text-sm" style={{ color: theme.text.muted }} data-testid="ping-result">
-            {ping.data.message} @ {ping.data.timestamp}
-          </p>
-        )}
-
-        {ping.isError && (
-          <p className="text-sm text-red-500">Ping failed: {ping.error.message}</p>
-        )}
-      </GlassPanel>
-    </AppShell>
+    <DashboardScreen
+      goals={goalsQuery.data}
+      onOpenProfile={() => setRoute("profile")}
+    />
   );
 }
 

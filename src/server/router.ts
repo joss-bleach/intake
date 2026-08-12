@@ -1,13 +1,8 @@
-import { initTRPC } from "@trpc/server";
 import { Effect } from "effect";
 import { runEffect } from "./effect-trpc";
 import { FOOD_DATA_ATTRIBUTION } from "./food/attribution";
-import type { Context } from "./context";
-
-const t = initTRPC.context<Context>().create();
-
-export const router = t.router;
-export const publicProcedure = t.procedure;
+import { publicProcedure, router } from "./trpc";
+import { goalsRouter, profileRouter } from "./routers/goals";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -27,6 +22,12 @@ export const appRouter = router({
   foodDataAttribution: publicProcedure.query(() =>
     runEffect(Effect.sync(() => FOOD_DATA_ATTRIBUTION)),
   ),
+
+  // Onboarding & goals (#45): calorie/macro goals and bodyweight, each a
+  // singleton row (see db/schema.ts) editable at onboarding and afterward
+  // from the profile screen.
+  goals: goalsRouter,
+  profile: profileRouter,
 });
 
 export type AppRouter = typeof appRouter;
