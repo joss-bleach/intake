@@ -4,7 +4,7 @@ Source: [Spec #39](https://github.com/joss-bleach/intake/issues/39), split into 
 
 17 tickets, grouped into 7 blocks by dependency level. Everything in a block can run in parallel (no ticket in a block blocks another ticket in the same block). **Finish and QA every ticket in a block before starting the next block** — that's the checkpoint. Within a block, order doesn't matter.
 
-To check live status instead of trusting this table, use the frontier query from `docs/agents/issue-tracker.md`: `gh issue list --state open` on this repo, filtered to unassigned issues with `issue_dependencies_summary.blocked_by == 0`.
+To check live status instead of trusting this table, run `gh issue list --state open --json number,title,assignees,blockedBy` and keep issues with no assignee and an empty `blockedBy` list — see `docs/agents/issue-tracker.md` for tracker conventions.
 
 ## Block A — solo
 
