@@ -64,6 +64,13 @@ export const foods = pgTable(
     index("foods_external_id_idx")
       .on(table.externalId)
       .where(sql`${table.externalId} is not null`),
+    // One canonical row per (provenance, external id) — the target the OFF
+    // pre-warm/delta-refresh and CoFID ingestion upsert against, and the
+    // live cache-miss fallback in resolveFood (issue #44) writes through the
+    // same way, so a re-run or a repeated live lookup never duplicates a row.
+    uniqueIndex("foods_provenance_external_id_idx")
+      .on(table.provenance, table.externalId)
+      .where(sql`${table.externalId} is not null`),
     check(
       "foods_provenance_check",
       inCheck(table.provenance, [
@@ -282,3 +289,15 @@ export const userProfile = pgTable(
   },
   (table) => [check("user_profile_singleton", sql`${table.id}`)],
 );
+
+// Backs the food-resolution rate limiter (issue #44's Postgres-table-backed
+// Effect service, not Effect's built-in `RateLimiter`, per the ticket's own
+// choice — a shared, restart-durable limiter on the rare live OFF-lookup
+// fallback path, rather than an in-memory one that resets per process). One
+// row per fixed window; `resolveFood`'s live-miss path atomically upserts
+// its own window row (insert-or-increment) and compares the returned count
+// against the configured ceiling — see src/server/food/rate-limiter.ts.
+export const foodLookupRateLimitWindows = pgTable("food_lookup_rate_limit_windows", {
+  windowStart: timestamp("window_start", { withTimezone: true }).primaryKey(),
+  count: integer("count").notNull().default(0),
+});

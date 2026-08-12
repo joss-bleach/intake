@@ -15,6 +15,13 @@
       "when": 1786549422815,
       "tag": "0001_green_karen_page",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786559720718,
+      "tag": "0002_rapid_smasher",
+      "breakpoints": true
     }
   ]
 }

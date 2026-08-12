@@ -16,3 +16,11 @@ export const pool = new Pool({
 // should use. `pool` stays exported for the migrator and any raw-SQL escape
 // hatch.
 export const db = drizzle(pool, { schema });
+
+// The handle a `db.transaction(async (tx) => ...)` callback receives. Code
+// that must run inside a caller-owned transaction takes this instead of `db`,
+// so the transaction boundary is visible at the call site rather than hidden
+// one level down.
+export type Transaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];
