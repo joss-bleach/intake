@@ -37,6 +37,7 @@ describe("migrate", () => {
 
     expect(rows.map((row) => row.table_name)).toEqual([
       "diary_entries",
+      "food_lookup_rate_limit_windows",
       "foods",
       "logged_items",
       "nutrient_values",
