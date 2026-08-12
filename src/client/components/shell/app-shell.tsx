@@ -11,11 +11,13 @@ export function AppShell({
   children,
   activeTab = "home",
   onLogFood,
+  onProfile,
   showNav = true,
 }: {
   children?: ReactNode;
   activeTab?: BottomNavActiveTab;
   onLogFood?: () => void;
+  onProfile?: () => void;
   showNav?: boolean;
 }) {
   return (
@@ -26,7 +28,9 @@ export function AppShell({
       <div className="relative flex min-h-screen flex-col px-5 pb-12 pt-14">
         {children}
       </div>
-      {showNav && <BottomNav active={activeTab} onLogFood={onLogFood} />}
+      {showNav && (
+        <BottomNav active={activeTab} onLogFood={onLogFood} onProfile={onProfile} />
+      )}
     </div>
   );
 }
