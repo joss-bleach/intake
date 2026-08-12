@@ -77,7 +77,65 @@ describe("ParsedLabelReading (Stage 2, label path)", () => {
     });
 
     expect(decoded.brand).toBeUndefined();
+    expect(decoded.servingSize).toBeUndefined();
     expect(decoded.nutrients[0]).toBeInstanceOf(ExtractedNutrient);
+  });
+
+  it("carries provenance on optional brand and serving size when present", () => {
+    const decoded = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Baked Beans",
+      foodNameConfidence: "confident",
+      brand: { value: "Heinz", confidence: "needs_review" },
+      basisUnit: "g",
+      servingSize: { value: 200, confidence: "confident" },
+      nutrients: [
+        { code: "energy_kcal", value: 78, unit: "kcal", confidence: "confident" },
+      ],
+    });
+
+    expect(decoded.brand).toEqual({
+      value: "Heinz",
+      confidence: "needs_review",
+    });
+    expect(decoded.servingSize).toEqual({ value: 200, confidence: "confident" });
+  });
+
+  it("rejects an optional value supplied without its confidence tag", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        brand: { value: "Heinz" },
+        basisUnit: "g",
+        nutrients: [
+          {
+            code: "energy_kcal",
+            value: 78,
+            unit: "kcal",
+            confidence: "confident",
+          },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a confidence tag supplied without the value it describes", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        basisUnit: "g",
+        servingSize: { confidence: "needs_review" },
+        nutrients: [
+          {
+            code: "energy_kcal",
+            value: 78,
+            unit: "kcal",
+            confidence: "confident",
+          },
+        ],
+      }),
+    ).toThrow();
   });
 
   it("rejects an empty nutrients array — a label read always extracts at least one value", () => {

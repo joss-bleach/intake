@@ -15,6 +15,16 @@ export type ConfidenceLevel = typeof ConfidenceLevel.Type;
 // Matches logged_items/saved_meal_items.quantity_unit (src/server/db/schema.ts).
 const QuantityUnit = Schema.Literal("g", "ml", "serving");
 
+// A field the model may legitimately omit — not every label prints a brand
+// or a serving size. Value and tag live in one optional struct rather than
+// as two independently-optional sibling fields, so the contract's "every
+// field carries provenance" rule survives optionality: a present value
+// always arrives with its tag, and a tag can never arrive detached from the
+// value it describes. Review UI reads `.confidence` off the same object it
+// reads `.value` from, with no cross-field correlation to get wrong.
+const OptionalWithConfidence = <A, I>(value: Schema.Schema<A, I>) =>
+  Schema.optional(Schema.Struct({ value, confidence: ConfidenceLevel }));
+
 // Stage 2, description path: one guessed ingredient out of a free-text
 // description ("chicken and rice"). Confidence is per estimated field, not
 // per ingredient as a whole — a model can be sure of "chicken" but unsure
@@ -60,10 +70,9 @@ export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
 )({
   foodName: Schema.String,
   foodNameConfidence: ConfidenceLevel,
-  brand: Schema.optional(Schema.String),
+  brand: OptionalWithConfidence(Schema.String),
   basisUnit: Schema.Literal("g", "ml"),
-  servingSize: Schema.optional(Schema.Positive),
-  servingSizeConfidence: Schema.optional(ConfidenceLevel),
+  servingSize: OptionalWithConfidence(Schema.Positive),
   nutrients: Schema.NonEmptyArray(ExtractedNutrient),
 }) {}
 
