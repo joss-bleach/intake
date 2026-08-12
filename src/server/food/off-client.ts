@@ -1,6 +1,7 @@
 import { Data, Effect } from "effect";
 import { z } from "zod";
-import { NUTRIENT_CODES } from "./nutrient-codes";
+import type { NutrientCode } from "./nutrient-codes";
+import { offNutriments, toOffNutrientRows } from "./off-nutriments";
 
 // The rare live-lookup fallback resolveFood reaches for on a cache miss,
 // gated by FoodLookupRateLimiter. Kept as its own Effect service (rather
@@ -15,7 +16,7 @@ export interface OffLiveHit {
   readonly basisUnit: "g" | "ml";
   readonly servingSize: string | null;
   readonly nutrients: ReadonlyArray<{
-    readonly code: (typeof NUTRIENT_CODES)[keyof typeof NUTRIENT_CODES];
+    readonly code: NutrientCode;
     readonly value: string;
     readonly unit: string;
   }>;
@@ -29,17 +30,6 @@ export class OffLiveSearchError extends Data.TaggedError(
 
 // Only the fields this mapping reads, decoded at the boundary rather than
 // trusted as `any` — OFF's full product shape is far larger than this.
-const offNutriments = z.object({
-  "energy-kcal_100g": z.number().optional(),
-  proteins_100g: z.number().optional(),
-  carbohydrates_100g: z.number().optional(),
-  sugars_100g: z.number().optional(),
-  fat_100g: z.number().optional(),
-  "saturated-fat_100g": z.number().optional(),
-  fiber_100g: z.number().optional(),
-  salt_100g: z.number().optional(),
-});
-
 const offProduct = z.object({
   code: z.string(),
   product_name: z.string().nullish(),
@@ -52,33 +42,6 @@ const offProduct = z.object({
 const offSearchResponse = z.object({
   products: z.array(offProduct),
 });
-
-type NutrientCode = OffLiveHit["nutrients"][number]["code"];
-type OffNutrimentField = keyof z.infer<typeof offNutriments>;
-
-const toNutrients = (
-  nutriments: z.infer<typeof offNutriments> | undefined,
-): OffLiveHit["nutrients"] => {
-  if (!nutriments) return [];
-
-  const entries: Array<[OffNutrimentField, NutrientCode]> = [
-    ["energy-kcal_100g", NUTRIENT_CODES.energyKcal],
-    ["proteins_100g", NUTRIENT_CODES.protein],
-    ["carbohydrates_100g", NUTRIENT_CODES.carbohydrate],
-    ["sugars_100g", NUTRIENT_CODES.sugars],
-    ["fat_100g", NUTRIENT_CODES.fat],
-    ["saturated-fat_100g", NUTRIENT_CODES.saturatedFat],
-    ["fiber_100g", NUTRIENT_CODES.fibre],
-    ["salt_100g", NUTRIENT_CODES.salt],
-  ];
-
-  return entries.flatMap(([field, code]) => {
-    const value = nutriments[field];
-    return value === undefined
-      ? []
-      : [{ code, value: String(value), unit: "g" }];
-  });
-};
 
 const toHit = (product: z.infer<typeof offProduct>): OffLiveHit | null => {
   const name = product.product_name;
@@ -93,7 +56,11 @@ const toHit = (product: z.infer<typeof offProduct>): OffLiveHit | null => {
       product.serving_quantity === null || product.serving_quantity === undefined
         ? null
         : String(product.serving_quantity),
-    nutrients: toNutrients(product.nutriments),
+    nutrients: toOffNutrientRows(product.nutriments).map((nutrient) => ({
+      code: nutrient.code,
+      value: String(nutrient.value),
+      unit: nutrient.unit,
+    })),
   };
 };
 

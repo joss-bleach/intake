@@ -75,5 +75,12 @@ describe("food ingestion", () => {
       .where(eq(nutrientValues.foodId, rice.id));
     const energy = values.find((value) => value.code === "energy_kcal");
     expect(energy?.value).toBe("138");
+
+    // CoFID reports sodium (mg), not salt — this locks in the conversion to
+    // the shared salt_g code (salt = sodium × 2.5 / 1000) so a CoFID food's
+    // salt_g means the same substance, in the same unit, as an OFF food's.
+    const salt = values.find((value) => value.code === "salt_g");
+    expect(salt?.unit).toBe("g");
+    expect(Number(salt?.value)).toBeCloseTo(0.0075);
   });
 });

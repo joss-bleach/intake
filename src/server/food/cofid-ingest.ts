@@ -3,7 +3,7 @@ import { createInterface } from "node:readline";
 import { sql } from "drizzle-orm";
 import { db, pool } from "../db";
 import { foods, nutrientValues } from "../db/schema";
-import { NUTRIENT_CODES } from "./nutrient-codes";
+import { NUTRIENT_CODES, type NutrientCode } from "./nutrient-codes";
 
 // One-time load of the UK's CoFID (~3,200 generic foods, gov.uk) into the
 // same foods/nutrient_values tables OFF pre-warms, source-tagged `cofid`.
@@ -26,8 +26,15 @@ const CSV_COLUMNS = {
   fat: "Fat (g)",
   saturatedFat: "Saturated fatty acids (g)",
   fibre: "AOAC fibre (g)",
-  salt: "Sodium (mg)",
+  // CoFID reports sodium, not salt — unlike OFF, which reports salt_100g
+  // directly. Converted below (salt g = sodium mg × 2.5 / 1000, the standard
+  // UK food-labelling factor) so both sources agree on NUTRIENT_CODES.salt
+  // meaning the same substance in the same unit, rather than one food's
+  // "salt_g" secretly being another food's sodium-in-milligrams.
+  sodiumMg: "Sodium (mg)",
 } as const;
+
+const SODIUM_TO_SALT_FACTOR = 2.5 / 1_000;
 
 // A cell can legitimately contain a comma inside quotes (e.g. `"Bread,
 // white"`) — CoFID food names do this — so this is a small quote-aware
@@ -110,24 +117,40 @@ export const ingestCofidCsv = async (
       continue;
     }
 
-    const nutrients: Array<{ code: string; value: number; unit: string }> = [
-      [CSV_COLUMNS.energyKcal, NUTRIENT_CODES.energyKcal, "g"],
-      [CSV_COLUMNS.protein, NUTRIENT_CODES.protein, "g"],
-      [CSV_COLUMNS.carbohydrate, NUTRIENT_CODES.carbohydrate, "g"],
-      [CSV_COLUMNS.sugars, NUTRIENT_CODES.sugars, "g"],
-      [CSV_COLUMNS.fat, NUTRIENT_CODES.fat, "g"],
-      [CSV_COLUMNS.saturatedFat, NUTRIENT_CODES.saturatedFat, "g"],
-      [CSV_COLUMNS.fibre, NUTRIENT_CODES.fibre, "g"],
-      [CSV_COLUMNS.salt, NUTRIENT_CODES.salt, "mg"],
-    ]
-      .map(([csvColumn, nutrientCode, unit]) => {
-        const value = parseNumericCell(row[csvColumn] ?? "");
-        return value === null ? null : { code: nutrientCode, value, unit };
-      })
-      .filter(
-        (nutrient): nutrient is { code: string; value: number; unit: string } =>
-          nutrient !== null,
-      );
+    const sodiumMg = parseNumericCell(row[CSV_COLUMNS.sodiumMg] ?? "");
+
+    const columnToCode: Array<[string, NutrientCode]> = [
+      [CSV_COLUMNS.energyKcal, NUTRIENT_CODES.energyKcal],
+      [CSV_COLUMNS.protein, NUTRIENT_CODES.protein],
+      [CSV_COLUMNS.carbohydrate, NUTRIENT_CODES.carbohydrate],
+      [CSV_COLUMNS.sugars, NUTRIENT_CODES.sugars],
+      [CSV_COLUMNS.fat, NUTRIENT_CODES.fat],
+      [CSV_COLUMNS.saturatedFat, NUTRIENT_CODES.saturatedFat],
+      [CSV_COLUMNS.fibre, NUTRIENT_CODES.fibre],
+    ];
+
+    const nutrients: Array<{ code: NutrientCode; value: number; unit: string }> =
+      columnToCode
+        .map(([csvColumn, nutrientCode]) => {
+          const value = parseNumericCell(row[csvColumn] ?? "");
+          return value === null
+            ? null
+            : { code: nutrientCode, value, unit: "g" };
+        })
+        .filter(
+          (
+            nutrient,
+          ): nutrient is { code: NutrientCode; value: number; unit: string } =>
+            nutrient !== null,
+        );
+
+    if (sodiumMg !== null) {
+      nutrients.push({
+        code: NUTRIENT_CODES.salt,
+        value: sodiumMg * SODIUM_TO_SALT_FACTOR,
+        unit: "g",
+      });
+    }
 
     if (nutrients.length === 0) {
       skipped += 1;

@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, pool } from "../db";
 import { foods, nutrientValues } from "../db/schema";
-import { NUTRIENT_CODES } from "./nutrient-codes";
+import { offNutriments, toOffNutrientRows } from "./off-nutriments";
 
 // Pre-warms the local cache from Open Food Facts' full JSONL export
 // (`openfoodfacts-products.jsonl.gz`, one product object per line —
@@ -21,17 +21,6 @@ import { NUTRIENT_CODES } from "./nutrient-codes";
 // deferred to deploy, per the build-plan's infra-provisioning carve-out; see
 // alchemy.run.ts.
 
-const offNutriments = z.object({
-  "energy-kcal_100g": z.number().optional(),
-  proteins_100g: z.number().optional(),
-  carbohydrates_100g: z.number().optional(),
-  sugars_100g: z.number().optional(),
-  fat_100g: z.number().optional(),
-  "saturated-fat_100g": z.number().optional(),
-  fiber_100g: z.number().optional(),
-  salt_100g: z.number().optional(),
-});
-
 const offDumpProduct = z.object({
   code: z.string(),
   product_name: z.string().nullish(),
@@ -47,30 +36,6 @@ type OffDumpProduct = z.infer<typeof offDumpProduct>;
 const isUk = (product: OffDumpProduct): boolean =>
   (product.countries_tags ?? []).includes("en:united-kingdom");
 
-type OffNutrimentField = keyof z.infer<typeof offNutriments>;
-
-const nutrientRows = (
-  nutriments: z.infer<typeof offNutriments> | undefined,
-): Array<{ code: string; value: number; unit: string }> => {
-  if (!nutriments) return [];
-
-  const fields: Array<[OffNutrimentField, string]> = [
-    ["energy-kcal_100g", NUTRIENT_CODES.energyKcal],
-    ["proteins_100g", NUTRIENT_CODES.protein],
-    ["carbohydrates_100g", NUTRIENT_CODES.carbohydrate],
-    ["sugars_100g", NUTRIENT_CODES.sugars],
-    ["fat_100g", NUTRIENT_CODES.fat],
-    ["saturated-fat_100g", NUTRIENT_CODES.saturatedFat],
-    ["fiber_100g", NUTRIENT_CODES.fibre],
-    ["salt_100g", NUTRIENT_CODES.salt],
-  ];
-
-  return fields.flatMap(([field, code]) => {
-    const value = nutriments[field];
-    return value === undefined ? [] : [{ code, value, unit: "g" }];
-  });
-};
-
 export interface OffIngestSummary {
   readonly processed: number;
   readonly upserted: number;
@@ -81,7 +46,7 @@ const upsertProduct = async (product: OffDumpProduct): Promise<boolean> => {
   const name = product.product_name;
   if (!name) return false;
 
-  const nutrients = nutrientRows(product.nutriments);
+  const nutrients = toOffNutrientRows(product.nutriments);
   if (nutrients.length === 0) return false;
 
   const [food] = await db
