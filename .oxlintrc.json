@@ -142,7 +142,8 @@
     },
     {
       "files": [
-        "src/client/components/ui/**/*.tsx"
+        "src/client/components/ui/**/*.tsx",
+        "src/client/components/shell/**/*.tsx"
       ],
       "rules": {
         "react/only-export-components": "off"
