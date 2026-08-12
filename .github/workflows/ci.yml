@@ -49,6 +49,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Run migrations
+        run: pnpm db:migrate
+
       - name: Unit tests
         run: pnpm test
 
