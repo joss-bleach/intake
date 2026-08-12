@@ -1,0 +1,1 @@
+ALTER TABLE "logged_items" ADD CONSTRAINT "logged_items_corrected_from_id_logged_items_id_fk" FOREIGN KEY ("corrected_from_id") REFERENCES "public"."logged_items"("id") ON DELETE set null ON UPDATE no action;

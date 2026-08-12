@@ -1,16 +1,55 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Newsreader", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  /* Newsreader Display — the app's display/heading face. Body text stays on
+     the system stack; only headings and hero numerals opt into it via
+     font-display (see theme.ts / GlassPanel usage). */
+  --font-display: "Newsreader Display", ui-serif, Georgia, serif;
+}
+
+/* Self-hosted, latin subset only (variable font, opsz 6–72 covers the
+   "Display" optical size range Google Fonts exposes for Newsreader). */
+@font-face {
+  font-family: "Newsreader Display";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("./assets/fonts/newsreader-display-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader Display";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/newsreader-display-italic.woff2") format("woff2");
 }
 
 :root {
+  color-scheme: light;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --primary: oklch(0.5 0.15 275);
   --primary-foreground: oklch(0.985 0 0);
   --border: oklch(0.9 0 0);
   --radius: 0.75rem;
+
+  /* C6-B1 theme tokens — cool-indigo colourway, ported verbatim from
+     prototype/dashboard-look (VariantC6B1 / c6-base.tsx). Any screen
+     dropped into the app shell should read off these, not invent its own. */
+  --shell-page-bg: #f5f4fa;
+  --shell-text-heading: #1e1b4b;
+  --shell-text-emphasis-strong: #312c6b;
+  --shell-text-label: #403a7a;
+  --shell-text-body: #332e6d;
+  --shell-text-suffix-light: #6b64a3;
+  --shell-text-food-name: #282460;
+  --shell-text-muted: #5a5490;
+  --shell-text-muted-label: #4a4480;
+  --shell-text-faint: #8480ad;
 }
 
 body {
