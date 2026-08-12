@@ -10,9 +10,11 @@ export type BottomNavActiveTab = "home" | "insights" | "log" | "profile";
 export function BottomNav({
   active,
   onLogFood,
+  onProfile,
 }: {
   active?: BottomNavActiveTab;
   onLogFood?: () => void;
+  onProfile?: () => void;
 }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-white/80 backdrop-blur-2xl">
@@ -23,7 +25,12 @@ export function BottomNav({
         </div>
         <div className="flex items-center gap-8">
           <NavIcon icon={BookOpen} label="Log" active={active === "log"} />
-          <NavIcon icon={User} label="Profile" active={active === "profile"} />
+          <NavIcon
+            icon={User}
+            label="Profile"
+            active={active === "profile"}
+            onClick={onProfile}
+          />
         </div>
         <button
           type="button"
@@ -42,16 +49,19 @@ function NavIcon({
   icon: Icon,
   label,
   active = false,
+  onClick,
 }: {
   icon: LucideIcon;
   label: string;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
       aria-current={active ? "page" : undefined}
+      onClick={onClick}
       className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
         active ? theme.navActiveClass : theme.navInactiveClass
       }`}

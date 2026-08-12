@@ -1,13 +1,32 @@
 import { Cause, Effect, Exit } from "effect";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import type { TRPC_ERROR_CODE_KEY } from "@trpc/server/rpc";
 
 // Tagged-error-ish shape (Effect's Data.TaggedError, or any plain object with
 // `_tag`/`message`). Parsed rather than typeof-narrowed, per anti-slop's
 // "decode unknown at the I/O boundary" rule — see tools/oxlint/anti-slop.
+// `code` is an opt-in escape hatch: a tagged error can name its own TRPCError
+// code (e.g. "BAD_REQUEST" for a user-input problem) instead of every
+// failure defaulting to INTERNAL_SERVER_ERROR.
+const trpcErrorCode = z.enum([
+  "BAD_REQUEST",
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "CONFLICT",
+  "PRECONDITION_FAILED",
+  "PAYLOAD_TOO_LARGE",
+  "UNPROCESSABLE_CONTENT",
+  "TOO_MANY_REQUESTS",
+  "CLIENT_CLOSED_REQUEST",
+  "INTERNAL_SERVER_ERROR",
+]) satisfies z.ZodType<TRPC_ERROR_CODE_KEY>;
+
 const taggedErrorLike = z.object({
   _tag: z.string().optional(),
   message: z.string().optional(),
+  code: trpcErrorCode.optional(),
 });
 
 /**
@@ -50,10 +69,8 @@ const toTRPCError = (cause: unknown): TRPCError => {
   const message =
     (parsed.success && parsed.data.message) ||
     `Effect failed with tagged error: ${tag}`;
+  const code =
+    (parsed.success && parsed.data.code) || "INTERNAL_SERVER_ERROR";
 
-  return new TRPCError({
-    code: "INTERNAL_SERVER_ERROR",
-    message,
-    cause,
-  });
+  return new TRPCError({ code, message, cause });
 };
