@@ -162,22 +162,27 @@ export const ingestCofidCsv = async (
       continue;
     }
 
-    const [food] = await db
-      .insert(foods)
-      .values({
-        name,
-        provenance: "cofid",
-        externalId: code,
-        basisUnit: "g",
-      })
-      .onConflictDoUpdate({
-        target: [foods.provenance, foods.externalId],
-        targetWhere: sql`${foods.externalId} is not null`,
-        set: { name, updatedAt: new Date() },
-      })
-      .returning();
+    // One transaction for the food and its nutrients, so cache reads only
+    // ever see a complete food — never metadata from this export sitting
+    // above a missing or superseded nutrient profile.
+    await db.transaction(async (tx) => {
+      const [food] = await tx
+        .insert(foods)
+        .values({
+          name,
+          provenance: "cofid",
+          externalId: code,
+          basisUnit: "g",
+        })
+        .onConflictDoUpdate({
+          target: [foods.provenance, foods.externalId],
+          targetWhere: sql`${foods.externalId} is not null`,
+          set: { name, updatedAt: new Date() },
+        })
+        .returning();
 
-    await writeFoodNutrients(food.id, nutrients);
+      await writeFoodNutrients(tx, food.id, nutrients);
+    });
 
     upserted += 1;
   }

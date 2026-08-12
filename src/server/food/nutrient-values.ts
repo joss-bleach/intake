@@ -1,5 +1,5 @@
 import { and, eq, notInArray, sql } from "drizzle-orm";
-import { db } from "../db";
+import type { Transaction } from "../db";
 import { nutrientValues } from "../db/schema";
 import type { NutrientCode, NutrientUnit } from "./nutrient-codes";
 
@@ -20,51 +20,54 @@ export interface FoodNutrientRow {
  * reads to keep serving. Rows this app didn't source from a database (a
  * user correction, a label extraction) are left alone.
  *
- * Upsert and prune run in one transaction: a failure between them would
- * otherwise commit the new values while leaving behind rows the latest
- * source no longer reports, i.e. a food whose stored profile is a mix of
- * two dataset versions until some later refresh happens to fix it.
+ * Takes the caller's transaction rather than opening its own, because the
+ * food row and its nutrients have to land together. Upsert and prune must be
+ * atomic with each other — a failure between them would commit the new values
+ * while leaving behind rows the latest source no longer reports — and both
+ * must be atomic with the `foods` upsert that produced `foodId`, or a crash
+ * mid-write leaves a food committed with no nutrients at all (a new food) or
+ * with new metadata over its previous nutrient profile (a refresh), until
+ * some later run happens to fix it.
  */
 export const writeFoodNutrients = async (
+  tx: Transaction,
   foodId: string,
   nutrients: ReadonlyArray<FoodNutrientRow>,
 ): Promise<void> => {
-  await db.transaction(async (tx) => {
-    // One row at a time rather than a single batched insert: each nutrient
-    // needs its own `excluded`-referencing upsert against the (foodId, code)
-    // unique index, and a batched insert can't express a different `set`
-    // per conflicting row.
-    for (const nutrient of nutrients) {
-      await tx
-        .insert(nutrientValues)
-        .values({
-          foodId,
-          code: nutrient.code,
-          value: nutrient.value,
-          unit: nutrient.unit,
-          provenance: "database",
-        })
-        .onConflictDoUpdate({
-          target: [nutrientValues.foodId, nutrientValues.code],
-          targetWhere: sql`${nutrientValues.foodId} is not null`,
-          set: {
-            value: sql`excluded.value`,
-            unit: sql`excluded.unit`,
-          },
-        });
-    }
-
-    const keptCodes = nutrients.map((nutrient) => nutrient.code);
+  // One row at a time rather than a single batched insert: each nutrient
+  // needs its own `excluded`-referencing upsert against the (foodId, code)
+  // unique index, and a batched insert can't express a different `set`
+  // per conflicting row.
+  for (const nutrient of nutrients) {
     await tx
-      .delete(nutrientValues)
-      .where(
-        and(
-          eq(nutrientValues.foodId, foodId),
-          eq(nutrientValues.provenance, "database"),
-          keptCodes.length === 0
-            ? undefined
-            : notInArray(nutrientValues.code, keptCodes),
-        ),
-      );
-  });
+      .insert(nutrientValues)
+      .values({
+        foodId,
+        code: nutrient.code,
+        value: nutrient.value,
+        unit: nutrient.unit,
+        provenance: "database",
+      })
+      .onConflictDoUpdate({
+        target: [nutrientValues.foodId, nutrientValues.code],
+        targetWhere: sql`${nutrientValues.foodId} is not null`,
+        set: {
+          value: sql`excluded.value`,
+          unit: sql`excluded.unit`,
+        },
+      });
+  }
+
+  const keptCodes = nutrients.map((nutrient) => nutrient.code);
+  await tx
+    .delete(nutrientValues)
+    .where(
+      and(
+        eq(nutrientValues.foodId, foodId),
+        eq(nutrientValues.provenance, "database"),
+        keptCodes.length === 0
+          ? undefined
+          : notInArray(nutrientValues.code, keptCodes),
+      ),
+    );
 };

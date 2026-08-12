@@ -50,39 +50,45 @@ const upsertProduct = async (product: OffDumpProduct): Promise<boolean> => {
   const nutrients = toOffNutrientRows(product.nutriments);
   if (nutrients.length === 0) return false;
 
-  const [food] = await db
-    .insert(foods)
-    .values({
-      name,
-      brand: product.brands ?? null,
-      provenance: "off",
-      externalId: product.code,
-      basisUnit: product.product_quantity_unit === "ml" ? "ml" : "g",
-      servingSize:
-        product.serving_quantity === null ||
-        product.serving_quantity === undefined
-          ? null
-          : String(product.serving_quantity),
-    })
-    .onConflictDoUpdate({
-      target: [foods.provenance, foods.externalId],
-      targetWhere: sql`${foods.externalId} is not null`,
-      set: {
+  // One transaction for the food and its nutrients, so cache reads only ever
+  // see a complete product — never metadata from this dump sitting above a
+  // missing or superseded nutrient profile.
+  await db.transaction(async (tx) => {
+    const [food] = await tx
+      .insert(foods)
+      .values({
         name,
         brand: product.brands ?? null,
-        updatedAt: new Date(),
-      },
-    })
-    .returning();
+        provenance: "off",
+        externalId: product.code,
+        basisUnit: product.product_quantity_unit === "ml" ? "ml" : "g",
+        servingSize:
+          product.serving_quantity === null ||
+          product.serving_quantity === undefined
+            ? null
+            : String(product.serving_quantity),
+      })
+      .onConflictDoUpdate({
+        target: [foods.provenance, foods.externalId],
+        targetWhere: sql`${foods.externalId} is not null`,
+        set: {
+          name,
+          brand: product.brands ?? null,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
 
-  await writeFoodNutrients(
-    food.id,
-    nutrients.map((nutrient) => ({
-      code: nutrient.code,
-      value: String(nutrient.value),
-      unit: nutrient.unit,
-    })),
-  );
+    await writeFoodNutrients(
+      tx,
+      food.id,
+      nutrients.map((nutrient) => ({
+        code: nutrient.code,
+        value: String(nutrient.value),
+        unit: nutrient.unit,
+      })),
+    );
+  });
 
   return true;
 };

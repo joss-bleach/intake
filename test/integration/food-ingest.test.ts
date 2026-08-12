@@ -5,6 +5,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
 import { foods, nutrientValues } from "../../src/server/db/schema";
 import { ingestCofidCsv } from "../../src/server/food/cofid-ingest";
+import {
+  NUTRIENT_CODES,
+  unitForNutrient,
+} from "../../src/server/food/nutrient-codes";
+import { writeFoodNutrients } from "../../src/server/food/nutrient-values";
 import { ingestOffDump } from "../../src/server/food/off-ingest";
 import { migrate } from "../../src/server/db/migrate";
 
@@ -120,5 +125,42 @@ describe("food ingestion", () => {
     const salt = values.find((value) => value.code === "salt_g");
     expect(salt?.unit).toBe("g");
     expect(Number(salt?.value)).toBeCloseTo(0.0075);
+  });
+
+  // Every ingestion path upserts a food and then writes its nutrients. Those
+  // two writes have to share one transaction, or a failure between them
+  // commits food metadata with no nutrients (a new food) or with the previous
+  // run's profile (a refresh) — a half-written cache entry that reads keep
+  // serving until some later refresh happens to repair it.
+  it("does not commit a food when its nutrient write fails", async () => {
+    await expect(
+      db.transaction(async (tx) => {
+        const [food] = await tx
+          .insert(foods)
+          .values({
+            name: "Rollback Test Product",
+            provenance: "off",
+            externalId: "rollback-test",
+            basisUnit: "g",
+          })
+          .returning();
+
+        await writeFoodNutrients(tx, food.id, [
+          {
+            code: NUTRIENT_CODES.protein,
+            // Rejected by the numeric column — stands in for any failure
+            // (bad source data, a dropped connection) between the two writes.
+            value: "not-a-number",
+            unit: unitForNutrient(NUTRIENT_CODES.protein),
+          },
+        ]);
+      }),
+    ).rejects.toThrow();
+
+    const rows = await db
+      .select()
+      .from(foods)
+      .where(eq(foods.externalId, "rollback-test"));
+    expect(rows).toHaveLength(0);
   });
 });

@@ -41,39 +41,45 @@ const searchCache = (
 const cacheLiveHit = (
   hit: OffLiveHit,
 ): Effect.Effect<ResolvedFood> =>
-  Effect.tryPromise(async () => {
-    const [food] = await db
-      .insert(foods)
-      .values({
-        name: hit.name,
-        brand: hit.brand,
-        provenance: "off",
-        externalId: hit.externalId,
-        basisUnit: hit.basisUnit,
-        servingSize: hit.servingSize,
-      })
-      .onConflictDoUpdate({
-        target: [foods.provenance, foods.externalId],
-        targetWhere: sql`${foods.externalId} is not null`,
-        set: {
+  Effect.tryPromise(async () =>
+    // One transaction for the food, its nutrients, and the read-back: a
+    // half-written cache entry (food metadata with no nutrients, or new
+    // metadata over the previous profile) would be served to every later
+    // query for this food until some future live hit happened to repair it.
+    db.transaction(async (tx) => {
+      const [food] = await tx
+        .insert(foods)
+        .values({
           name: hit.name,
           brand: hit.brand,
+          provenance: "off",
+          externalId: hit.externalId,
           basisUnit: hit.basisUnit,
           servingSize: hit.servingSize,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
+        })
+        .onConflictDoUpdate({
+          target: [foods.provenance, foods.externalId],
+          targetWhere: sql`${foods.externalId} is not null`,
+          set: {
+            name: hit.name,
+            brand: hit.brand,
+            basisUnit: hit.basisUnit,
+            servingSize: hit.servingSize,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
 
-    await writeFoodNutrients(food.id, hit.nutrients);
+      await writeFoodNutrients(tx, food.id, hit.nutrients);
 
-    const values = await db
-      .select()
-      .from(nutrientValues)
-      .where(eq(nutrientValues.foodId, food.id));
+      const values = await tx
+        .select()
+        .from(nutrientValues)
+        .where(eq(nutrientValues.foodId, food.id));
 
-    return { food, nutrientValues: values };
-  }).pipe(Effect.orDie);
+      return { food, nutrientValues: values };
+    }),
+  ).pipe(Effect.orDie);
 
 /**
  * The description-path food resolution layer (issue #44): search the local
