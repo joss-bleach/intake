@@ -120,7 +120,16 @@ export const loggedItems = pgTable(
     quantity: numeric("quantity").notNull(),
     quantityUnit: text("quantity_unit", { enum: quantityUnit }).notNull(),
     confidence: text("confidence", { enum: confidenceLevel }),
-    correctedFromId: uuid("corrected_from_id"),
+    // Self-reference, so lineage can't point at a row that was never there or
+    // is already gone. `set null` rather than the default: deleting a diary
+    // entry cascades to its logged_items, and a correction can sit in a different
+    // entry from its original — under the default that delete would fail on
+    // this constraint. Nulling the pointer loses nothing, since the row it
+    // described is gone either way.
+    correctedFromId: uuid("corrected_from_id").references(
+      (): PgColumn => loggedItems.id,
+      { onDelete: "set null" },
+    ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
