@@ -121,15 +121,18 @@ export const scoreLabelItem = (
     );
   }
 
-  if (expected.brand !== undefined) {
-    if (
-      !parsed.brand ||
-      !nameMatches(parsed.brand.value, expected.brand)
-    ) {
-      failures.push(
-        `brand "${parsed.brand?.value}" !== expected "${expected.brand}"`,
-      );
+  // An absent `expected.brand`/`expected.servingSize` means the panel does
+  // not print it, so the correct read is null — the app then asks the user
+  // for the value. A read that supplies one instead is invented data that
+  // skips that prompt, so it fails the same way an unexpected nutrient does.
+  if (expected.brand === undefined) {
+    if (parsed.brand) {
+      failures.push(`unexpected brand "${parsed.brand.value}"`);
     }
+  } else if (!parsed.brand || !nameMatches(parsed.brand.value, expected.brand)) {
+    failures.push(
+      `brand "${parsed.brand?.value}" !== expected "${expected.brand}"`,
+    );
   }
 
   if (parsed.basisUnit !== expected.basisUnit) {
@@ -138,19 +141,21 @@ export const scoreLabelItem = (
     );
   }
 
-  if (expected.servingSize !== undefined) {
-    if (
-      !parsed.servingSize ||
-      !withinTolerance(
-        parsed.servingSize.value,
-        expected.servingSize,
-        LABEL_TOLERANCE,
-      )
-    ) {
-      failures.push(
-        `servingSize ${parsed.servingSize?.value} outside ±${LABEL_TOLERANCE * 100}% of expected ${expected.servingSize}`,
-      );
+  if (expected.servingSize === undefined) {
+    if (parsed.servingSize) {
+      failures.push(`unexpected servingSize ${parsed.servingSize.value}`);
     }
+  } else if (
+    !parsed.servingSize ||
+    !withinTolerance(
+      parsed.servingSize.value,
+      expected.servingSize,
+      LABEL_TOLERANCE,
+    )
+  ) {
+    failures.push(
+      `servingSize ${parsed.servingSize?.value} outside ±${LABEL_TOLERANCE * 100}% of expected ${expected.servingSize}`,
+    );
   }
 
   const matchedIndexes = new Set<number>();

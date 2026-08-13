@@ -177,6 +177,69 @@ describe("scoreLabelItem", () => {
     expect(result.failures).toContain('unexpected nutrient "salt_g"');
   });
 
+  it("fails when the read invents a brand the panel does not print", () => {
+    const fixture = Schema.decodeUnknownSync(LabelFixture)({
+      id: "label-unbranded",
+      groundTruthReviewed: true,
+      groundTruthSource: "hand-authored",
+      imageFile: "unbranded.jpg",
+      imageMediaType: "image/jpeg",
+      expected: {
+        foodName: "Porridge Oats",
+        basisUnit: "g",
+        nutrients: [
+          { code: "energy_kcal", value: 356, unit: "kcal" },
+        ],
+      },
+    });
+    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Porridge Oats",
+      foodNameConfidence: "confident",
+      brand: { value: "Quaker", confidence: "confident" },
+      basisUnit: "g",
+      servingSize: { value: 40, confidence: "confident" },
+      nutrients: [
+        { code: "energy_kcal", value: 356, unit: "kcal", confidence: "confident" },
+      ],
+    });
+
+    const result = scoreLabelItem(fixture, parsed);
+
+    expect(result.pass).toBe(false);
+    expect(result.failures).toContain('unexpected brand "Quaker"');
+    expect(result.failures).toContain("unexpected servingSize 40");
+  });
+
+  it("passes when the read omits a brand and serving size the panel does not print", () => {
+    const fixture = Schema.decodeUnknownSync(LabelFixture)({
+      id: "label-unbranded",
+      groundTruthReviewed: true,
+      groundTruthSource: "hand-authored",
+      imageFile: "unbranded.jpg",
+      imageMediaType: "image/jpeg",
+      expected: {
+        foodName: "Porridge Oats",
+        basisUnit: "g",
+        nutrients: [
+          { code: "energy_kcal", value: 356, unit: "kcal" },
+        ],
+      },
+    });
+    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Porridge Oats",
+      foodNameConfidence: "confident",
+      basisUnit: "g",
+      nutrients: [
+        { code: "energy_kcal", value: 356, unit: "kcal", confidence: "confident" },
+      ],
+    });
+
+    const result = scoreLabelItem(fixture, parsed);
+
+    expect(result.pass).toBe(true);
+    expect(result.failures).toEqual([]);
+  });
+
   it("fails when a nutrient is read twice, even with conflicting values", () => {
     const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
       foodName: "Weetabix Original",

@@ -62,6 +62,8 @@ export class LabelFixture extends Schema.Class<LabelFixture>("LabelFixture")({
   imageMediaType: Schema.Literal("image/jpeg", "image/png"),
   expected: Schema.Struct({
     foodName: Schema.String,
+    // Omit brand/servingSize only when the panel does not print them — the
+    // scorer then fails a read that supplies one anyway.
     brand: Schema.optional(Schema.String),
     basisUnit: Schema.Literal("g", "ml"),
     servingSize: Schema.optional(Schema.Positive),
