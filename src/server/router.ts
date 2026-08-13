@@ -6,6 +6,7 @@ import { goalsRouter, profileRouter } from "./routers/goals";
 import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
 import { dashboardRouter } from "./routers/dashboard";
+import { insightsRouter } from "./routers/insights";
 import { savedMealsRouter } from "./routers/saved-meals";
 
 export const appRouter = router({
@@ -44,6 +45,9 @@ export const appRouter = router({
 
   // Dashboard (#53): rolling-7-day activity aggregation for the home screen.
   dashboard: dashboardRouter,
+
+  // Insights (#55): more-of/less-of NRV comparison, on-demand like dashboard.
+  insights: insightsRouter,
 
   // Saved meals & recently-logged (#52): search over logging history,
   // frequency/recency-ranked suggestions, and named multi-item SavedMeals —

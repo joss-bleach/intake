@@ -1,4 +1,4 @@
-import { NUTRIENT_CODES } from "./nutrient-codes";
+import { NUTRIENT_CODES, type NutrientCode } from "./nutrient-codes";
 
 // Every nutrient_values row is normalized to per-100(basisUnit) (schema.ts),
 // regardless of which pipeline wrote it — this is the one place that scales
@@ -81,4 +81,35 @@ export const sumMacros = (macros: ReadonlyArray<ConsumedMacros>): ConsumedMacros
       fatG: total.fatG + m.fatG,
     }),
     { energyKcal: 0, proteinG: 0, carbsG: 0, fatG: 0 },
+  );
+
+// Same scaling as computeConsumedMacros, but over every NUTRIENT_CODES entry
+// (insights' NRV comparison needs saturates/sugars/fibre/salt too, not just
+// the 4-macro dashboard set).
+export const computeConsumedNutrients = (
+  amount: LoggedItemAmount,
+  food: FoodBasis,
+  nutrients: ReadonlyArray<NutrientRow>,
+): Record<NutrientCode, number> => {
+  const basisAmount = consumedBasisAmount(amount, food);
+  const scale = basisAmount === null ? 0 : basisAmount / 100;
+  return Object.fromEntries(
+    Object.values(NUTRIENT_CODES).map((code) => [code, findValue(nutrients, code) * scale]),
+  ) as Record<NutrientCode, number>;
+};
+
+export const sumNutrients = (
+  rows: ReadonlyArray<Record<NutrientCode, number>>,
+): Record<NutrientCode, number> =>
+  rows.reduce(
+    (total, row) => {
+      for (const code of Object.values(NUTRIENT_CODES)) {
+        total[code] += row[code];
+      }
+      return total;
+    },
+    Object.fromEntries(Object.values(NUTRIENT_CODES).map((code) => [code, 0])) as Record<
+      NutrientCode,
+      number
+    >,
   );
