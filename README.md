@@ -19,10 +19,12 @@ Other scripts:
 - `pnpm test` / `pnpm test:watch` — unit tests (Vitest)
 - `pnpm test:e2e` — end-to-end tests (Playwright); boots the dev servers itself
 - `pnpm build` — typecheck + client production build
+- `pnpm observability:up` — starts a local GlitchTip instance (docker compose) for error tracking; get a project DSN from it for `GLITCHTIP_DSN`
+- `pnpm observability:tripwire` — checks `model_calls` row count against `MODEL_CALLS_TRIPWIRE_THRESHOLD`, alerting via GlitchTip past it
 
-Copy `.env.example` to `.env` to override `DATABASE_URL`/`PORT`.
+Copy `.env.example` to `.env` to override `DATABASE_URL`/`PORT`/`GLITCHTIP_DSN`.
 
 ## Stack
 
-React · TypeScript · Tailwind · shadcn/ui · tRPC · TanStack Query · Effect · Postgres · Alchemy (IaC) · Playwright · GitHub Actions. See `CONTEXT.md` for domain vocabulary and `docs/adr/` for architecture decisions.
+React · TypeScript · Tailwind · shadcn/ui · tRPC · TanStack Query · Effect · Postgres · GlitchTip (error tracking) · Alchemy (IaC) · Playwright · GitHub Actions. See `CONTEXT.md` for domain vocabulary and `docs/adr/` for architecture decisions.
 

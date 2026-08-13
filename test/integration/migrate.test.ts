@@ -40,6 +40,7 @@ describe("migrate", () => {
       "food_lookup_rate_limit_windows",
       "foods",
       "logged_items",
+      "model_calls",
       "nutrient_values",
       "saved_meal_items",
       "saved_meals",

@@ -27,6 +27,19 @@ export const env = createEnv({
     // CI intentionally runs without one (no OpenRouter account provisioned
     // yet), which is why the ADR 0001 real-round-trip test is skipped there.
     OPENROUTER_API_KEY: z.string().min(1).optional(),
+    // Optional (issue #49): the self-hosted GlitchTip project DSN.
+    // captureEffectFailure (src/server/observability/glitchtip.ts) no-ops
+    // without one — real GlitchTip deployment on the VPS is infra
+    // provisioning, out of this repo's scope (see the MVP spec's carve-out).
+    GLITCHTIP_DSN: z.url().optional(),
+    // Row-count threshold the cron tripwire (src/server/observability/
+    // tripwire.ts) alerts past — model_calls is kept indefinitely, so this
+    // is a "someone should look at this" nudge, not a hard cap.
+    MODEL_CALLS_TRIPWIRE_THRESHOLD: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(500_000),
     // ADR 0005's text/description-parsing pick is still TBD, pending the
     // real model-selection bake-off (issue #54) — this default is a
     // placeholder from that ADR's candidate shortlist (cheapest-tiebreak
