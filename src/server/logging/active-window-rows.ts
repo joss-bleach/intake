@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { eq, gte, inArray } from "drizzle-orm";
+import { eq, gte, inArray, or } from "drizzle-orm";
 import type { db as Db } from "../db";
 import { diaryEntries, foods, loggedItems, nutrientValues } from "../db/schema";
 import type { NutrientRow } from "../food/nutrient-scaling";
@@ -18,17 +18,17 @@ export interface ActiveWindowRow {
 
 /**
  * The join + supersession-filter shared by dashboard.ts and insights.ts:
- * every logged item within `windowStart..now`, joined to its food, plus a
- * foodId -> nutrient rows map for scaling. Excludes rows superseded by a
- * correction (schema.ts's correctedFromId) — a no-op today since #50's
- * write path doesn't exist yet, but not dead logic.
+ * every logged item within `windowStart..now`, joined to its food, plus an
+ * itemId -> nutrient rows map for scaling (an item-level correction's own
+ * nutrients if it has any, else its food's — see correct-label-photo.ts).
+ * Excludes rows superseded by a correction (schema.ts's correctedFromId).
  */
 export const loadActiveWindowRows = (
   db: typeof Db,
   windowStart: Date,
 ): Effect.Effect<{
   readonly rows: ReadonlyArray<ActiveWindowRow>;
-  readonly nutrientsByFoodId: ReadonlyMap<string, NutrientRow[]>;
+  readonly nutrientsByItemId: ReadonlyMap<string, NutrientRow[]>;
 }> =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise(() =>
@@ -37,6 +37,7 @@ export const loadActiveWindowRows = (
           entryId: diaryEntries.id,
           loggedAt: diaryEntries.loggedAt,
           itemId: loggedItems.id,
+          itemCreatedAt: loggedItems.createdAt,
           foodId: loggedItems.foodId,
           foodName: foods.name,
           servingSize: foods.servingSize,
@@ -51,26 +52,26 @@ export const loadActiveWindowRows = (
         .where(gte(diaryEntries.loggedAt, windowStart)),
     ).pipe(Effect.orDie);
 
-    const foodIds = [...new Set(rows.map((row) => row.foodId))];
-    const nutrientRows = foodIds.length
-      ? yield* Effect.tryPromise(() =>
-          db.select().from(nutrientValues).where(inArray(nutrientValues.foodId, foodIds)),
-        ).pipe(Effect.orDie)
-      : [];
-    const nutrientsByFoodId = new Map<string, NutrientRow[]>();
-    for (const n of nutrientRows) {
-      // nutrient_values.food_id is nullable in general (a row can instead
-      // attach to a logged_item — schema.ts's exactly-one-parent check), but
-      // this query filtered to foodIds, so it's never null here.
-      if (n.foodId === null) continue;
-      const bucket = nutrientsByFoodId.get(n.foodId) ?? [];
-      bucket.push({ code: n.code, value: Number(n.value) });
-      nutrientsByFoodId.set(n.foodId, bucket);
+    // Every original with at least one replacement is superseded; among
+    // replacements sharing the same original, all but the newest are too.
+    const replacementsByOriginalId = new Map<string, typeof rows>();
+    for (const row of rows) {
+      if (row.correctedFromId === null) continue;
+      const bucket = replacementsByOriginalId.get(row.correctedFromId) ?? [];
+      bucket.push(row);
+      replacementsByOriginalId.set(row.correctedFromId, bucket);
+    }
+    const supersededIds = new Set<string>();
+    for (const [originalId, replacements] of replacementsByOriginalId) {
+      supersededIds.add(originalId);
+      const newest = replacements.reduce((a, b) =>
+        a.itemCreatedAt > b.itemCreatedAt ? a : b,
+      );
+      for (const replacement of replacements) {
+        if (replacement.itemId !== newest.itemId) supersededIds.add(replacement.itemId);
+      }
     }
 
-    const supersededIds = new Set(
-      rows.map((row) => row.correctedFromId).filter((id): id is string => id !== null),
-    );
     const activeRows: ActiveWindowRow[] = rows
       .filter((row) => !supersededIds.has(row.itemId))
       .map((row) => ({
@@ -79,5 +80,43 @@ export const loadActiveWindowRows = (
         quantity: Number(row.quantity),
       }));
 
-    return { rows: activeRows, nutrientsByFoodId };
+    const foodIds = [...new Set(activeRows.map((row) => row.foodId))];
+    const itemIds = activeRows.map((row) => row.itemId);
+    const nutrientRows = foodIds.length
+      ? yield* Effect.tryPromise(() =>
+          db
+            .select()
+            .from(nutrientValues)
+            .where(
+              or(inArray(nutrientValues.foodId, foodIds), inArray(nutrientValues.loggedItemId, itemIds)),
+            ),
+        ).pipe(Effect.orDie)
+      : [];
+
+    // nutrient_values attaches to exactly one of food_id / logged_item_id
+    // (schema.ts's exactly-one-parent check).
+    const nutrientsByFoodId = new Map<string, NutrientRow[]>();
+    const overridesByItemId = new Map<string, NutrientRow[]>();
+    for (const n of nutrientRows) {
+      const value = { code: n.code, value: Number(n.value) };
+      if (n.loggedItemId !== null) {
+        const bucket = overridesByItemId.get(n.loggedItemId) ?? [];
+        bucket.push(value);
+        overridesByItemId.set(n.loggedItemId, bucket);
+      } else if (n.foodId !== null) {
+        const bucket = nutrientsByFoodId.get(n.foodId) ?? [];
+        bucket.push(value);
+        nutrientsByFoodId.set(n.foodId, bucket);
+      }
+    }
+
+    // Resolve per row: an item's own correction wins over its food's nutrients.
+    const nutrientsByItemId = new Map<string, NutrientRow[]>(
+      activeRows.map((row) => [
+        row.itemId,
+        overridesByItemId.get(row.itemId) ?? nutrientsByFoodId.get(row.foodId) ?? [],
+      ]),
+    );
+
+    return { rows: activeRows, nutrientsByItemId };
   });

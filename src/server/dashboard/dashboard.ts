@@ -61,7 +61,7 @@ export const getDashboardSnapshotEffect = (
     const windowStart = addUtcDays(todayStart, -(ROLLING_WINDOW_DAYS - 1));
     const todayIso = toIsoDate(todayStart);
 
-    const { rows: activeRows, nutrientsByFoodId } = yield* loadActiveWindowRows(db, windowStart);
+    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart);
 
     const macrosByItem = new Map<string, ConsumedMacros>(
       activeRows.map((row) => [
@@ -69,7 +69,7 @@ export const getDashboardSnapshotEffect = (
         computeConsumedMacros(
           { quantity: row.quantity, quantityUnit: row.quantityUnit },
           { servingSize: row.servingSize },
-          nutrientsByFoodId.get(row.foodId) ?? [],
+          nutrientsByItemId.get(row.itemId) ?? [],
         ),
       ]),
     );

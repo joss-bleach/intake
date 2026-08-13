@@ -1,8 +1,12 @@
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
 import { diaryEntries, foods, loggedItems, nutrientValues } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { appRouter } from "../../src/server/router";
+import { saveLabelPhotoEntry } from "../../src/server/label-photo/save-label-photo";
+import { correctLabelPhotoInstance } from "../../src/server/label-photo/correct-label-photo";
+import type { ParsedLabelReading } from "../../src/ai/schemas";
 
 // Exercises the dashboard router end-to-end against a real Postgres (same
 // pattern as goals-router.test.ts / label-photo-save.test.ts) — proves #53's
@@ -179,5 +183,45 @@ describe("dashboard router", () => {
     // shows the last 7, but the streak itself must count all 10.
     expect(snapshot.streakDays).toBe(10);
     expect(snapshot.calorieHistory).toHaveLength(7);
+  });
+
+  it("reflects an instance-level correction's own nutrients, and only the newest of repeated corrections", async () => {
+    const now = new Date();
+    const reading: ParsedLabelReading = {
+      foodName: "Granola Bar",
+      foodNameConfidence: "confident",
+      basisUnit: "g",
+      servingSize: { value: 40, confidence: "confident" },
+      nutrients: [{ code: "energy_kcal", value: 425, unit: "kcal", confidence: "confident" }],
+    };
+    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    await db.update(diaryEntries).set({ loggedAt: atHour(now, 8) }).where(
+      eq(diaryEntries.id, original.diaryEntryId),
+    );
+
+    // Both corrections target the same original (e.g. corrected twice from
+    // the diary's historical view) — two replacement siblings, not a chain.
+    await correctLabelPhotoInstance(db, {
+      originalLoggedItemId: original.loggedItemId,
+      reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 300, unit: "kcal", confidence: "confident" }] },
+      amount: { quantity: 40, quantityUnit: "g" },
+      editedNutrientCodes: ["energy_kcal"],
+    });
+    await correctLabelPhotoInstance(db, {
+      originalLoggedItemId: original.loggedItemId,
+      reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 200, unit: "kcal", confidence: "confident" }] },
+      amount: { quantity: 40, quantityUnit: "g" },
+      editedNutrientCodes: ["energy_kcal"],
+    });
+
+    const snapshot = await caller.dashboard.get();
+
+    // The label's 425kcal/100g and the first correction's 300kcal/100g are
+    // both superseded — only the second (newest) correction's 200kcal/100g
+    // should count at the logged 40g, once, not both siblings summed.
+    const items = snapshot.meals.flatMap((m) => m.items);
+    expect(items).toHaveLength(1);
+    expect(items[0]?.calories).toBe(80);
+    expect(snapshot.today.calories).toBe(80);
   });
 });
