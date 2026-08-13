@@ -53,10 +53,10 @@ type Tracking = {
 
 // The {model, prompt} pair every call needs, regardless of whether it also
 // takes a schema — shared here so the five operation wrappers below don't
-// each redeclare it. `images` is the one-shot wrappers' multimodal escape
-// hatch (label OCR, issue #47): still just a text prompt for every caller
-// that doesn't pass any, so ADR 0004's existing text-only callers are
-// unaffected.
+// each redeclare it. `images` is optional and additive: the label-photo
+// pipeline (issue #47, base64 nutrition-panel photos) is the only caller
+// that supplies it — text-only callers (description parsing) never set it
+// and see no behavior change.
 type AiCallParams = {
   readonly model: string;
   readonly prompt: string;
@@ -65,27 +65,6 @@ type AiCallParams = {
     readonly mediaType: string;
   }>;
 };
-
-// A plain string prompt, or — when `images` is present — a single user
-// message carrying the text plus each image as a file part. generateObject/
-// generateText's `prompt` option accepts either shape directly (ai's
-// `Prompt` type), so no separate `messages` plumbing is needed.
-const toModelPrompt = (params: AiCallParams): string | Array<ModelMessage> =>
-  params.images && params.images.length > 0
-    ? [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: params.prompt },
-            ...params.images.map((image) => ({
-              type: "file" as const,
-              data: image.data,
-              mediaType: image.mediaType,
-            })),
-          ],
-        },
-      ]
-    : params.prompt;
 
 // `tracking` only exists on the two one-shot wrappers (generateTextEffect,
 // generateObjectEffect) — those are the only ones withTracking actually
@@ -102,6 +81,32 @@ const toAiSdkError = (cause: unknown): AiSdkError =>
       ? "parse_failure"
       : "call_failed",
   });
+
+// generateObject/generateText both accept `prompt: string | ModelMessage[]`
+// — a plain string for text-only calls, or a single user message mixing
+// text and image parts for multimodal ones. Kept as one helper so both
+// wrappers build the vision-capable shape identically. Exported as a test
+// seam (no network involved in building the shape) — test/unit/ai asserts
+// it directly rather than through a real generateObject call.
+export const toSdkPrompt = (params: AiCallParams): string | ModelMessage[] =>
+  params.images && params.images.length > 0
+    ? [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: params.prompt },
+            ...params.images.map(
+              (image) =>
+                ({
+                  type: "image",
+                  image: image.data,
+                  mediaType: image.mediaType,
+                }) as const,
+            ),
+          ],
+        },
+      ]
+    : params.prompt;
 
 // Shape generateText/generateObject results share, and all `recordModelCall`
 // actually reads off a successful result — narrow enough that both one-shot
@@ -165,7 +170,7 @@ export const generateTextEffect = (
       try: () =>
         generateText({
           model: resolveModel(params.model),
-          prompt: toModelPrompt(params),
+          prompt: toSdkPrompt(params),
         }),
       catch: toAiSdkError,
     }),
@@ -188,7 +193,7 @@ export const generateObjectEffect = <A, I>(
       try: () =>
         generateObject({
           model: resolveModel(params.model),
-          prompt: toModelPrompt(params),
+          prompt: toSdkPrompt(params),
           schema: Schema.standardSchemaV1(params.schema),
         }),
       catch: toAiSdkError,
@@ -247,7 +252,10 @@ export const generateObjectWithFallbackEffect = <A, I>(
 export const streamTextEffect = (params: AiCallParams) =>
   Stream.unwrap(
     Effect.sync(() =>
-      streamText({ model: resolveModel(params.model), prompt: toModelPrompt(params) }),
+      streamText({
+        model: resolveModel(params.model),
+        prompt: toSdkPrompt(params),
+      }),
     ).pipe(
       Effect.map((result) =>
         Stream.fromAsyncIterable(result.fullStream, toAiSdkError).pipe(
@@ -275,7 +283,7 @@ export const streamObjectEffect = <A, I>(
       // it here is what makes `part.type === "error"` below narrow.
       streamObject<typeof standardSchema, "object">({
         model: resolveModel(params.model),
-        prompt: toModelPrompt(params),
+        prompt: toSdkPrompt(params),
         schema: standardSchema,
       }),
     ).pipe(

@@ -24,6 +24,8 @@
     "db:migrate": "tsx src/server/db/migrate.ts",
     "food:ingest-off": "tsx src/server/food/off-ingest.ts",
     "food:ingest-cofid": "tsx src/server/food/cofid-ingest.ts",
+    "eval": "tsx src/eval/run.ts",
+    "eval:corrections-queue": "tsx src/eval/corrections-queue.ts",
     "observability:tripwire": "tsx src/server/observability/tripwire.ts",
     "infra:deploy": "alchemy deploy",
     "infra:destroy": "alchemy destroy"
