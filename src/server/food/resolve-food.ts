@@ -18,10 +18,15 @@ const searchCache = (
   query: string,
 ): Effect.Effect<ResolvedFood[]> =>
   Effect.tryPromise(async () => {
+    // Ordered, not just limited: without it Postgres gives no row-order
+    // guarantee, so a caller reading matches[0] as "the" match (issue #46's
+    // happy path, ahead of #50's ambiguity picker) could get a different food
+    // for the same query on different requests.
     const matches = await db
       .select()
       .from(foods)
       .where(ilike(foods.name, `%${query}%`))
+      .orderBy(foods.createdAt, foods.id)
       .limit(MAX_RESULTS);
 
     if (matches.length === 0) return [];

@@ -27,6 +27,12 @@ export const env = createEnv({
     // CI intentionally runs without one (no OpenRouter account provisioned
     // yet), which is why the ADR 0001 real-round-trip test is skipped there.
     OPENROUTER_API_KEY: z.string().min(1).optional(),
+    // ADR 0005's text/description-parsing pick is still TBD, pending the
+    // real model-selection bake-off (issue #54) — this default is a
+    // placeholder from that ADR's candidate shortlist (cheapest-tiebreak
+    // tier), not a considered choice, and env-overridable so swapping it
+    // once the bake-off runs needs no code change.
+    DESCRIPTION_PARSE_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

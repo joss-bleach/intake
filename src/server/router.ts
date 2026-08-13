@@ -3,6 +3,7 @@ import { runEffect } from "./effect-trpc";
 import { FOOD_DATA_ATTRIBUTION } from "./food/attribution";
 import { publicProcedure, router } from "./trpc";
 import { goalsRouter, profileRouter } from "./routers/goals";
+import { logDescriptionRouter } from "./routers/log-description";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -28,6 +29,10 @@ export const appRouter = router({
   // from the profile screen.
   goals: goalsRouter,
   profile: profileRouter,
+
+  // Log by description, happy path (#46): free-text -> parse -> resolve ->
+  // save. Ambiguity/correction UI is #50's concern, not this router's.
+  logDescription: logDescriptionRouter,
 });
 
 export type AppRouter = typeof appRouter;
