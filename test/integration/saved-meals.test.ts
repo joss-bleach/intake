@@ -40,10 +40,10 @@ describe("saved meals & recently-logged", () => {
     return food;
   };
 
-  const logFood = async (foodId: string) => {
+  const logFood = async (foodId: string, loggedAt?: Date) => {
     const [entry] = await db
       .insert(diaryEntries)
-      .values({ entryMethod: "description" })
+      .values({ entryMethod: "description", ...(loggedAt ? { loggedAt } : {}) })
       .returning();
     await db.insert(loggedItems).values({
       diaryEntryId: entry.id,
@@ -83,6 +83,18 @@ describe("saved meals & recently-logged", () => {
       const results = await caller.savedMeals.search({});
 
       expect(results.map((r) => r.name)).toEqual(["Banana", "Porridge Oats"]);
+    });
+
+    it("breaks equal-frequency ties by most-recently logged", async () => {
+      const stale = await seedFood("Stale Bread");
+      const fresh = await seedFood("Fresh Bread");
+      await logFood(stale.id, new Date("2026-01-01T08:00:00Z"));
+      await logFood(fresh.id, new Date("2026-06-01T08:00:00Z"));
+
+      const results = await caller.savedMeals.search({});
+
+      expect(results.map((r) => r.timesLogged)).toEqual([1, 1]);
+      expect(results.map((r) => r.name)).toEqual(["Fresh Bread", "Stale Bread"]);
     });
 
     it("filters by query text", async () => {
