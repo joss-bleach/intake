@@ -10,11 +10,73 @@ services:
       - "5432:5432"
     volumes:
       - intake-postgres-data:/var/lib/postgresql/data
+      # Creates the separate `glitchtip` database (below) on first boot —
+      # see the acceptance criterion: GlitchTip shares this Postgres
+      # instance rather than getting its own container.
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U intake"]
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Error tracking (issue #49): self-hosted GlitchTip, Sentry-SDK-compatible
+  # (src/server/observability/glitchtip.ts talks to it via @sentry/node).
+  # This compose file is the deployable unit — the same one the VPS runs —
+  # but actually standing it up there is infra provisioning, out of this
+  # repo's scope (see the MVP spec's carve-out).
+  glitchtip-redis:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+
+  glitchtip-migrate:
+    image: glitchtip/glitchtip:v4.2.9
+    restart: "no"
+    command: ./manage.py migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://intake:intake@postgres:5432/glitchtip
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-dev-secret-do-not-use-in-production}
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:v4.2.9
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_started
+      glitchtip-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://intake:intake@postgres:5432/glitchtip
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-dev-secret-do-not-use-in-production}
+      PORT: 8000
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:8000}
+      DEFAULT_FROM_EMAIL: ${GLITCHTIP_FROM_EMAIL:-glitchtip@localhost}
+      EMAIL_URL: consolemail://
+      ENABLE_OPEN_USER_REGISTRATION: "false"
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:v4.2.9
+    restart: unless-stopped
+    command: ./bin/run-celery-with-beat.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
+      glitchtip-redis:
+        condition: service_started
+      glitchtip-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://intake:intake@postgres:5432/glitchtip
+      REDIS_URL: redis://glitchtip-redis:6379/0
+      SECRET_KEY: ${GLITCHTIP_SECRET_KEY:-dev-secret-do-not-use-in-production}
 
 volumes:
   intake-postgres-data:

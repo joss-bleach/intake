@@ -17,4 +17,12 @@ const app = await alchemy("intake");
 //
 // TODO(#44, deploy): wire a real schedule to `pnpm food:ingest-off <dump>`.
 
+// Same deferral, for the model_calls tripwire (issue #49): `pnpm
+// observability:tripwire` is ready and idempotent (a pure count-vs-threshold
+// check, no state mutated), but the actual schedule — and the GlitchTip
+// container itself (docker-compose.yml) — are VPS infra provisioning, out
+// of this repo's scope per the MVP spec's carve-out.
+//
+// TODO(#49, deploy): wire a real schedule to `pnpm observability:tripwire`.
+
 await app.finalize();

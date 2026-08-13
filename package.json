@@ -19,15 +19,18 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "db:up": "docker compose up -d postgres",
+    "observability:up": "docker compose up -d glitchtip-web glitchtip-worker",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/server/db/migrate.ts",
     "food:ingest-off": "tsx src/server/food/off-ingest.ts",
     "food:ingest-cofid": "tsx src/server/food/cofid-ingest.ts",
+    "observability:tripwire": "tsx src/server/observability/tripwire.ts",
     "infra:deploy": "alchemy deploy",
     "infra:destroy": "alchemy destroy"
   },
   "dependencies": {
     "@openrouter/ai-sdk-provider": "^3.0.0",
+    "@sentry/node": "^10.70.0",
     "@t3-oss/env-core": "^0.13.11",
     "@tanstack/react-query": "^5.101.4",
     "@trpc/client": "^11.18.0",
