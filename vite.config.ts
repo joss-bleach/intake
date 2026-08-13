@@ -44,6 +44,7 @@ export default defineConfig({
   server: {
       port: 5173,
       host: true,
+      allowedHosts: ["jossbox"],
     proxy: {
       "/trpc": {
         target: "http://localhost:3001",
