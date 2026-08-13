@@ -69,15 +69,17 @@ export function DashboardScreen({
   goals,
   onOpenProfile,
   onLogFood,
+  onInsights,
 }: {
   goals: GoalsSnapshot;
   onOpenProfile: () => void;
   onLogFood?: () => void;
+  onInsights?: () => void;
 }) {
   const dashboardQuery = useQuery(trpc.dashboard.get.queryOptions());
 
   return (
-    <AppShell activeTab="home" onProfile={onOpenProfile} onLogFood={onLogFood}>
+    <AppShell activeTab="home" onProfile={onOpenProfile} onLogFood={onLogFood} onInsights={onInsights}>
       <div className="flex items-end justify-between">
         <h1
           className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
