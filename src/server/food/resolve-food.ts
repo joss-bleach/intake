@@ -1,4 +1,4 @@
-import { eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, ne, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import { db } from "../db";
 import { foods, nutrientValues } from "../db/schema";
@@ -18,10 +18,27 @@ const searchCache = (
   query: string,
 ): Effect.Effect<ResolvedFood[]> =>
   Effect.tryPromise(async () => {
+    // Ordered, not just limited: without it Postgres gives no row-order
+    // guarantee, so a caller reading matches[0] as "the" match (issue #46's
+    // happy path, ahead of #50's ambiguity picker) could get a different food
+    // for the same query on different requests.
+    //
+    // llm_estimate_fallback rows are excluded: they are one-off, single-use
+    // foods written for a total-database-gap ingredient (resolve-ingredient.ts),
+    // holding an estimate the model made for one specific description and
+    // quantity. They are not database facts, so serving one as a cache hit
+    // would give a later item stale nutrition and a `confident` label the
+    // number never earned.
     const matches = await db
       .select()
       .from(foods)
-      .where(ilike(foods.name, `%${query}%`))
+      .where(
+        and(
+          ilike(foods.name, `%${query}%`),
+          ne(foods.provenance, "llm_estimate_fallback"),
+        ),
+      )
+      .orderBy(foods.createdAt, foods.id)
       .limit(MAX_RESULTS);
 
     if (matches.length === 0) return [];

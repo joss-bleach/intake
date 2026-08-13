@@ -13,14 +13,16 @@ import type { GoalsSnapshot } from "@/lib/router-types";
 export function DashboardScreen({
   goals,
   onOpenProfile,
+  onLogFood,
 }: {
   goals: GoalsSnapshot;
   onOpenProfile: () => void;
+  onLogFood?: () => void;
 }) {
   const ping = useQuery(trpc.ping.queryOptions());
 
   return (
-    <AppShell activeTab="home" onProfile={onOpenProfile}>
+    <AppShell activeTab="home" onProfile={onOpenProfile} onLogFood={onLogFood}>
       <h1
         className="font-display text-[2rem] leading-[1.05] tracking-[-0.02em]"
         style={{ color: theme.text.heading }}

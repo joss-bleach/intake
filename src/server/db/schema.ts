@@ -301,3 +301,46 @@ export const foodLookupRateLimitWindows = pgTable("food_lookup_rate_limit_window
   windowStart: timestamp("window_start", { withTimezone: true }).primaryKey(),
   count: integer("count").notNull().default(0),
 });
+
+// Exported (not local like the other enum arrays above) so it's the single
+// source of truth for the outcome vocabulary — model-calls.ts's
+// `ModelCallOutcome` and effect-ai-sdk.ts's `AiSdkError.reason` both derive
+// from this rather than redeclaring the same three strings.
+export const modelCallOutcome = ["success", "parse_failure", "call_failed"] as const;
+
+// Observability (issue #49): one row per raw provider call made through
+// src/ai/effect-ai-sdk.ts, dev/ops-facing only — not surfaced in GlitchTip,
+// queried ad hoc via SQL. Kept indefinitely; a scheduled cron tripwire
+// (src/server/observability/tripwire.ts) alerts via GlitchTip once the
+// table passes a size threshold, rather than this table pruning itself.
+// Production calls only — the (future) eval harness's own runs don't carry
+// `tracking` metadata, so they never reach this table (see effect-ai-sdk.ts).
+export const modelCalls = pgTable(
+  "model_calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    // Client-generated, so one logical request (e.g. a fallback retry) can
+    // still be correlated across the rows it produces.
+    correlationId: text("correlation_id").notNull(),
+    pipelineStage: text("pipeline_stage").notNull(),
+    model: text("model").notNull(),
+    outcome: text("outcome", { enum: modelCallOutcome }).notNull(),
+    latencyMs: integer("latency_ms").notNull(),
+    promptTokens: integer("prompt_tokens"),
+    completionTokens: integer("completion_tokens"),
+    // Only populated when the provider returns usage-accounting data (e.g.
+    // OpenRouter's optional cost field) — null otherwise, not estimated.
+    costUsd: numeric("cost_usd"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("model_calls_created_at_idx").on(table.createdAt),
+    index("model_calls_correlation_id_idx").on(table.correlationId),
+    check(
+      "model_calls_outcome_check",
+      inCheck(table.outcome, modelCallOutcome),
+    ),
+  ],
+);
