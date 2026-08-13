@@ -128,14 +128,16 @@ export const loggedItems = pgTable(
     quantityUnit: text("quantity_unit", { enum: quantityUnit }).notNull(),
     confidence: text("confidence", { enum: confidenceLevel }),
     // Self-reference, so lineage can't point at a row that was never there or
-    // is already gone. `set null` rather than the default: deleting a diary
-    // entry cascades to its logged_items, and a correction can sit in a different
-    // entry from its original — under the default that delete would fail on
-    // this constraint. Nulling the pointer loses nothing, since the row it
-    // described is gone either way.
+    // is already gone. Issue #50 decided a correction always shares its
+    // original's diary_entry_id (one entry, corrected in place) rather than
+    // landing in a different entry — so a diary_entries delete cascades to
+    // both rows in the same statement, and Postgres checks this FK's default
+    // NO ACTION at end-of-statement, not per-row. That lets lineage survive
+    // the delete instead of being nulled out, unlike the `set null` this
+    // replaced (see issue #50's PR #60 follow-up comment for the full
+    // reasoning, including why RESTRICT would NOT be interchangeable here).
     correctedFromId: uuid("corrected_from_id").references(
       (): PgColumn => loggedItems.id,
-      { onDelete: "set null" },
     ),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
