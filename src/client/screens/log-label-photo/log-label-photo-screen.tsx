@@ -200,8 +200,6 @@ export function LogLabelPhotoScreen({
       if (session.correctionScope === "instance") {
         const result = await correctInstanceMutation.mutateAsync({
           originalLoggedItemId: entry.loggedItemId,
-          diaryEntryId: entry.diaryEntryId,
-          foodId: entry.foodId,
           reading,
           ...amount,
           editedNutrientCodes: session.editedNutrientCodes,

@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { db as Db } from "../db";
 import { foods, loggedItems, nutrientValues } from "../db/schema";
 import type { ParsedLabelReading } from "../../ai/schemas";
@@ -8,9 +8,11 @@ import type { ConfirmedAmount } from "./save-label-photo";
 type DbClient = typeof Db;
 
 export interface CorrectLabelPhotoInstanceInput {
+  // The only target the caller names — the diary entry and food the
+  // correction belongs to are read off this row rather than passed
+  // alongside it, so three IDs can't arrive describing three unrelated
+  // records.
   readonly originalLoggedItemId: string;
-  readonly diaryEntryId: string;
-  readonly foodId: string;
   readonly reading: ParsedLabelReading;
   readonly amount: ConfirmedAmount;
   // Nutrient codes the user actually edited this correction — everything
@@ -43,11 +45,20 @@ export const correctLabelPhotoInstance = (
   input: CorrectLabelPhotoInstanceInput,
 ): Promise<{ readonly loggedItemId: string }> =>
   db.transaction(async (tx) => {
+    const [original] = await tx
+      .select()
+      .from(loggedItems)
+      .where(eq(loggedItems.id, input.originalLoggedItemId));
+
+    if (!original) {
+      throw new Error("No logged item to correct.");
+    }
+
     const [item] = await tx
       .insert(loggedItems)
       .values({
-        diaryEntryId: input.diaryEntryId,
-        foodId: input.foodId,
+        diaryEntryId: original.diaryEntryId,
+        foodId: original.foodId,
         quantity: String(input.amount.quantity),
         quantityUnit: input.amount.quantityUnit,
         // Same rollup save-label-photo.ts uses — any field still

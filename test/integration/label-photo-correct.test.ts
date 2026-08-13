@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { Effect } from "effect";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
 import { diaryEntries, foods, loggedItems, nutrientValues } from "../../src/server/db/schema";
@@ -8,6 +9,7 @@ import {
   correctLabelPhotoFood,
   correctLabelPhotoInstance,
 } from "../../src/server/label-photo/correct-label-photo";
+import { getDiaryEntryEffect } from "../../src/server/log-description/log-description";
 import type { ParsedLabelReading } from "../../src/ai/schemas";
 
 // Exercises issue #51's two correction writes against a real Postgres, same
@@ -53,8 +55,6 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
 
     const result = await correctLabelPhotoInstance(db, {
       originalLoggedItemId: original.loggedItemId,
-      diaryEntryId: original.diaryEntryId,
-      foodId: original.foodId,
       reading: corrected,
       amount: { quantity: 40, quantityUnit: "g" },
       editedNutrientCodes: ["sugars_g"],
@@ -113,8 +113,6 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
 
     const result = await correctLabelPhotoInstance(db, {
       originalLoggedItemId: original.loggedItemId,
-      diaryEntryId: original.diaryEntryId,
-      foodId: original.foodId,
       reading: corrected,
       amount: { quantity: 40, quantityUnit: "g" },
       editedNutrientCodes: [],
@@ -172,5 +170,53 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
     const items = await db.select().from(loggedItems).where(eq(loggedItems.foodId, original.foodId));
     expect(items).toHaveLength(1);
     expect(items[0]?.correctedFromId).toBeNull();
+  });
+
+  it("a corrected diary entry reads back once, with the correction's own values", async () => {
+    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+
+    const corrected: ParsedLabelReading = {
+      ...reading,
+      nutrients: [
+        { code: "energy_kcal", value: 425, unit: "kcal", confidence: "confident" },
+        { code: "sugars_g", value: 18, unit: "g", confidence: "confident" },
+      ],
+    };
+
+    await correctLabelPhotoInstance(db, {
+      originalLoggedItemId: original.loggedItemId,
+      reading: corrected,
+      amount: { quantity: 40, quantityUnit: "g" },
+      editedNutrientCodes: ["sugars_g"],
+    });
+
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId));
+    // The superseded original is still on disk for audit, but the entry is
+    // one item — showing both would double-count the log.
+    expect(snapshot?.items).toHaveLength(1);
+    expect(snapshot?.items[0]?.id).not.toBe(original.loggedItemId);
+    // ...and it reads the corrected 18g, not the shared food's untouched 22g.
+    const sugars = snapshot?.items[0]?.nutrition.find((n) => n.code === "sugars_g");
+    expect(sugars?.value).toBe(18);
+  });
+
+  it("an uncorrected entry still reads its nutrition off the shared food", async () => {
+    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId));
+    expect(snapshot?.items).toHaveLength(1);
+    const sugars = snapshot?.items[0]?.nutrition.find((n) => n.code === "sugars_g");
+    expect(sugars?.value).toBe(22);
+  });
+
+  it("correctLabelPhotoInstance rejects an originalLoggedItemId that doesn't exist", async () => {
+    await expect(
+      correctLabelPhotoInstance(db, {
+        originalLoggedItemId: "00000000-0000-0000-0000-000000000000",
+        reading,
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: [],
+      }),
+    ).rejects.toThrow("No logged item to correct.");
   });
 });

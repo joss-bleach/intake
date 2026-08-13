@@ -37,9 +37,9 @@ const saveInput = Schema.standardSchemaV1(
 // correction is the same Stage 2 data, just written to a different place.
 const correctInstanceInput = Schema.standardSchemaV1(
   Schema.Struct({
+    // The diary entry and food are read off this row server-side rather
+    // than taken from the client — see correct-label-photo.ts.
     originalLoggedItemId: Schema.String,
-    diaryEntryId: Schema.String,
-    foodId: Schema.String,
     reading: ParsedLabelReading,
     quantity: Schema.Positive,
     quantityUnit: QuantityUnit,
@@ -89,8 +89,6 @@ export const labelPhotoRouter = router({
         try: () =>
           correctLabelPhotoInstance(ctx.db, {
             originalLoggedItemId: input.originalLoggedItemId,
-            diaryEntryId: input.diaryEntryId,
-            foodId: input.foodId,
             reading: input.reading,
             amount: { quantity: input.quantity, quantityUnit: input.quantityUnit },
             editedNutrientCodes: input.editedNutrientCodes,

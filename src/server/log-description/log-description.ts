@@ -152,10 +152,42 @@ export const getDiaryEntryEffect = (
         .where(eq(loggedItems.diaryEntryId, id)),
     ).pipe(Effect.orDie);
 
-    const foodIds = rows.map((row) => row.food.id);
-    const nutrients = foodIds.length
+    const itemIds = rows.map((row) => row.item.id);
+
+    // An instance-level correction is additive (ADR 0001) — it inserts a new
+    // logged item and leaves the original in place for the audit trail. Both
+    // rows come back from the query above, so the superseded ones are dropped
+    // here: a diary entry shows what the user last said, counted once. The
+    // lookup isn't scoped to this entry because a correction is allowed to
+    // sit in a different one (see logged_items.correctedFromId).
+    const supersededRows = itemIds.length
+      ? yield* Effect.tryPromise(() =>
+          db
+            .select({ correctedFromId: loggedItems.correctedFromId })
+            .from(loggedItems)
+            .where(inArray(loggedItems.correctedFromId, itemIds)),
+        ).pipe(Effect.orDie)
+      : [];
+    const superseded = new Set(supersededRows.map((row) => row.correctedFromId));
+    const currentRows = rows.filter((row) => !superseded.has(row.item.id));
+
+    const foodIds = currentRows.map((row) => row.food.id);
+    const foodNutrients = foodIds.length
       ? yield* Effect.tryPromise(() =>
           db.select().from(nutrientValues).where(inArray(nutrientValues.foodId, foodIds)),
+        ).pipe(Effect.orDie)
+      : [];
+
+    // Nutrients attached to a logged item are that log's own corrected
+    // values and override the shared food's — nutrient_values' exactly-one-
+    // parent rule means an item either has a complete own set or none.
+    const currentItemIds = currentRows.map((row) => row.item.id);
+    const itemNutrients = currentItemIds.length
+      ? yield* Effect.tryPromise(() =>
+          db
+            .select()
+            .from(nutrientValues)
+            .where(inArray(nutrientValues.loggedItemId, currentItemIds)),
         ).pipe(Effect.orDie)
       : [];
 
@@ -163,20 +195,24 @@ export const getDiaryEntryEffect = (
       id: diaryEntry.id,
       loggedAt: diaryEntry.loggedAt.toISOString(),
       entryMethod: diaryEntry.entryMethod,
-      items: rows.map((row) => ({
-        id: row.item.id,
-        foodName: row.food.name,
-        quantity: Number(row.item.quantity),
-        quantityUnit: row.item.quantityUnit,
-        confidence: row.item.confidence,
-        source: toStage3Source(row.food.provenance),
-        nutrition: nutrients
-          .filter((nutrient) => nutrient.foodId === row.food.id)
-          .map((nutrient) => ({
+      items: currentRows.map((row) => {
+        const own = itemNutrients.filter((nutrient) => nutrient.loggedItemId === row.item.id);
+        const nutrition = own.length
+          ? own
+          : foodNutrients.filter((nutrient) => nutrient.foodId === row.food.id);
+        return {
+          id: row.item.id,
+          foodName: row.food.name,
+          quantity: Number(row.item.quantity),
+          quantityUnit: row.item.quantityUnit,
+          confidence: row.item.confidence,
+          source: toStage3Source(row.food.provenance),
+          nutrition: nutrition.map((nutrient) => ({
             code: nutrient.code,
             value: Number(nutrient.value),
             unit: nutrient.unit,
           })),
-      })),
+        };
+      }),
     };
   });
