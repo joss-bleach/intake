@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { theme, reviewBadgeClass, confidentDotClass } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
+import { OFFLINE_LOG_MESSAGE, useOnlineStatus } from "@/lib/offline";
 import {
   availableUnits,
   computeTotals,
@@ -106,6 +107,7 @@ export function LogLabelPhotoScreen({
 }) {
   const [session, dispatch] = useReducer(reduce, undefined, initialSession);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const online = useOnlineStatus();
 
   const extractMutation = useMutation(trpc.labelPhoto.extract.mutationOptions());
   const saveMutation = useMutation(trpc.labelPhoto.save.mutationOptions());
@@ -166,7 +168,7 @@ export function LogLabelPhotoScreen({
   const save = async () => {
     const reading = session.reading;
     const basisAmount = resolveBasisAmount(session);
-    if (!reading || basisAmount === null) return;
+    if (!reading || basisAmount === null || !online) return;
 
     dispatch({ type: "SAVE" });
     try {
@@ -243,6 +245,7 @@ export function LogLabelPhotoScreen({
       {(session.phase === "idle" || session.phase === "hard_failed") && (
         <CaptureView
           error={session.phase === "hard_failed" ? session.error : null}
+          online={online}
           onCapture={() => fileInputRef.current?.click()}
           onCancel={onDiscard}
         />
@@ -262,6 +265,7 @@ export function LogLabelPhotoScreen({
             basisAmount={resolveBasisAmount(session) ?? 0}
             error={session.error}
             saving={session.phase === "saving"}
+            online={online}
             onUnitChange={(unit) => dispatch({ type: "SET_UNIT", unit })}
             onAmountChange={(amount) => dispatch({ type: "SET_AMOUNT", amount })}
             onEditFoodName={(name) => dispatch({ type: "EDIT_FOOD_NAME", name })}
@@ -301,10 +305,12 @@ export function LogLabelPhotoScreen({
 
 function CaptureView({
   error,
+  online,
   onCapture,
   onCancel,
 }: {
   error: string | null;
+  online: boolean;
   onCapture: () => void;
   onCancel: () => void;
 }) {
@@ -316,6 +322,11 @@ function CaptureView({
       <p className="max-w-xs text-sm" style={{ color: theme.text.body }}>
         Photograph the nutrition panel on the back of the pack.
       </p>
+      {!online && (
+        <p className="max-w-xs text-sm" style={{ color: theme.text.faint }} role="alert">
+          {OFFLINE_LOG_MESSAGE}
+        </p>
+      )}
       {error && (
         <p className="max-w-xs text-sm text-red-500" role="alert">
           {error}
@@ -324,8 +335,9 @@ function CaptureView({
       <button
         type="button"
         onClick={onCapture}
+        disabled={!online}
         aria-label="Take photo"
-        className={`grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white shadow-lg transition-transform active:scale-95`}
+        className={`grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br ${theme.navButtonGradient} text-white shadow-lg transition-transform active:scale-95 disabled:opacity-50`}
       >
         <Camera className="h-6 w-6" strokeWidth={2.25} />
       </button>
@@ -524,6 +536,7 @@ function ConfirmView({
   basisAmount,
   error,
   saving,
+  online,
   onUnitChange,
   onAmountChange,
   onEditFoodName,
@@ -539,6 +552,7 @@ function ConfirmView({
   basisAmount: number;
   error: string | null;
   saving: boolean;
+  online: boolean;
   onUnitChange: (unit: Unit) => void;
   onAmountChange: (amount: number) => void;
   onEditFoodName: (name: string) => void;
@@ -623,6 +637,12 @@ function ConfirmView({
         </div>
       </GlassPanel>
 
+      {!online && (
+        <p className="text-sm" style={{ color: theme.text.faint }} role="alert">
+          {OFFLINE_LOG_MESSAGE}
+        </p>
+      )}
+
       {error && (
         <p className="text-sm text-red-500" role="alert">
           {error}
@@ -647,7 +667,7 @@ function ConfirmView({
           <button
             type="button"
             onClick={onSave}
-            disabled={saving}
+            disabled={saving || !online}
             className={`flex h-11 items-center gap-1.5 rounded-full bg-gradient-to-br ${theme.navButtonGradient} px-5 text-sm font-medium text-white transition-transform active:scale-95 disabled:opacity-50`}
           >
             <Check className="h-4 w-4" strokeWidth={2.5} />
