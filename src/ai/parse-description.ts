@@ -14,6 +14,8 @@ const prompt = (description: string) => `You are a nutrition-logging assistant. 
 
 For each ingredient, guess a quantity in grams (g), millilitres (ml), or servings ("serving") — whichever the description implies. Tag both the ingredient's name and its quantity as "confident" only when the description states or clearly implies it; use "needs_review" for anything you had to estimate (a vague amount like "a splash" or "a bowl of", or a food you're guessing the identity of).
 
+If an ingredient's identity is genuinely ambiguous in a way that would meaningfully change its nutrition (e.g. "a latte" — which milk?), set its nameConfidence to "needs_review" and include 2-4 short clarifyOptions, each a specific variant the user might mean: a "label" for the chip button (e.g. "Oat milk") and a "searchTerm" naming that variant for a food-database search (e.g. "oat milk latte"). Only offer clarifyOptions when asking would genuinely help — most ingredients are specific enough already and should have none.
+
 Description: "${description}"`;
 
 /**

@@ -33,8 +33,9 @@ export const appRouter = router({
   goals: goalsRouter,
   profile: profileRouter,
 
-  // Log by description, happy path (#46): free-text -> parse -> resolve ->
-  // save. Ambiguity/correction UI is #50's concern, not this router's.
+  // Log by description (#46's happy path, #50's ambiguity/correction UI):
+  // free-text -> Stage 1/2 parse -> clarify-up-front chip (if ambiguous) ->
+  // Stage 3 resolve + save -> instance/food-level corrections afterward.
   logDescription: logDescriptionRouter,
 
   // Log by label photo (#47): OCR extraction + confirmed-amount save, no
