@@ -7,8 +7,10 @@ import {
   generateTextEffect,
   streamObjectEffect,
   streamTextEffect,
+  toGenerateObjectSchema,
   toSdkPrompt,
 } from "../../../src/ai/effect-ai-sdk";
+import { ParsedLabelReading } from "../../../src/ai/schemas";
 
 const failureValue = (exit: Exit.Exit<unknown, unknown>): unknown => {
   if (Exit.isSuccess(exit)) return undefined;
@@ -65,6 +67,69 @@ describe("toSdkPrompt", () => {
       { type: "image", image: "front", mediaType: "image/jpeg" },
       { type: "image", image: "back", mediaType: "image/jpeg" },
     ]);
+  });
+});
+
+// TrivialSchema (below) is a required string — it can't exercise an
+// optional field, a cross-field refinement, or a constrained array, all of
+// which production calls rely on. ParsedLabelReading has all three.
+describe("toGenerateObjectSchema", () => {
+  // toGenerateObjectSchema's `validate` never returns a promise — Effect's
+  // decode is synchronous — but the AI SDK's type covers both. Narrow it
+  // here so assertions below can read `.success` without a type error.
+  const runValidate = <V extends object>(
+    converted: { validate?: (value: V) => unknown },
+    value: V,
+  ) => converted.validate?.(value) as { success: boolean; value?: unknown; error?: unknown } | undefined;
+
+  const validReading = {
+    foodName: "Baked Beans",
+    foodNameConfidence: "confident" as const,
+    basisUnit: "g" as const,
+    nutrients: [
+      { code: "energy_kcal", value: 84, unit: "kcal", confidence: "confident" as const },
+      { code: "protein_g", value: 5.1, unit: "g", confidence: "confident" as const },
+    ],
+  };
+
+  it("round-trips a valid production payload, optional fields omitted", () => {
+    const converted = toGenerateObjectSchema(ParsedLabelReading);
+
+    const result = runValidate(converted, validReading);
+    expect(result).toEqual({
+      success: true,
+      value: Schema.decodeUnknownSync(ParsedLabelReading)(validReading),
+    });
+  });
+
+  it("round-trips a valid payload with its optional field present", () => {
+    const converted = toGenerateObjectSchema(ParsedLabelReading);
+    const withBrand = { ...validReading, brand: { value: "Heinz", confidence: "confident" as const } };
+
+    const result = runValidate(converted, withBrand);
+    expect(result).toEqual({
+      success: true,
+      value: Schema.decodeUnknownSync(ParsedLabelReading)(withBrand),
+    });
+  });
+
+  it("rejects a payload that fails the schema's cross-field refinement", () => {
+    const converted = toGenerateObjectSchema(ParsedLabelReading);
+    const wrongUnit = {
+      ...validReading,
+      nutrients: [{ code: "energy_kcal", value: 84, unit: "g", confidence: "confident" as const }],
+    };
+
+    const result = runValidate(converted, wrongUnit);
+    expect(result?.success).toBe(false);
+  });
+
+  it("rejects a payload that violates the array's minItems constraint", () => {
+    const converted = toGenerateObjectSchema(ParsedLabelReading);
+    const emptyNutrients = { ...validReading, nutrients: [] };
+
+    const result = runValidate(converted, emptyNutrients);
+    expect(result?.success).toBe(false);
   });
 });
 

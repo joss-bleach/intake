@@ -181,18 +181,11 @@ export const generateTextEffect = (
     // generateObjectWithFallbackEffect's catchAll below.
   ).pipe(Effect.flatMap((result) => Effect.try({ try: () => result.text, catch: toAiSdkError })));
 
-// ADR 0004's original assumption — Schema.standardSchemaV1 plugs straight
-// into generateObject's `schema` option — doesn't hold: the AI SDK's
-// standard-schema adapter needs a `~standard.jsonSchema` converter to build
-// the provider request, and Effect's standard-schema output doesn't supply
-// one (confirmed against a real OpenRouter call while running issue #54's
-// bake-off). Built explicitly instead, via `ai`'s own `jsonSchema()`
-// escape hatch: `JSONSchema.make` gives the provider-facing shape,
-// `Schema.decodeUnknownEither` gives the response-side validation —
-// together the same round-trip standardSchemaV1 was meant to give in one
-// call. Kept local to this module (ADR 0004: the vendor SDK is wrapped once,
-// here) rather than exported as a general-purpose helper.
-const toGenerateObjectSchema = <A, I>(schema: Schema.Schema<A, I>) =>
+// ADR 0004's Schema.standardSchemaV1 assumption doesn't hold: the AI SDK's
+// adapter needs a `~standard.jsonSchema` converter Effect's output doesn't
+// supply (confirmed against real OpenRouter calls, issue #54). Built via
+// `jsonSchema()` instead; exported so tests can round-trip it directly.
+export const toGenerateObjectSchema = <A, I>(schema: Schema.Schema<A, I>) =>
   jsonSchema<A>(JSONSchema.make(schema), {
     validate: (value) => {
       const result = Schema.decodeUnknownEither(schema)(value);
