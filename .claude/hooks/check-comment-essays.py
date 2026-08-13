@@ -97,20 +97,22 @@ def find_violations(text, ext):
 
 
 def contents_for(tool_name, tool_input):
-    """Yield (file_path, full_text_after_edit) pairs to check.
+    """Yield (file_path, full_text) pairs to check.
 
-    We only have the new_string fragment for Edit/MultiEdit, not the whole
-    file, but scanning the fragment alone still catches essay-style blocks.
+    PostToolUse runs after the edit lands, so we read the whole file from disk
+    rather than the new_string fragment. A fragment misses blocks that only
+    breach the limits once joined to the comments already around them.
     """
-    if tool_name == "Write":
-        return [(tool_input.get("file_path", ""), tool_input.get("content", ""))]
-    if tool_name == "Edit":
-        return [(tool_input.get("file_path", ""), tool_input.get("new_string", ""))]
-    if tool_name == "MultiEdit":
-        path = tool_input.get("file_path", "")
-        edits = tool_input.get("edits", [])
-        return [(path, e.get("new_string", "")) for e in edits]
-    return []
+    if tool_name not in ("Write", "Edit", "MultiEdit"):
+        return []
+    path = tool_input.get("file_path", "")
+    if not path:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            return [(path, f.read())]
+    except OSError:
+        return []
 
 
 def main():
