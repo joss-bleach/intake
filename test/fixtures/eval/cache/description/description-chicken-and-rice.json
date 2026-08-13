@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "chicken breast",
+        "nameConfidence": "confident",
+        "quantity": 150,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      },
+      {
+        "name": "white rice",
+        "nameConfidence": "confident",
+        "quantity": 160,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      }
+    ]
+  }
+}

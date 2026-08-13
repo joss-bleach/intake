@@ -55,6 +55,9 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      - name: Eval harness (label ≥95%, description ≥85%)
+        run: pnpm eval
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
