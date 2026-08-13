@@ -37,8 +37,9 @@ export const buildLabelOcrPrompt = (): string =>
  * (ADR 0001, via `generateObjectWithFallbackEffect`) — this function itself
  * makes no further retry decision.
  *
- * Model roles are env-configured placeholders (env.ts) pending ADR 0005's
- * bake-off (#54), not hardcoded picks.
+ * Model roles are env-configured (env.ts), defaulting to ADR 0005's actual
+ * bake-off picks (#54) — overridable rather than hardcoded so a future
+ * re-run doesn't need a code change.
  */
 export const extractLabelReading = (photo: {
   readonly data: string;

@@ -4,10 +4,11 @@ import {
   NoObjectGeneratedError,
   generateObject,
   generateText,
+  jsonSchema,
   streamObject,
   streamText,
 } from "ai";
-import { Data, Effect, Schema, Stream } from "effect";
+import { Data, Effect, JSONSchema, ParseResult, Schema, Stream } from "effect";
 import type { ModelCallOutcome } from "../server/observability/model-calls";
 import { recordModelCall } from "../server/observability/model-calls";
 import { env } from "../server/env";
@@ -180,9 +181,27 @@ export const generateTextEffect = (
     // generateObjectWithFallbackEffect's catchAll below.
   ).pipe(Effect.flatMap((result) => Effect.try({ try: () => result.text, catch: toAiSdkError })));
 
-// Standard Schema compatibility (ADR 0004's open assumption): an Effect
-// Schema converts to a Standard Schema via Schema.standardSchemaV1, which
-// generateObject's `schema` option accepts directly — no translation layer.
+// ADR 0004's original assumption — Schema.standardSchemaV1 plugs straight
+// into generateObject's `schema` option — doesn't hold: the AI SDK's
+// standard-schema adapter needs a `~standard.jsonSchema` converter to build
+// the provider request, and Effect's standard-schema output doesn't supply
+// one (confirmed against a real OpenRouter call while running issue #54's
+// bake-off). Built explicitly instead, via `ai`'s own `jsonSchema()`
+// escape hatch: `JSONSchema.make` gives the provider-facing shape,
+// `Schema.decodeUnknownEither` gives the response-side validation —
+// together the same round-trip standardSchemaV1 was meant to give in one
+// call. Kept local to this module (ADR 0004: the vendor SDK is wrapped once,
+// here) rather than exported as a general-purpose helper.
+const toGenerateObjectSchema = <A, I>(schema: Schema.Schema<A, I>) =>
+  jsonSchema<A>(JSONSchema.make(schema), {
+    validate: (value) => {
+      const result = Schema.decodeUnknownEither(schema)(value);
+      return result._tag === "Right"
+        ? { success: true, value: result.right }
+        : { success: false, error: new Error(ParseResult.TreeFormatter.formatErrorSync(result.left)) };
+    },
+  });
+
 export const generateObjectEffect = <A, I>(
   params: TrackedAiCallParams & { readonly schema: Schema.Schema<A, I> },
 ): Effect.Effect<A, AiSdkError> =>
@@ -194,7 +213,7 @@ export const generateObjectEffect = <A, I>(
         generateObject({
           model: resolveModel(params.model),
           prompt: toSdkPrompt(params),
-          schema: Schema.standardSchemaV1(params.schema),
+          schema: toGenerateObjectSchema(params.schema),
         }),
       catch: toAiSdkError,
     }),
@@ -208,8 +227,8 @@ export const generateObjectEffect = <A, I>(
 // API key, network error, rate limit, ...) propagates immediately instead
 // of burning a call against the fallback model for a failure the fallback
 // can't help with. Which model is "the fallback" is deliberately not
-// decided here (ADR 0005's picks are still TBD, pending the model-selection
-// bake-off) — callers supply it. Valid-but-`needs_review` output never
+// decided here — callers supply it (ADR 0005's picks live in env.ts).
+// Valid-but-`needs_review` output never
 // reaches the catch: the schema validates shape and confidence *tags*, not
 // confidence *values*, so a `needs_review` field is a successful parse,
 // exactly as ADR 0001 requires.
@@ -272,7 +291,7 @@ export const streamTextEffect = (params: AiCallParams) =>
 export const streamObjectEffect = <A, I>(
   params: AiCallParams & { readonly schema: Schema.Schema<A, I> },
 ) => {
-  const standardSchema = Schema.standardSchemaV1(params.schema);
+  const aiSdkSchema = toGenerateObjectSchema(params.schema);
 
   return Stream.unwrap(
     Effect.sync(() =>
@@ -281,10 +300,10 @@ export const streamObjectEffect = <A, I>(
       // OUTPUT/RESULT inference can't collapse — TS reports the stream part
       // as an opaque conditional type rather than the real union. Pinning
       // it here is what makes `part.type === "error"` below narrow.
-      streamObject<typeof standardSchema, "object">({
+      streamObject<typeof aiSdkSchema, "object">({
         model: resolveModel(params.model),
         prompt: toSdkPrompt(params),
-        schema: standardSchema,
+        schema: aiSdkSchema,
       }),
     ).pipe(
       // fullStream, not partialObjectStream: the latter only ever yields
