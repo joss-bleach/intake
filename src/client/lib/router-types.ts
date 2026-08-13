@@ -21,6 +21,11 @@ export type LabelReading = RouterOutputs["labelPhoto"]["extract"];
 export type DashboardSnapshot = RouterOutputs["dashboard"]["get"];
 export type DashboardMealGroup = DashboardSnapshot["meals"][number];
 
+// The insights more-of/less-of NRV comparison (issue #55).
+export type InsightsSnapshot = RouterOutputs["insights"]["get"];
+export type InsightsPeriodSnapshot = InsightsSnapshot["today"];
+export type NrvComparisonItem = InsightsPeriodSnapshot["nrvItems"][number];
+
 // Issue #50: Stage 1/2's ingredient array, as `logDescription.parse`
 // returns it — clarifyOptions included. Reused (not hand-duplicated) so the
 // client's ClarifiedIngredient round-trip to `confirm` can't drift from

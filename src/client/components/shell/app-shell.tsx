@@ -12,12 +12,14 @@ export function AppShell({
   activeTab = "home",
   onLogFood,
   onProfile,
+  onInsights,
   showNav = true,
 }: {
   children?: ReactNode;
   activeTab?: BottomNavActiveTab;
   onLogFood?: () => void;
   onProfile?: () => void;
+  onInsights?: () => void;
   showNav?: boolean;
 }) {
   return (
@@ -29,7 +31,7 @@ export function AppShell({
         {children}
       </div>
       {showNav && (
-        <BottomNav active={activeTab} onLogFood={onLogFood} onProfile={onProfile} />
+        <BottomNav active={activeTab} onLogFood={onLogFood} onProfile={onProfile} onInsights={onInsights} />
       )}
     </div>
   );
