@@ -41,9 +41,10 @@ type FallbackNutrientRow = {
 // quantity* (e.g. "500ml smoothie -> 320kcal total"), not a per-100 rate, so
 // it's scaled down here by quantity/100; basisUnit mirrors quantityUnit for
 // g/ml, and defaults to "g" for "serving" quantities, since foods.basisUnit
-// only allows g/ml — this food is synthetic and single-use (never looked up
-// again), so that label is approximate, but scaling the same quantity back up
-// on read reconstructs the model's original estimate exactly. Always
+// only allows g/ml — this food is synthetic and single-use (resolve-food.ts's
+// cache search skips llm_estimate_fallback rows, so it is never returned for
+// a later query), so that label is approximate, but scaling the same quantity
+// back up on read reconstructs the model's original estimate exactly. Always
 // needs_review at the call site regardless, so the approximation doesn't
 // masquerade as a confident number.
 const createFallbackFood = (
