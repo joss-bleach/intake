@@ -17,6 +17,10 @@ export type ProfileSnapshot = RouterOutputs["profile"]["get"];
 // than importing src/ai's Effect Schema class into the client bundle.
 export type LabelReading = RouterOutputs["labelPhoto"]["extract"];
 
+// The dashboard's rolling-7-day activity aggregation (issue #53).
+export type DashboardSnapshot = RouterOutputs["dashboard"]["get"];
+export type DashboardMealGroup = DashboardSnapshot["meals"][number];
+
 // Issue #50: Stage 1/2's ingredient array, as `logDescription.parse`
 // returns it — clarifyOptions included. Reused (not hand-duplicated) so the
 // client's ClarifiedIngredient round-trip to `confirm` can't drift from
