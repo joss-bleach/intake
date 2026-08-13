@@ -156,6 +156,46 @@ describe("scoreLabelItem", () => {
     expect(result.pass).toBe(false);
     expect(result.failures.some((f) => f.includes("protein_g"))).toBe(true);
   });
+
+  it("fails when the read invents a nutrient the panel does not show", () => {
+    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Weetabix Original",
+      foodNameConfidence: "confident",
+      brand: { value: "Weetabix", confidence: "confident" },
+      basisUnit: "g",
+      servingSize: { value: 37.5, confidence: "confident" },
+      nutrients: [
+        { code: "energy_kcal", value: 362, unit: "kcal", confidence: "confident" },
+        { code: "protein_g", value: 12, unit: "g", confidence: "confident" },
+        { code: "salt_g", value: 0.5, unit: "g", confidence: "confident" },
+      ],
+    });
+
+    const result = scoreLabelItem(labelFixture, parsed);
+
+    expect(result.pass).toBe(false);
+    expect(result.failures).toContain('unexpected nutrient "salt_g"');
+  });
+
+  it("fails when a nutrient is read twice, even with conflicting values", () => {
+    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Weetabix Original",
+      foodNameConfidence: "confident",
+      brand: { value: "Weetabix", confidence: "confident" },
+      basisUnit: "g",
+      servingSize: { value: 37.5, confidence: "confident" },
+      nutrients: [
+        { code: "energy_kcal", value: 362, unit: "kcal", confidence: "confident" },
+        { code: "energy_kcal", value: 136, unit: "kcal", confidence: "confident" },
+        { code: "protein_g", value: 12, unit: "g", confidence: "confident" },
+      ],
+    });
+
+    const result = scoreLabelItem(labelFixture, parsed);
+
+    expect(result.pass).toBe(false);
+    expect(result.failures).toContain('unexpected nutrient "energy_kcal"');
+  });
 });
 
 describe("aggregate", () => {

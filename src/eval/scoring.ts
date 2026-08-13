@@ -153,14 +153,19 @@ export const scoreLabelItem = (
     }
   }
 
+  const matchedIndexes = new Set<number>();
+
   for (const expectedNutrient of expected.nutrients) {
-    const match = parsed.nutrients.find(
-      (nutrient) => nutrient.code === expectedNutrient.code,
+    const matchIndex = parsed.nutrients.findIndex(
+      (nutrient, index) =>
+        !matchedIndexes.has(index) && nutrient.code === expectedNutrient.code,
     );
-    if (!match) {
+    if (matchIndex === -1) {
       failures.push(`missing nutrient "${expectedNutrient.code}"`);
       continue;
     }
+    matchedIndexes.add(matchIndex);
+    const match = parsed.nutrients[matchIndex];
     if (match.unit !== expectedNutrient.unit) {
       failures.push(
         `"${expectedNutrient.code}" unit ${match.unit} !== expected ${expectedNutrient.unit}`,
@@ -174,6 +179,15 @@ export const scoreLabelItem = (
       );
     }
   }
+
+  // Same rule as the description scorer: a nutrient the model read that no
+  // expected entry claimed is invented or duplicated data — a transcription
+  // regression that recall of the expected codes alone would not catch.
+  parsed.nutrients.forEach((nutrient, index) => {
+    if (!matchedIndexes.has(index)) {
+      failures.push(`unexpected nutrient "${nutrient.code}"`);
+    }
+  });
 
   const fieldsNeedingReview =
     (parsed.foodNameConfidence === "needs_review" ? 1 : 0) +

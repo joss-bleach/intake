@@ -65,6 +65,8 @@ export class LabelFixture extends Schema.Class<LabelFixture>("LabelFixture")({
     brand: Schema.optional(Schema.String),
     basisUnit: Schema.Literal("g", "ml"),
     servingSize: Schema.optional(Schema.Positive),
+    // Every nutrient printed on the panel, not a subset — the scorer fails
+    // a read that reports a nutrient this list does not claim.
     nutrients: Schema.NonEmptyArray(LabelFixtureExpectedNutrient),
   }),
 }) {}
