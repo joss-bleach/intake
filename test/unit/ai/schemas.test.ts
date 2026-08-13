@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import { describe, expect, it } from "vitest";
 import {
+  EstimatedNutrition,
   ExtractedNutrient,
   NutritionFact,
   ParsedDescription,
@@ -198,6 +199,42 @@ describe("ParsedLabelReading (Stage 2, label path)", () => {
         foodNameConfidence: "confident",
         basisUnit: "g",
         nutrients: [],
+      }),
+    ).toThrow();
+  });
+});
+
+describe("EstimatedNutrition (total-database-gap fallback, issue #44/#46)", () => {
+  it("decodes a well-formed macro estimate", () => {
+    const decoded = Schema.decodeUnknownSync(EstimatedNutrition)({
+      energyKcal: 320,
+      proteinG: 22,
+      carbohydrateG: 45,
+      fatG: 4,
+    });
+
+    expect(decoded).toBeInstanceOf(EstimatedNutrition);
+    expect(decoded.energyKcal).toBe(320);
+  });
+
+  it("accepts zero for a macro genuinely absent from the food", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(EstimatedNutrition)({
+        energyKcal: 50,
+        proteinG: 0,
+        carbohydrateG: 12,
+        fatG: 0,
+      }),
+    ).not.toThrow();
+  });
+
+  it("rejects a negative macro value", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(EstimatedNutrition)({
+        energyKcal: 320,
+        proteinG: -1,
+        carbohydrateG: 45,
+        fatG: 4,
       }),
     ).toThrow();
   });

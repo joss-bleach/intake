@@ -2,6 +2,17 @@ import { Cause, Effect, Exit } from "effect";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import type { TRPC_ERROR_CODE_KEY } from "@trpc/server/rpc";
+import { captureEffectFailure } from "./observability/glitchtip";
+
+// Error tracking must never change what the client sees: a broken reporter
+// would otherwise replace the real TRPCError with its own throw.
+const report = (cause: Cause.Cause<unknown>): void => {
+  try {
+    captureEffectFailure(cause, { tags: { source: "trpc" } });
+  } catch {
+    // Nothing useful left to do — the original error still gets thrown below.
+  }
+};
 
 // Tagged-error-ish shape (Effect's Data.TaggedError, or any plain object with
 // `_tag`/`message`). Parsed rather than typeof-narrowed, per anti-slop's
@@ -35,6 +46,9 @@ const taggedErrorLike = z.object({
  * own error formatting takes over from there. This is the seam Effect
  * programs cross back into tRPC's plain-promise world — see ADR 0001 for the
  * project's wider tagged-error discipline this mirrors.
+ *
+ * It is also where server-side request failures reach GlitchTip (issue #49):
+ * every defect, plus any typed failure that becomes a 500.
  */
 export const runEffect = async <A, E>(
   effect: Effect.Effect<A, E>,
@@ -47,11 +61,19 @@ export const runEffect = async <A, E>(
 
   const failure = Cause.failureOption(exit.cause);
   if (failure._tag === "Some") {
-    throw toTRPCError(failure.value);
+    const trpcError = toTRPCError(failure.value);
+    // Expected failures carry their own 4xx-ish code and are part of normal
+    // request handling (not found, bad input) — only the ones that reach the
+    // client as a server error are worth an error-tracking event.
+    if (trpcError.code === "INTERNAL_SERVER_ERROR") {
+      report(exit.cause);
+    }
+    throw trpcError;
   }
 
   // A defect (unexpected throw, interruption) rather than a typed Effect
   // failure — no tag to report, so fall back to the rendered cause.
+  report(exit.cause);
   throw new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
     message: Cause.pretty(exit.cause),

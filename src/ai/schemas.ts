@@ -107,6 +107,23 @@ export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
   ),
 }) {}
 
+// Stage 2, description path's total-database-gap fallback (issue #44): when
+// resolveFood finds nothing for a parsed ingredient, the model estimates the
+// macros directly instead of the app silently guessing zero. Always the
+// whole-ingredient-quantity amount (not per-100g/100ml — that normalization
+// happens where this is written into the foods table, see
+// src/server/log-description). Not per-field-confidence like ParsedIngredient
+// — a total database gap is a single needs_review flag on the ingredient as a
+// whole (ADR 0001), not a per-macro judgement.
+export class EstimatedNutrition extends Schema.Class<EstimatedNutrition>(
+  "EstimatedNutrition",
+)({
+  energyKcal: Schema.NonNegative,
+  proteinG: Schema.NonNegative,
+  carbohydrateG: Schema.NonNegative,
+  fatG: Schema.NonNegative,
+}) {}
+
 // Stage 3 (ADR 0001): the trusted, per-nutrient fact a diary entry is
 // actually built from. Shape matches the nutrient_values table exactly —
 // `source`/`confidence` are this schema's view of that table's

@@ -34,6 +34,25 @@ export const env = createEnv({
     // swapping in the real bake-off picks doesn't need a code change.
     LABEL_VISION_MODEL: z.string().min(1).default("google/gemini-2.5-flash-lite"),
     LABEL_VISION_FALLBACK_MODEL: z.string().min(1).default("google/gemini-2.5-pro"),
+    // Optional (issue #49): the self-hosted GlitchTip project DSN.
+    // captureEffectFailure (src/server/observability/glitchtip.ts) no-ops
+    // without one — real GlitchTip deployment on the VPS is infra
+    // provisioning, out of this repo's scope (see the MVP spec's carve-out).
+    GLITCHTIP_DSN: z.url().optional(),
+    // Row-count threshold the cron tripwire (src/server/observability/
+    // tripwire.ts) alerts past — model_calls is kept indefinitely, so this
+    // is a "someone should look at this" nudge, not a hard cap.
+    MODEL_CALLS_TRIPWIRE_THRESHOLD: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(500_000),
+    // ADR 0005's text/description-parsing pick is still TBD, pending the
+    // real model-selection bake-off (issue #54) — this default is a
+    // placeholder from that ADR's candidate shortlist (cheapest-tiebreak
+    // tier), not a considered choice, and env-overridable so swapping it
+    // once the bake-off runs needs no code change.
+    DESCRIPTION_PARSE_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

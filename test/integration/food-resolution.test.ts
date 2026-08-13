@@ -118,6 +118,27 @@ describe("resolveFood", () => {
     expect(secondClient.wasCalled()).toBe(false);
   });
 
+  it("never serves an llm_estimate_fallback food as a cache hit", async () => {
+    // A one-off fallback food written for an earlier gap ingredient: its
+    // nutrition is an estimate for one description and quantity, so a later
+    // matching query must miss the cache instead of reusing it.
+    await db.insert(foods).values({
+      name: "Grandma's Secret Casserole",
+      provenance: "llm_estimate_fallback",
+      basisUnit: "g",
+    });
+
+    const client = offLiveClient([]);
+    const exit = await runResolve("Grandma's Secret Casserole", client.layer);
+
+    expect(exit._tag).toBe("Failure");
+    if (exit._tag !== "Failure") throw new Error("unreachable");
+    expect(exit.cause._tag === "Fail" ? exit.cause.error : null).toBeInstanceOf(
+      FoodNotFoundError,
+    );
+    expect(client.wasCalled()).toBe(true);
+  });
+
   it("fails with FoodNotFoundError on a genuine miss (empty cache, empty live result)", async () => {
     const client = offLiveClient([]);
     const exit = await runResolve("Something Nobody Has Ever Logged", client.layer);

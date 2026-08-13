@@ -8,6 +8,8 @@ import {
   streamText,
 } from "ai";
 import { Data, Effect, Schema, Stream } from "effect";
+import type { ModelCallOutcome } from "../server/observability/model-calls";
+import { recordModelCall } from "../server/observability/model-calls";
 import { env } from "../server/env";
 
 // ADR 0004: the vendor SDK is wrapped once, here, and nothing outside this
@@ -19,10 +21,13 @@ import { env } from "../server/env";
 // output" retry trigger apart from every other way a call can fail (a
 // missing API key, a network error, a rate limit): only "parse_failure"
 // means the model actually responded with something the schema rejected.
+// `reason`'s type is model-calls.ts's `ModelCallOutcome` minus "success" —
+// a call that fails can't record a success outcome, and deriving it keeps
+// the two vocabularies (this and model_calls.outcome) from drifting apart.
 export class AiSdkError extends Data.TaggedError("AiSdkError")<{
   readonly message: string;
   readonly cause: unknown;
-  readonly reason: "parse_failure" | "call_failed";
+  readonly reason: Exclude<ModelCallOutcome, "success">;
 }> {}
 
 // One provider instance for the process. OPENROUTER_API_KEY is optional at
@@ -33,6 +38,18 @@ export class AiSdkError extends Data.TaggedError("AiSdkError")<{
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
 
 const resolveModel = (model: string): LanguageModel => openrouter(model);
+
+// Issue #49: identifies one logical call for model_calls tracking.
+// Client-generated `correlationId` so a fallback retry's two rows can still
+// be tied together. Deliberately optional on TrackedAiCallParams below, not
+// a required argument: the (future) eval harness's own runs (issue #48,
+// already logged its own way) simply omit it, which is what keeps them out
+// of model_calls — "production calls only" per the ticket's acceptance
+// criteria, with no separate eval/production flag to keep in sync.
+type Tracking = {
+  readonly pipelineStage: string;
+  readonly correlationId: string;
+};
 
 // The {model, prompt} pair every call needs, regardless of whether it also
 // takes a schema — shared here so the five operation wrappers below don't
@@ -70,6 +87,13 @@ const toModelPrompt = (params: AiCallParams): string | Array<ModelMessage> =>
       ]
     : params.prompt;
 
+// `tracking` only exists on the two one-shot wrappers (generateTextEffect,
+// generateObjectEffect) — those are the only ones withTracking actually
+// instruments. It's deliberately not on plain AiCallParams: streamTextEffect
+// and streamObjectEffect would otherwise accept it and silently do nothing
+// with it, which is worse than a caller not being able to ask for it at all.
+type TrackedAiCallParams = AiCallParams & { readonly tracking?: Tracking };
+
 const toAiSdkError = (cause: unknown): AiSdkError =>
   new AiSdkError({
     message: cause instanceof Error ? cause.message : String(cause),
@@ -79,33 +103,97 @@ const toAiSdkError = (cause: unknown): AiSdkError =>
       : "call_failed",
   });
 
+// Shape generateText/generateObject results share, and all `recordModelCall`
+// actually reads off a successful result — narrow enough that both one-shot
+// wrappers below satisfy it without this module caring which one it is.
+type UsageBearingResult = {
+  readonly usage?: {
+    readonly inputTokens?: number;
+    readonly outputTokens?: number;
+  };
+  readonly providerMetadata?: {
+    readonly openrouter?: { readonly usage?: { readonly cost?: number } };
+  };
+};
+
+// Times a call and, only when the caller opted in via `tracking`, writes
+// its outcome to model_calls (src/server/observability/model-calls.ts) —
+// "success" with whatever usage/cost the provider returned, or the same
+// `reason` the call already failed with. Recording never changes what the
+// caller sees (`recordModelCall`'s error channel is `never`) and a missing
+// `tracking` skips it entirely rather than writing a placeholder row. It
+// does sequence before returning — recordModelCall's own short timeout is
+// what keeps that from turning into an unbounded stall.
+const withTracking = <T extends UsageBearingResult>(
+  tracking: Tracking | undefined,
+  model: string,
+  call: Effect.Effect<T, AiSdkError>,
+): Effect.Effect<T, AiSdkError> => {
+  if (!tracking) return call;
+
+  const startedAt = Date.now();
+  return call.pipe(
+    Effect.tap((result) =>
+      recordModelCall({
+        ...tracking,
+        model,
+        outcome: "success",
+        latencyMs: Date.now() - startedAt,
+        promptTokens: result.usage?.inputTokens,
+        completionTokens: result.usage?.outputTokens,
+        costUsd: result.providerMetadata?.openrouter?.usage?.cost,
+      }),
+    ),
+    Effect.tapError((error) =>
+      recordModelCall({
+        ...tracking,
+        model,
+        outcome: error.reason,
+        latencyMs: Date.now() - startedAt,
+      }),
+    ),
+  );
+};
+
 export const generateTextEffect = (
-  params: AiCallParams,
+  params: TrackedAiCallParams,
 ): Effect.Effect<string, AiSdkError> =>
-  Effect.tryPromise({
-    try: () =>
-      generateText({
-        model: resolveModel(params.model),
-        prompt: toModelPrompt(params),
-      }).then((result) => result.text),
-    catch: toAiSdkError,
-  });
+  withTracking(
+    params.tracking,
+    params.model,
+    Effect.tryPromise({
+      try: () =>
+        generateText({
+          model: resolveModel(params.model),
+          prompt: toModelPrompt(params),
+        }),
+      catch: toAiSdkError,
+    }),
+    // .text is read inside the same Effect.try/catch discipline as the call
+    // itself — a throw here (however unlikely off a resolved data property)
+    // still becomes a typed AiSdkError, not a defect that skips
+    // generateObjectWithFallbackEffect's catchAll below.
+  ).pipe(Effect.flatMap((result) => Effect.try({ try: () => result.text, catch: toAiSdkError })));
 
 // Standard Schema compatibility (ADR 0004's open assumption): an Effect
 // Schema converts to a Standard Schema via Schema.standardSchemaV1, which
 // generateObject's `schema` option accepts directly — no translation layer.
 export const generateObjectEffect = <A, I>(
-  params: AiCallParams & { readonly schema: Schema.Schema<A, I> },
+  params: TrackedAiCallParams & { readonly schema: Schema.Schema<A, I> },
 ): Effect.Effect<A, AiSdkError> =>
-  Effect.tryPromise({
-    try: () =>
-      generateObject({
-        model: resolveModel(params.model),
-        prompt: toModelPrompt(params),
-        schema: Schema.standardSchemaV1(params.schema),
-      }).then((result) => result.object),
-    catch: toAiSdkError,
-  });
+  withTracking(
+    params.tracking,
+    params.model,
+    Effect.tryPromise({
+      try: () =>
+        generateObject({
+          model: resolveModel(params.model),
+          prompt: toModelPrompt(params),
+          schema: Schema.standardSchemaV1(params.schema),
+        }),
+      catch: toAiSdkError,
+    }),
+  ).pipe(Effect.flatMap((result) => Effect.try({ try: () => result.object, catch: toAiSdkError })));
 
 // ADR 0001's Stage 2 retry policy: a malformed/unparseable response (schema
 // validation failing inside generateObject, which the AI SDK surfaces as a
@@ -124,7 +212,7 @@ export const generateObjectEffect = <A, I>(
 // seam — it's how test/unit/ai/effect-ai-sdk.test.ts proves the "retry once
 // against the fallback model, then hard-fail" order without a network call.
 export const generateObjectWithFallbackEffect = <A, I>(
-  params: AiCallParams & {
+  params: TrackedAiCallParams & {
     readonly fallbackModel: string;
     readonly schema: Schema.Schema<A, I>;
   },
@@ -136,6 +224,7 @@ export const generateObjectWithFallbackEffect = <A, I>(
       prompt: params.prompt,
       images: params.images,
       schema: params.schema,
+      tracking: params.tracking,
     });
 
   return runAttempt(params.model).pipe(

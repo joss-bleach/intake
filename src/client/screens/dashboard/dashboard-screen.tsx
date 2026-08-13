@@ -17,9 +17,9 @@ export function DashboardScreen({
 }: {
   goals: GoalsSnapshot;
   onOpenProfile: () => void;
-  // Straight to the label-photo flow for now (#47) — #46's description path
-  // still needs to land before the "+" button has a method to pick between.
-  onLogFood: () => void;
+  // Opens the log-method choice (description #46 / label photo #47). The
+  // real dashboard (#53) owns how this button finally behaves.
+  onLogFood?: () => void;
 }) {
   const ping = useQuery(trpc.ping.queryOptions());
 
