@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "protein shake",
+        "nameConfidence": "confident",
+        "quantity": 300,
+        "quantityUnit": "ml",
+        "quantityConfidence": "confident"
+      },
+      {
+        "name": "banana",
+        "nameConfidence": "confident",
+        "quantity": 120,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      }
+    ]
+  }
+}

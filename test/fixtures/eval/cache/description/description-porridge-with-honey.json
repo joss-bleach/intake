@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "porridge",
+        "nameConfidence": "confident",
+        "quantity": 230,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      },
+      {
+        "name": "honey",
+        "nameConfidence": "confident",
+        "quantity": 20,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      }
+    ]
+  }
+}

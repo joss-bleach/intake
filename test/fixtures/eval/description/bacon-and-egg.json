@@ -1,0 +1,12 @@
+{
+  "id": "description-bacon-and-egg",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "llm_generated_pending_human_review: count-based compound phrasing, standard cooked-rasher and fried-egg weights, 2026-08-13",
+  "input": "3 rashers of bacon and a fried egg",
+  "expected": {
+    "ingredients": [
+      { "name": "bacon", "quantity": 72, "quantityUnit": "g" },
+      { "name": "egg", "quantity": 50, "quantityUnit": "g" }
+    ]
+  }
+}

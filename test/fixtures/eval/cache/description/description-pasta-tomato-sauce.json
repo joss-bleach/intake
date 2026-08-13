@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "pasta",
+        "nameConfidence": "confident",
+        "quantity": 200,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      },
+      {
+        "name": "tomato sauce",
+        "nameConfidence": "confident",
+        "quantity": 140,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      }
+    ]
+  }
+}

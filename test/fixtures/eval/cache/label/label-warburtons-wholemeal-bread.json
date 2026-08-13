@@ -1,0 +1,21 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "foodName": "Warburtons Wholemeal Bread",
+    "foodNameConfidence": "confident",
+    "brand": { "value": "Warburtons", "confidence": "confident" },
+    "basisUnit": "g",
+    "servingSize": { "value": 44.8, "confidence": "confident" },
+    "nutrients": [
+      { "code": "energy_kcal", "value": 231, "unit": "kcal", "confidence": "confident" },
+      { "code": "protein_g", "value": 10.6, "unit": "g", "confidence": "confident" },
+      { "code": "carbohydrate_g", "value": 37.8, "unit": "g", "confidence": "confident" },
+      { "code": "sugars_g", "value": 2.4, "unit": "g", "confidence": "confident" },
+      { "code": "fat_g", "value": 2.8, "unit": "g", "confidence": "needs_review" },
+      { "code": "saturated_fat_g", "value": 0.5, "unit": "g", "confidence": "confident" },
+      { "code": "fibre_g", "value": 6.4, "unit": "g", "confidence": "confident" },
+      { "code": "salt_g", "value": 0.95, "unit": "g", "confidence": "confident" }
+    ]
+  }
+}

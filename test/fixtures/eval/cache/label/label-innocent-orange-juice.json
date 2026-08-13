@@ -1,0 +1,21 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "foodName": "Innocent Orange Juice",
+    "foodNameConfidence": "confident",
+    "brand": { "value": "Innocent", "confidence": "confident" },
+    "basisUnit": "ml",
+    "servingSize": { "value": 180, "confidence": "confident" },
+    "nutrients": [
+      { "code": "energy_kcal", "value": 45, "unit": "kcal", "confidence": "confident" },
+      { "code": "protein_g", "value": 0.4, "unit": "g", "confidence": "needs_review" },
+      { "code": "carbohydrate_g", "value": 10, "unit": "g", "confidence": "confident" },
+      { "code": "sugars_g", "value": 8.7, "unit": "g", "confidence": "confident" },
+      { "code": "fat_g", "value": 0, "unit": "g", "confidence": "confident" },
+      { "code": "saturated_fat_g", "value": 0, "unit": "g", "confidence": "confident" },
+      { "code": "fibre_g", "value": 0.9, "unit": "g", "confidence": "confident" },
+      { "code": "salt_g", "value": 0, "unit": "g", "confidence": "confident" }
+    ]
+  }
+}

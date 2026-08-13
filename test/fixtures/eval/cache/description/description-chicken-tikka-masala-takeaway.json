@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "chicken tikka masala",
+        "nameConfidence": "confident",
+        "quantity": 380,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      },
+      {
+        "name": "rice",
+        "nameConfidence": "confident",
+        "quantity": 210,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      }
+    ]
+  }
+}

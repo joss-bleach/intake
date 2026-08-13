@@ -1,0 +1,22 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "bacon",
+        "nameConfidence": "confident",
+        "quantity": 70,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      },
+      {
+        "name": "egg",
+        "nameConfidence": "confident",
+        "quantity": 50,
+        "quantityUnit": "g",
+        "quantityConfidence": "confident"
+      }
+    ]
+  }
+}

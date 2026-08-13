@@ -1,0 +1,21 @@
+{
+  "id": "label-cathedral-city-mature-cheddar",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5000295147393 (https://world.openfoodfacts.org/product/5000295147393), values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.6) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "cathedral-city-mature-cheddar.jpg",
+  "imageMediaType": "image/jpeg",
+  "expected": {
+    "foodName": "Mature Cheddar",
+    "brand": "Cathedral City",
+    "basisUnit": "g",
+    "nutrients": [
+      { "code": "energy_kcal", "value": 416, "unit": "kcal" },
+      { "code": "protein_g", "value": 25.4, "unit": "g" },
+      { "code": "carbohydrate_g", "value": 0.1, "unit": "g" },
+      { "code": "sugars_g", "value": 0.1, "unit": "g" },
+      { "code": "fat_g", "value": 34.9, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 21.7, "unit": "g" },
+      { "code": "salt_g", "value": 1.8, "unit": "g" }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "almonds",
+        "nameConfidence": "confident",
+        "quantity": 30,
+        "quantityUnit": "g",
+        "quantityConfidence": "needs_review"
+      }
+    ]
+  }
+}

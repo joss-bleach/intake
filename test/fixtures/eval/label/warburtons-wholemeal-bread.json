@@ -1,0 +1,23 @@
+{
+  "id": "label-warburtons-wholemeal-bread",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5010044009629 (https://world.openfoodfacts.org/product/5010044009629), values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.5) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "warburtons-wholemeal-bread.jpg",
+  "imageMediaType": "image/jpeg",
+  "expected": {
+    "foodName": "Wholemeal Bread",
+    "brand": "Warburtons",
+    "basisUnit": "g",
+    "servingSize": 44.8,
+    "nutrients": [
+      { "code": "energy_kcal", "value": 231, "unit": "kcal" },
+      { "code": "protein_g", "value": 10.6, "unit": "g" },
+      { "code": "carbohydrate_g", "value": 37.8, "unit": "g" },
+      { "code": "sugars_g", "value": 2.4, "unit": "g" },
+      { "code": "fat_g", "value": 2.8, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 0.5, "unit": "g" },
+      { "code": "fibre_g", "value": 6.4, "unit": "g" },
+      { "code": "salt_g", "value": 0.95, "unit": "g" }
+    ]
+  }
+}

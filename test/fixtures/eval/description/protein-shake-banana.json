@@ -1,0 +1,12 @@
+{
+  "id": "description-protein-shake-banana",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "llm_generated_pending_human_review: mixed drink/whole-food phrasing, standard single-scoop shake volume and medium-banana weight, 2026-08-13",
+  "input": "protein shake with a banana",
+  "expected": {
+    "ingredients": [
+      { "name": "protein shake", "quantity": 300, "quantityUnit": "ml" },
+      { "name": "banana", "quantity": 118, "quantityUnit": "g" }
+    ]
+  }
+}

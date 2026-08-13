@@ -42,12 +42,12 @@ Tolerances (see `src/eval/scoring.ts`): label reads ±2%, description parses
 ±15% — the label already is the fact, so its bar for "close enough" is
 tighter than an estimate parsed from free text.
 
-**Seed dataset only.** This ships with three placeholder fixtures (two
-description, one label) to prove the harness end to end — enough to gate CI
-today, not enough to trust the accuracy numbers themselves yet. The label
-fixture's photo (`weetabix-original.png`) is a synthetic placeholder, not a
-real nutrition-label photo — growing this into a real, representative
-dataset (real label photos included) is tracked as a fast-follow.
+This ships with 6 label fixtures (real UK nutrition-panel photos sourced
+from Open Food Facts, spanning packaging types — cereal box, crisp bag,
+juice carton, bread bag, cheese pack, yogurt pot) and 12 description
+fixtures (a spread of free-text logging phrasing). Not every fixture's
+ground truth has been spot-checked against the physical pack yet — see
+each fixture's `groundTruthReviewed`.
 
 ## Scoring
 
