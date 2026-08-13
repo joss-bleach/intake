@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ModelMessage } from "ai";
 import {
   NoObjectGeneratedError,
   generateObject,
@@ -36,10 +36,17 @@ const resolveModel = (model: string): LanguageModel => openrouter(model);
 
 // The {model, prompt} pair every call needs, regardless of whether it also
 // takes a schema — shared here so the five operation wrappers below don't
-// each redeclare it.
+// each redeclare it. `images` is optional and additive: the label-photo
+// pipeline (base64 nutrition-panel photos) is the only caller that supplies
+// it — text-only callers (description parsing) never set it and see no
+// behavior change.
 type AiCallParams = {
   readonly model: string;
   readonly prompt: string;
+  readonly images?: ReadonlyArray<{
+    readonly data: string;
+    readonly mediaType: string;
+  }>;
 };
 
 const toAiSdkError = (cause: unknown): AiSdkError =>
@@ -51,6 +58,32 @@ const toAiSdkError = (cause: unknown): AiSdkError =>
       : "call_failed",
   });
 
+// generateObject/generateText both accept `prompt: string | ModelMessage[]`
+// — a plain string for text-only calls, or a single user message mixing
+// text and image parts for multimodal ones. Kept as one helper so both
+// wrappers build the vision-capable shape identically. Exported as a test
+// seam (no network involved in building the shape) — test/unit/ai asserts
+// it directly rather than through a real generateObject call.
+export const toSdkPrompt = (params: AiCallParams): string | ModelMessage[] =>
+  params.images && params.images.length > 0
+    ? [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: params.prompt },
+            ...params.images.map(
+              (image) =>
+                ({
+                  type: "image",
+                  image: image.data,
+                  mediaType: image.mediaType,
+                }) as const,
+            ),
+          ],
+        },
+      ]
+    : params.prompt;
+
 export const generateTextEffect = (
   params: AiCallParams,
 ): Effect.Effect<string, AiSdkError> =>
@@ -58,7 +91,7 @@ export const generateTextEffect = (
     try: () =>
       generateText({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toSdkPrompt(params),
       }).then((result) => result.text),
     catch: toAiSdkError,
   });
@@ -73,7 +106,7 @@ export const generateObjectEffect = <A, I>(
     try: () =>
       generateObject({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toSdkPrompt(params),
         schema: Schema.standardSchemaV1(params.schema),
       }).then((result) => result.object),
     catch: toAiSdkError,
@@ -103,7 +136,12 @@ export const generateObjectWithFallbackEffect = <A, I>(
   attempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<A, AiSdkError> => {
   const runAttempt = (model: string) =>
-    attempt({ model, prompt: params.prompt, schema: params.schema });
+    attempt({
+      model,
+      prompt: params.prompt,
+      images: params.images,
+      schema: params.schema,
+    });
 
   return runAttempt(params.model).pipe(
     Effect.catchAll((error) =>
@@ -125,7 +163,10 @@ export const generateObjectWithFallbackEffect = <A, I>(
 export const streamTextEffect = (params: AiCallParams) =>
   Stream.unwrap(
     Effect.sync(() =>
-      streamText({ model: resolveModel(params.model), prompt: params.prompt }),
+      streamText({
+        model: resolveModel(params.model),
+        prompt: toSdkPrompt(params),
+      }),
     ).pipe(
       Effect.map((result) =>
         Stream.fromAsyncIterable(result.fullStream, toAiSdkError).pipe(
@@ -153,7 +194,7 @@ export const streamObjectEffect = <A, I>(
       // it here is what makes `part.type === "error"` below narrow.
       streamObject<typeof standardSchema, "object">({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toSdkPrompt(params),
         schema: standardSchema,
       }),
     ).pipe(

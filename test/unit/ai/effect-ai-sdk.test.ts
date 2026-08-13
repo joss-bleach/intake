@@ -7,6 +7,7 @@ import {
   generateTextEffect,
   streamObjectEffect,
   streamTextEffect,
+  toSdkPrompt,
 } from "../../../src/ai/effect-ai-sdk";
 
 const failureValue = (exit: Exit.Exit<unknown, unknown>): unknown => {
@@ -21,6 +22,52 @@ const failureValue = (exit: Exit.Exit<unknown, unknown>): unknown => {
 // rejects during its own auth check before a request goes out (confirmed
 // against @openrouter/ai-sdk-provider's LoadAPIKeyError), so these stay
 // fast and offline while still proving the tagged-error wrapping is real.
+// toSdkPrompt has no network dependency, unlike the effects above — it just
+// builds the shape the AI SDK's `prompt` param accepts, so it's asserted
+// directly rather than through a real call.
+describe("toSdkPrompt", () => {
+  it("passes a plain string through untouched when there are no images", () => {
+    expect(toSdkPrompt({ model: "m", prompt: "describe this" })).toBe(
+      "describe this",
+    );
+  });
+
+  it("builds a single multimodal user message when images are present", () => {
+    const result = toSdkPrompt({
+      model: "m",
+      prompt: "read this label",
+      images: [{ data: "base64data", mediaType: "image/jpeg" }],
+    });
+
+    expect(result).toEqual([
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "read this label" },
+          { type: "image", image: "base64data", mediaType: "image/jpeg" },
+        ],
+      },
+    ]);
+  });
+
+  it("folds multiple images into the same user message, in order", () => {
+    const result = toSdkPrompt({
+      model: "m",
+      prompt: "read these labels",
+      images: [
+        { data: "front", mediaType: "image/jpeg" },
+        { data: "back", mediaType: "image/jpeg" },
+      ],
+    });
+
+    expect(Array.isArray(result) && result[0].content).toEqual([
+      { type: "text", text: "read these labels" },
+      { type: "image", image: "front", mediaType: "image/jpeg" },
+      { type: "image", image: "back", mediaType: "image/jpeg" },
+    ]);
+  });
+});
+
 describe("generateTextEffect / generateObjectEffect", () => {
   it("fails with a single tagged AiSdkError, not a raw rejection", async () => {
     const exit = await Effect.runPromiseExit(
