@@ -16,3 +16,7 @@ export type ProfileSnapshot = RouterOutputs["profile"]["get"];
 // returns it (issue #47) — reused from the server's inferred output rather
 // than importing src/ai's Effect Schema class into the client bundle.
 export type LabelReading = RouterOutputs["labelPhoto"]["extract"];
+
+// The dashboard's rolling-7-day activity aggregation (issue #53).
+export type DashboardSnapshot = RouterOutputs["dashboard"]["get"];
+export type DashboardMealGroup = DashboardSnapshot["meals"][number];

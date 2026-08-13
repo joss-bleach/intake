@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./trpc";
 import { goalsRouter, profileRouter } from "./routers/goals";
 import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
+import { dashboardRouter } from "./routers/dashboard";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -38,6 +39,9 @@ export const appRouter = router({
   // Log by label photo (#47): OCR extraction + confirmed-amount save, no
   // food-database resolution — see routers/label-photo.ts.
   labelPhoto: labelPhotoRouter,
+
+  // Dashboard (#53): rolling-7-day activity aggregation for the home screen.
+  dashboard: dashboardRouter,
 });
 
 export type AppRouter = typeof appRouter;
