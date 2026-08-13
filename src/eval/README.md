@@ -15,7 +15,12 @@ pnpm eval --pipeline=label   # just one pipeline
 
 No `OPENROUTER_API_KEY` needed for the above — every fixture already has a
 cached model response committed at `test/fixtures/eval/cache/`, and the
-default run never calls a model.
+default run never calls a model. Every cache entry today has
+`"model": "seed/manually-authored"` — hand-written to match ground truth,
+not yet a real model response — so a passing `pnpm eval` score confirms the
+harness and its scoring rules, not that a configured model actually reads
+these inputs correctly. Run `--refresh` (below) against a real model to
+get a genuine accuracy read.
 
 To update the cache (a new fixture, or a real model-selection change):
 
