@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Tests for the essay-comment hook. Run: python3 .claude/hooks/test_check_comment_essays.py"""
-import importlib.util
 import json
 import os
 import subprocess
@@ -8,9 +7,6 @@ import sys
 import tempfile
 
 HOOK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check-comment-essays.py")
-spec = importlib.util.spec_from_file_location("hook", HOOK)
-hook = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(hook)
 
 failures = []
 
