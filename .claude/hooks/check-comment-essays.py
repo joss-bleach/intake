@@ -9,6 +9,7 @@ the agent fixes it immediately instead of drifting back into prose.
 import json
 import re
 import sys
+from collections import Counter
 
 # Extensions we care about (the project's TS/JS stack, plus common scripting langs).
 SLASH_EXTS = {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".go", ".rs", ".java", ".c", ".cpp", ".h"}
@@ -24,8 +25,17 @@ def ext_of(path):
     return m.group(1).lower() if m else ""
 
 
+def run_key(lines, run_start, run_len):
+    """Identity of a comment run: its own comment lines, stripped."""
+    return ("run", tuple(l.strip() for l in lines[run_start - 1:run_start + run_len - 1]))
+
+
 def find_violations(text, ext):
-    """Return (start_line, end_line, message) for each essay-style comment in the file."""
+    """Return (key, message) for each essay-style comment in the file.
+
+    The key is the offending comment's own text, so the same comment matches
+    itself across two versions of a file even when its line numbers move.
+    """
     lines = text.split("\n")
     violations = []
 
@@ -44,7 +54,8 @@ def find_violations(text, ext):
                 jsdoc_len += 1
                 if "*/" in stripped:
                     if jsdoc_len > MAX_JSDOC_LINES:
-                        violations.append((jsdoc_start, i, f"line {jsdoc_start}: /** */ block runs {jsdoc_len} lines (max {MAX_JSDOC_LINES})"))
+                        key = ("jsdoc", tuple(l.strip() for l in lines[jsdoc_start - 1:i]))
+                        violations.append((key, f"line {jsdoc_start}: /** */ block runs {jsdoc_len} lines (max {MAX_JSDOC_LINES})"))
                     in_jsdoc = False
                 continue
 
@@ -60,18 +71,18 @@ def find_violations(text, ext):
             if is_line_comment:
                 text_only = stripped.lstrip("/").strip()
                 if len(text_only) > MAX_LINE_CHARS:
-                    violations.append((i, i, f"line {i}: comment is {len(text_only)} chars (max {MAX_LINE_CHARS}) — restate as prose or trim"))
+                    violations.append((("long", text_only), f"line {i}: comment is {len(text_only)} chars (max {MAX_LINE_CHARS}) — restate as prose or trim"))
                 if run_start is None:
                     run_start = i
                 run_len += 1
             else:
                 if run_len > MAX_BLOCK_LINES:
-                    violations.append((run_start, run_start + run_len - 1, f"line {run_start}: {run_len} consecutive // comment lines (max {MAX_BLOCK_LINES})"))
+                    violations.append((run_key(lines, run_start, run_len), f"line {run_start}: {run_len} consecutive // comment lines (max {MAX_BLOCK_LINES})"))
                 run_start = None
                 run_len = 0
 
         if run_len > MAX_BLOCK_LINES:
-            violations.append((run_start, run_start + run_len - 1, f"line {run_start}: {run_len} consecutive // comment lines (max {MAX_BLOCK_LINES})"))
+            violations.append((run_key(lines, run_start, run_len), f"line {run_start}: {run_len} consecutive // comment lines (max {MAX_BLOCK_LINES})"))
 
     elif ext in HASH_EXTS:
         run_start = None
@@ -82,34 +93,29 @@ def find_violations(text, ext):
             if is_comment:
                 text_only = stripped.lstrip("#").strip()
                 if len(text_only) > MAX_LINE_CHARS:
-                    violations.append((i, i, f"line {i}: comment is {len(text_only)} chars (max {MAX_LINE_CHARS}) — restate as prose or trim"))
+                    violations.append((("long", text_only), f"line {i}: comment is {len(text_only)} chars (max {MAX_LINE_CHARS}) — restate as prose or trim"))
                 if run_start is None:
                     run_start = i
                 run_len += 1
             else:
                 if run_len > MAX_BLOCK_LINES:
-                    violations.append((run_start, run_start + run_len - 1, f"line {run_start}: {run_len} consecutive # comment lines (max {MAX_BLOCK_LINES})"))
+                    violations.append((run_key(lines, run_start, run_len), f"line {run_start}: {run_len} consecutive # comment lines (max {MAX_BLOCK_LINES})"))
                 run_start = None
                 run_len = 0
         if run_len > MAX_BLOCK_LINES:
-            violations.append((run_start, run_start + run_len - 1, f"line {run_start}: {run_len} consecutive # comment lines (max {MAX_BLOCK_LINES})"))
+            violations.append((run_key(lines, run_start, run_len), f"line {run_start}: {run_len} consecutive # comment lines (max {MAX_BLOCK_LINES})"))
 
     return violations
 
 
-def span_of(text, index, fragment):
-    """Line range a fragment occupies, given its character offset in text."""
-    start = text.count("\n", 0, index) + 1
-    return (start, start + fragment.count("\n"))
+def text_before(tool_name, tool_input, text):
+    """The file as it was before this call, or None when it cannot be rebuilt.
 
-
-def touched_ranges(tool_name, tool_input, text):
-    """Line ranges this tool call wrote, or None to check the whole file.
-
-    Write authors the whole file, so it owns every line. Edit/MultiEdit own only
-    the text they inserted; comments already in the file must not block an
-    unrelated edit. Returns None when the inserted text cannot be located, so the
-    hook fails closed rather than skipping a real violation.
+    Write authors the whole file, so nothing pre-existed it. Edit/MultiEdit are
+    undone in reverse order (a later edit may have rewritten an earlier one's
+    output), turning each new_string back into its old_string. Returns None when
+    an edit cannot be undone, so the hook falls back to checking the whole file
+    rather than skipping a real violation.
     """
     if tool_name == "Write":
         return None
@@ -118,39 +124,52 @@ def touched_ranges(tool_name, tool_input, text):
     if not isinstance(edits, list):
         return None
 
-    ranges = []
-    for edit in edits:
+    before = text
+    for edit in reversed(edits):
         if not isinstance(edit, dict):
             return None
-        fragment = edit.get("new_string") or ""
-        if not fragment:
+        new = edit.get("new_string") or ""
+        old = edit.get("old_string") or ""
+        if new == old:
             continue
-        index = text.find(fragment)
-        if index == -1:
+        if not new:
+            return None  # a deletion leaves no anchor to re-insert old_string at
+        occurrences = before.count(new)
+        if occurrences == 0:
             return None
-        while index != -1:
-            ranges.append(span_of(text, index, fragment))
-            if not edit.get("replace_all"):
-                break
-            index = text.find(fragment, index + 1)
-    return ranges
+        if occurrences > 1 and not edit.get("replace_all"):
+            return None  # cannot tell which copy this edit wrote
+        before = before.replace(new, old, -1 if edit.get("replace_all") else 1)
+    return before
 
 
-def overlaps(violation, ranges):
-    """True when a violation's lines intersect text this call wrote."""
-    if ranges is None:
-        return True
-    start, end = violation[0], violation[1]
-    return any(start <= r_end and r_start <= end for r_start, r_end in ranges)
+def new_violations(text, before, ext):
+    """Violations in `text` that are not already in `before`.
+
+    Matching is by comment content, so an untouched comment stays excused when an
+    edit elsewhere shifts its line numbers, while a comment run that only breaches
+    the limit once this edit joined it to its neighbours counts as new.
+    """
+    found = find_violations(text, ext)
+    if before is None:
+        return found
+    excused = Counter(key for key, _ in find_violations(before, ext))
+    fresh = []
+    for key, message in found:
+        if excused[key] > 0:
+            excused[key] -= 1
+            continue
+        fresh.append((key, message))
+    return fresh
 
 
 def contents_for(tool_name, tool_input):
-    """Yield (file_path, full_text, touched_ranges) for the file this call changed.
+    """Yield (file_path, full_text, text_before) for the file this call changed.
 
     PostToolUse runs after the edit lands, so we read the whole file from disk
     rather than the new_string fragment. A fragment misses blocks that only
-    breach the limits once joined to the comments already around them; the ranges
-    then narrow reporting back to the lines this call is responsible for.
+    breach the limits once joined to the comments already around them; the prior
+    text then excuses the comments this call did not create.
     """
     if tool_name not in ("Write", "Edit", "MultiEdit"):
         return []
@@ -162,7 +181,7 @@ def contents_for(tool_name, tool_input):
             text = f.read()
     except OSError:
         return []
-    return [(path, text, touched_ranges(tool_name, tool_input, text))]
+    return [(path, text, text_before(tool_name, tool_input, text))]
 
 
 def main():
@@ -175,13 +194,12 @@ def main():
     tool_input = payload.get("tool_input", {}) or {}
 
     all_violations = []
-    for path, text, ranges in contents_for(tool_name, tool_input):
+    for path, text, before in contents_for(tool_name, tool_input):
         ext = ext_of(path)
         if not ext or (ext not in SLASH_EXTS and ext not in HASH_EXTS):
             continue
-        for violation in find_violations(text or "", ext):
-            if overlaps(violation, ranges):
-                all_violations.append(f"{path} — {violation[2]}")
+        for _, message in new_violations(text or "", before, ext):
+            all_violations.append(f"{path} — {message}")
 
     if not all_violations:
         return 0
