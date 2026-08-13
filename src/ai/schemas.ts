@@ -13,7 +13,8 @@ export const ConfidenceLevel = Schema.Literal("confident", "needs_review");
 export type ConfidenceLevel = typeof ConfidenceLevel.Type;
 
 // Matches logged_items/saved_meal_items.quantity_unit (src/server/db/schema.ts).
-const QuantityUnit = Schema.Literal("g", "ml", "serving");
+export const QuantityUnit = Schema.Literal("g", "ml", "serving");
+export type QuantityUnit = typeof QuantityUnit.Type;
 
 // A field the model may legitimately omit — not every label prints a brand
 // or a serving size. Value and tag live in one optional struct rather than
@@ -73,7 +74,12 @@ export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
   brand: OptionalWithConfidence(Schema.String),
   basisUnit: Schema.Literal("g", "ml"),
   servingSize: OptionalWithConfidence(Schema.Positive),
-  nutrients: Schema.NonEmptyArray(ExtractedNutrient),
+  // Same "at least one" guarantee as Schema.NonEmptyArray, but typed as a
+  // plain ReadonlyArray rather than a `[X, ...X[]]` tuple: the label-save
+  // router (issue #47) round-trips this exact shape from the client, whose
+  // tRPC-inferred copy of it (lib/router-types.ts) isn't tuple-typed — a
+  // tuple type here would make that legitimate round-trip a type error.
+  nutrients: Schema.Array(ExtractedNutrient).pipe(Schema.minItems(1)),
 }) {}
 
 // Stage 3 (ADR 0001): the trusted, per-nutrient fact a diary entry is

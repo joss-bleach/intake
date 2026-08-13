@@ -1,5 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import type { LanguageModel } from "ai";
+import type { LanguageModel, ModelMessage } from "ai";
 import {
   NoObjectGeneratedError,
   generateObject,
@@ -36,11 +36,39 @@ const resolveModel = (model: string): LanguageModel => openrouter(model);
 
 // The {model, prompt} pair every call needs, regardless of whether it also
 // takes a schema — shared here so the five operation wrappers below don't
-// each redeclare it.
+// each redeclare it. `images` is the one-shot wrappers' multimodal escape
+// hatch (label OCR, issue #47): still just a text prompt for every caller
+// that doesn't pass any, so ADR 0004's existing text-only callers are
+// unaffected.
 type AiCallParams = {
   readonly model: string;
   readonly prompt: string;
+  readonly images?: ReadonlyArray<{
+    readonly data: string;
+    readonly mediaType: string;
+  }>;
 };
+
+// A plain string prompt, or — when `images` is present — a single user
+// message carrying the text plus each image as a file part. generateObject/
+// generateText's `prompt` option accepts either shape directly (ai's
+// `Prompt` type), so no separate `messages` plumbing is needed.
+const toModelPrompt = (params: AiCallParams): string | Array<ModelMessage> =>
+  params.images && params.images.length > 0
+    ? [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: params.prompt },
+            ...params.images.map((image) => ({
+              type: "file" as const,
+              data: image.data,
+              mediaType: image.mediaType,
+            })),
+          ],
+        },
+      ]
+    : params.prompt;
 
 const toAiSdkError = (cause: unknown): AiSdkError =>
   new AiSdkError({
@@ -58,7 +86,7 @@ export const generateTextEffect = (
     try: () =>
       generateText({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toModelPrompt(params),
       }).then((result) => result.text),
     catch: toAiSdkError,
   });
@@ -73,7 +101,7 @@ export const generateObjectEffect = <A, I>(
     try: () =>
       generateObject({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toModelPrompt(params),
         schema: Schema.standardSchemaV1(params.schema),
       }).then((result) => result.object),
     catch: toAiSdkError,
@@ -103,7 +131,12 @@ export const generateObjectWithFallbackEffect = <A, I>(
   attempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<A, AiSdkError> => {
   const runAttempt = (model: string) =>
-    attempt({ model, prompt: params.prompt, schema: params.schema });
+    attempt({
+      model,
+      prompt: params.prompt,
+      images: params.images,
+      schema: params.schema,
+    });
 
   return runAttempt(params.model).pipe(
     Effect.catchAll((error) =>
@@ -125,7 +158,7 @@ export const generateObjectWithFallbackEffect = <A, I>(
 export const streamTextEffect = (params: AiCallParams) =>
   Stream.unwrap(
     Effect.sync(() =>
-      streamText({ model: resolveModel(params.model), prompt: params.prompt }),
+      streamText({ model: resolveModel(params.model), prompt: toModelPrompt(params) }),
     ).pipe(
       Effect.map((result) =>
         Stream.fromAsyncIterable(result.fullStream, toAiSdkError).pipe(
@@ -153,7 +186,7 @@ export const streamObjectEffect = <A, I>(
       // it here is what makes `part.type === "error"` below narrow.
       streamObject<typeof standardSchema, "object">({
         model: resolveModel(params.model),
-        prompt: params.prompt,
+        prompt: toModelPrompt(params),
         schema: standardSchema,
       }),
     ).pipe(

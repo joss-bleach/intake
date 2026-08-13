@@ -27,6 +27,13 @@ export const env = createEnv({
     // CI intentionally runs without one (no OpenRouter account provisioned
     // yet), which is why the ADR 0001 real-round-trip test is skipped there.
     OPENROUTER_API_KEY: z.string().min(1).optional(),
+    // Label-photo OCR (issue #47) model roles. ADR 0005's actual picks are
+    // still TBD pending the model-selection bake-off (#54) — these defaults
+    // are placeholders drawn from that ADR's vision candidate shortlist (a
+    // cheap/fast primary, a cost-agnostic-accuracy fallback), overridable so
+    // swapping in the real bake-off picks doesn't need a code change.
+    LABEL_VISION_MODEL: z.string().min(1).default("google/gemini-2.5-flash-lite"),
+    LABEL_VISION_FALLBACK_MODEL: z.string().min(1).default("google/gemini-2.5-pro"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

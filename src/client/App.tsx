@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { OnboardingFlow } from "@/screens/onboarding/onboarding-flow";
 import { DashboardScreen } from "@/screens/dashboard/dashboard-screen";
 import { ProfileScreen } from "@/screens/profile/profile-screen";
+import { LogLabelPhotoScreen } from "@/screens/log-label-photo/log-label-photo-screen";
 import { theme } from "@/lib/theme";
 import { trpc, queryClient } from "@/lib/trpc";
 
-type Route = "dashboard" | "profile";
+type Route = "dashboard" | "profile" | "log-label-photo";
 
 // Top-level screen switch, driven by whether a goal has been set (#45):
 // no `user_goals` row means onboarding hasn't run yet, so that's shown
@@ -61,10 +62,20 @@ function App() {
     );
   }
 
+  if (route === "log-label-photo") {
+    return (
+      <LogLabelPhotoScreen
+        onDiscard={() => setRoute("dashboard")}
+        onSaved={() => setRoute("dashboard")}
+      />
+    );
+  }
+
   return (
     <DashboardScreen
       goals={goalsQuery.data}
       onOpenProfile={() => setRoute("profile")}
+      onLogFood={() => setRoute("log-label-photo")}
     />
   );
 }
