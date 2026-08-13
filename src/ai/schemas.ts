@@ -27,6 +27,20 @@ export type QuantityUnit = typeof QuantityUnit.Type;
 const OptionalWithConfidence = <A, I>(value: Schema.Schema<A, I>) =>
   Schema.optional(Schema.Struct({ value, confidence: ConfidenceLevel }));
 
+// Issue #50's clarify-up-front chip: offered only when an ingredient's
+// identity is genuinely ambiguous in a way that would change its nutrition
+// ("a latte" — which milk?). `label` is the chip's button text; `searchTerm`
+// is what Stage 3 searches the food database with if the user picks it —
+// kept separate from `label` since a natural chip label ("Oat milk") isn't
+// always the best search string on its own (resolve-ingredient.ts folds it
+// into the ingredient's own name before searching).
+export class ClarifyOption extends Schema.Class<ClarifyOption>(
+  "ClarifyOption",
+)({
+  label: Schema.String,
+  searchTerm: Schema.String,
+}) {}
+
 // Stage 2, description path: one guessed ingredient out of a free-text
 // description ("chicken and rice"). Confidence is per estimated field, not
 // per ingredient as a whole — a model can be sure of "chicken" but unsure
@@ -39,6 +53,25 @@ export class ParsedIngredient extends Schema.Class<ParsedIngredient>(
   quantity: Schema.Positive,
   quantityUnit: QuantityUnit,
   quantityConfidence: ConfidenceLevel,
+  // Present only for a genuinely ambiguous identity — most ingredients have
+  // none. When present, nameConfidence must be "needs_review": the model
+  // itself is saying it can't pick one, which is exactly what needs_review
+  // means (enforced by ParsedDescription's per-ingredient filter below).
+  clarifyOptions: Schema.optional(Schema.NonEmptyArray(ClarifyOption)),
+}) {}
+
+// Issue #50: the client round-trips the exact ParsedIngredient array a
+// `parse` call returned back to `confirm`, each optionally carrying the
+// clarify-chip answer (a ClarifyOption's searchTerm, or free text from
+// "Something else…") the user gave for it. A plain extension rather than a
+// new field on ParsedIngredient itself — Stage 2 never produces this field,
+// only the client does, so keeping it a separate type keeps "what the model
+// said" and "what the user answered" from blurring into one shape.
+export class ClarifiedIngredient extends Schema.Class<ClarifiedIngredient>(
+  "ClarifiedIngredient",
+)({
+  ...ParsedIngredient.fields,
+  clarificationSearchTerm: Schema.optional(Schema.String),
 }) {}
 
 // Stage 2, description path (ADR 0001). A multi-ingredient description
@@ -47,7 +80,21 @@ export class ParsedIngredient extends Schema.Class<ParsedIngredient>(
 export class ParsedDescription extends Schema.Class<ParsedDescription>(
   "ParsedDescription",
 )({
-  ingredients: Schema.NonEmptyArray(ParsedIngredient),
+  ingredients: Schema.NonEmptyArray(ParsedIngredient).pipe(
+    // clarifyOptions is the model itself saying "I can't pick one" — the
+    // same needs_review meaning nameConfidence already carries, so the two
+    // must agree rather than letting a "confident" ingredient also carry
+    // unresolved chip options.
+    Schema.filter((ingredients) => {
+      const mismatch = ingredients.find(
+        (ingredient) =>
+          ingredient.clarifyOptions && ingredient.nameConfidence !== "needs_review",
+      );
+      return mismatch
+        ? `"${mismatch.name}" offers clarifyOptions but its nameConfidence is "confident" — clarifyOptions requires "needs_review"`
+        : true;
+    }),
+  ),
 }) {}
 
 // Stage 2, label path: one nutrient value read off a printed label panel.
