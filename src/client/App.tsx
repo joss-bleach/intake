@@ -6,15 +6,21 @@ import { OnboardingFlow } from "@/screens/onboarding/onboarding-flow";
 import { DashboardScreen } from "@/screens/dashboard/dashboard-screen";
 import { ProfileScreen } from "@/screens/profile/profile-screen";
 import { LogDescriptionScreen } from "@/screens/log-description/log-description-screen";
+import { LogLabelPhotoScreen } from "@/screens/log-label-photo/log-label-photo-screen";
 import { theme } from "@/lib/theme";
 import { trpc, queryClient } from "@/lib/trpc";
 
-type Route = "dashboard" | "profile" | "log-description";
+type Route =
+  | "dashboard"
+  | "profile"
+  | "log-choice"
+  | "log-description"
+  | "log-label-photo";
 
 // Top-level screen switch, driven by whether a goal has been set (#45):
 // no `user_goals` row means onboarding hasn't run yet, so that's shown
 // instead of the dashboard until it completes. No router library — the app
-// only has these three destinations so far; #53 can graduate this once
+// only has these few destinations so far; #53 can graduate this once
 // there's enough surface to need one.
 function App() {
   const goalsQuery = useQuery(trpc.goals.get.queryOptions());
@@ -62,15 +68,50 @@ function App() {
     );
   }
 
+  // Both logging paths (#46, #47) are now behind the "+" button, so it has
+  // to ask which one. A plain two-button panel, not the final design —
+  // the real dashboard (#53) owns how logging is entered.
+  if (route === "log-choice") {
+    return (
+      <AppShell activeTab="log">
+        <h1
+          className="font-display text-[1.6rem] leading-[1.05] tracking-[-0.02em]"
+          style={{ color: theme.text.heading }}
+        >
+          Log food
+        </h1>
+
+        <GlassPanel className="mt-7 flex flex-col gap-3">
+          <Button onClick={() => setRoute("log-description")}>Describe a meal</Button>
+          <Button variant="outline" onClick={() => setRoute("log-label-photo")}>
+            Scan a label
+          </Button>
+          <Button variant="outline" onClick={() => setRoute("dashboard")}>
+            Cancel
+          </Button>
+        </GlassPanel>
+      </AppShell>
+    );
+  }
+
   if (route === "log-description") {
     return <LogDescriptionScreen onSaved={() => setRoute("dashboard")} />;
+  }
+
+  if (route === "log-label-photo") {
+    return (
+      <LogLabelPhotoScreen
+        onDiscard={() => setRoute("dashboard")}
+        onSaved={() => setRoute("dashboard")}
+      />
+    );
   }
 
   return (
     <DashboardScreen
       goals={goalsQuery.data}
       onOpenProfile={() => setRoute("profile")}
-      onLogFood={() => setRoute("log-description")}
+      onLogFood={() => setRoute("log-choice")}
     />
   );
 }

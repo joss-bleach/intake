@@ -54,9 +54,9 @@ type Tracking = {
 // The {model, prompt} pair every call needs, regardless of whether it also
 // takes a schema — shared here so the five operation wrappers below don't
 // each redeclare it. `images` is optional and additive: the label-photo
-// pipeline (base64 nutrition-panel photos) is the only caller that supplies
-// it — text-only callers (description parsing) never set it and see no
-// behavior change.
+// pipeline (issue #47, base64 nutrition-panel photos) is the only caller
+// that supplies it — text-only callers (description parsing) never set it
+// and see no behavior change.
 type AiCallParams = {
   readonly model: string;
   readonly prompt: string;

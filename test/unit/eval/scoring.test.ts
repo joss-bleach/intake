@@ -240,19 +240,26 @@ describe("scoreLabelItem", () => {
     expect(result.failures).toEqual([]);
   });
 
+  // Validation is disabled deliberately: ParsedLabelReading now rejects a
+  // repeated nutrient code at decode time (see test/unit/ai/schemas.test.ts),
+  // so this shape can't be built through the decoder any more. Scoring keeps
+  // its own check as the second line of defence, and this is what covers it.
   it("fails when a nutrient is read twice, even with conflicting values", () => {
-    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
-      foodName: "Weetabix Original",
-      foodNameConfidence: "confident",
-      brand: { value: "Weetabix", confidence: "confident" },
-      basisUnit: "g",
-      servingSize: { value: 37.5, confidence: "confident" },
-      nutrients: [
-        { code: "energy_kcal", value: 362, unit: "kcal", confidence: "confident" },
-        { code: "energy_kcal", value: 136, unit: "kcal", confidence: "confident" },
-        { code: "protein_g", value: 12, unit: "g", confidence: "confident" },
-      ],
-    });
+    const parsed = new ParsedLabelReading(
+      {
+        foodName: "Weetabix Original",
+        foodNameConfidence: "confident",
+        brand: { value: "Weetabix", confidence: "confident" },
+        basisUnit: "g",
+        servingSize: { value: 37.5, confidence: "confident" },
+        nutrients: [
+          { code: "energy_kcal", value: 362, unit: "kcal", confidence: "confident" },
+          { code: "energy_kcal", value: 136, unit: "kcal", confidence: "confident" },
+          { code: "protein_g", value: 12, unit: "g", confidence: "confident" },
+        ],
+      },
+      { disableValidation: true },
+    );
 
     const result = scoreLabelItem(labelFixture, parsed);
 

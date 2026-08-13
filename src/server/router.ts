@@ -3,6 +3,7 @@ import { runEffect } from "./effect-trpc";
 import { FOOD_DATA_ATTRIBUTION } from "./food/attribution";
 import { publicProcedure, router } from "./trpc";
 import { goalsRouter, profileRouter } from "./routers/goals";
+import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
 
 export const appRouter = router({
@@ -33,6 +34,10 @@ export const appRouter = router({
   // Log by description, happy path (#46): free-text -> parse -> resolve ->
   // save. Ambiguity/correction UI is #50's concern, not this router's.
   logDescription: logDescriptionRouter,
+
+  // Log by label photo (#47): OCR extraction + confirmed-amount save, no
+  // food-database resolution — see routers/label-photo.ts.
+  labelPhoto: labelPhotoRouter,
 });
 
 export type AppRouter = typeof appRouter;

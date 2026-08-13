@@ -11,3 +11,8 @@ export type MacroRatioInput = RouterInputs["goals"]["upsert"]["macroRatio"];
 export type ProteinOverrideInput = MacroRatioInput["proteinOverride"];
 export type GoalsSnapshot = RouterOutputs["goals"]["get"];
 export type ProfileSnapshot = RouterOutputs["profile"]["get"];
+
+// The Stage 2 ParsedLabelReading, as the label-photo extract mutation
+// returns it (issue #47) — reused from the server's inferred output rather
+// than importing src/ai's Effect Schema class into the client bundle.
+export type LabelReading = RouterOutputs["labelPhoto"]["extract"];

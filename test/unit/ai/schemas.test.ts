@@ -139,6 +139,59 @@ describe("ParsedLabelReading (Stage 2, label path)", () => {
     ).toThrow();
   });
 
+  it("rejects a nutrient code outside the app's fixed vocabulary", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        basisUnit: "g",
+        nutrients: [
+          { code: "vitamin_c_mg", value: 12, unit: "mg", confidence: "confident" },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a negative nutrient value — no panel prints one", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        basisUnit: "g",
+        nutrients: [
+          { code: "protein_g", value: -4, unit: "g", confidence: "confident" },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a unit that disagrees with the code's fixed unit", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        basisUnit: "g",
+        nutrients: [
+          { code: "salt_g", value: 1.2, unit: "kcal", confidence: "confident" },
+        ],
+      }),
+    ).toThrow();
+  });
+
+  it("rejects a repeated nutrient code — nutrient_values is unique per (food, code)", () => {
+    expect(() =>
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Baked Beans",
+        foodNameConfidence: "confident",
+        basisUnit: "g",
+        nutrients: [
+          { code: "protein_g", value: 4.7, unit: "g", confidence: "confident" },
+          { code: "protein_g", value: 5.1, unit: "g", confidence: "needs_review" },
+        ],
+      }),
+    ).toThrow();
+  });
+
   it("rejects an empty nutrients array — a label read always extracts at least one value", () => {
     expect(() =>
       Schema.decodeUnknownSync(ParsedLabelReading)({
