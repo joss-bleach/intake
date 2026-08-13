@@ -73,6 +73,17 @@ check("reported original still blocks a deletion-joined run",
                                   after_join,
                                   original="// a\n// b\nconst x = 1;\n// c\n// d\n// e\n"))
 
+# A replace_all whose new_string also pre-existed in the file cannot be undone:
+# reverting every copy corrupts the prior text, here excusing the genuinely new
+# run at line 9. The hook must fall back to the whole file and still report it.
+after_replace_all = ("// p\n// q\n// zed\n// s\n// t\nA;\n// zed\nB;\n"
+                     "// p\n// q\n// r\n// s\n// t\nC;\n")
+check("ambiguous replace_all still reports the new run",
+      "line 9" in run_hook("MultiEdit", {"edits": [
+          {"old_string": "// r", "new_string": "// zed", "replace_all": True},
+          {"old_string": "Y;", "new_string": "// p\n// q\n// r\n// s\n// t"},
+      ]}, after_replace_all))
+
 # Regressions.
 check("unrelated edit does not block on legacy comments",
       run_hook("Edit", {"old_string": "const keep = 1;", "new_string": "const keep = 2;"},

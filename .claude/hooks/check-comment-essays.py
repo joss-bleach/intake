@@ -137,9 +137,9 @@ def text_before(tool_name, tool_input, text):
         occurrences = before.count(new)
         if occurrences == 0:
             return None
-        if occurrences > 1 and not edit.get("replace_all"):
-            return None  # cannot tell which copy this edit wrote
-        before = before.replace(new, old, -1 if edit.get("replace_all") else 1)
+        if occurrences > 1:
+            return None  # even with replace_all, pre-existing copies of new_string are indistinguishable from this edit's
+        before = before.replace(new, old, 1)
     return before
 
 
