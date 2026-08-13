@@ -17,13 +17,19 @@ def check(name, condition):
         failures.append(name)
 
 
-def run_hook(tool_name, tool_input, file_text):
-    """Write file_text to a temp .ts file, run the hook on it, return its block reason."""
+def run_hook(tool_name, tool_input, file_text, original=None):
+    """Write file_text to a temp .ts file, run the hook on it, return its block reason.
+
+    `original` stands in for the tool's own `originalFile` report; omit it to
+    exercise the rebuild-from-the-edit fallback.
+    """
     with tempfile.NamedTemporaryFile("w", suffix=".ts", delete=False) as f:
         f.write(file_text)
         path = f.name
     try:
-        payload = {"tool_name": tool_name, "tool_input": dict(tool_input, file_path=path)}
+        response = {} if original is None else {"originalFile": original}
+        payload = {"tool_name": tool_name, "tool_input": dict(tool_input, file_path=path),
+                   "tool_response": response}
         out = subprocess.run([sys.executable, HOOK], input=json.dumps(payload),
                              capture_output=True, text=True).stdout.strip()
         return json.loads(out)["reason"] if out else ""
@@ -53,6 +59,19 @@ check("chained MultiEdit entries excuse legacy comments",
           {"old_string": "const keep = 1;", "new_string": "const mid = 2;"},
           {"old_string": "const mid = 2;", "new_string": "const final = 2;"},
       ]}, after_multi) == "")
+
+# The reported prior file settles what pre-existed, so a deletion elsewhere must
+# not blame the file's legacy comments.
+after_delete = run5 + "\nconst keep = 1;\n"
+check("reported original excuses legacy comments across a deletion",
+      run_hook("Edit", {"old_string": "const drop = 1;\n", "new_string": ""}, after_delete,
+               original=run5 + "\nconst drop = 1;\nconst keep = 1;\n") == "")
+
+# ...but a deletion that joins two short runs still blocks against that original.
+check("reported original still blocks a deletion-joined run",
+      "5 consecutive" in run_hook("Edit", {"old_string": "const x = 1;\n", "new_string": ""},
+                                  after_join,
+                                  original="// a\n// b\nconst x = 1;\n// c\n// d\n// e\n"))
 
 # Regressions.
 check("unrelated edit does not block on legacy comments",

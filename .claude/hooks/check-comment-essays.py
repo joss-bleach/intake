@@ -163,13 +163,16 @@ def new_violations(text, before, ext):
     return fresh
 
 
-def contents_for(tool_name, tool_input):
+def contents_for(tool_name, tool_input, tool_response):
     """Yield (file_path, full_text, text_before) for the file this call changed.
 
     PostToolUse runs after the edit lands, so we read the whole file from disk
     rather than the new_string fragment. A fragment misses blocks that only
     breach the limits once joined to the comments already around them; the prior
     text then excuses the comments this call did not create.
+
+    The tool reports the pre-edit file as `originalFile`; only when it is absent
+    do we rebuild the prior text from the edit itself.
     """
     if tool_name not in ("Write", "Edit", "MultiEdit"):
         return []
@@ -181,7 +184,10 @@ def contents_for(tool_name, tool_input):
             text = f.read()
     except OSError:
         return []
-    return [(path, text, text_before(tool_name, tool_input, text))]
+    original = tool_response.get("originalFile") if isinstance(tool_response, dict) else None
+    if not isinstance(original, str):
+        original = text_before(tool_name, tool_input, text)
+    return [(path, text, original)]
 
 
 def main():
@@ -192,9 +198,10 @@ def main():
 
     tool_name = payload.get("tool_name", "")
     tool_input = payload.get("tool_input", {}) or {}
+    tool_response = payload.get("tool_response", {}) or {}
 
     all_violations = []
-    for path, text, before in contents_for(tool_name, tool_input):
+    for path, text, before in contents_for(tool_name, tool_input, tool_response):
         ext = ext_of(path)
         if not ext or (ext not in SLASH_EXTS and ext not in HASH_EXTS):
             continue
