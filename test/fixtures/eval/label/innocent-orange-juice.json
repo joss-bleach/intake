@@ -1,0 +1,23 @@
+{
+  "id": "label-innocent-orange-juice",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5038862600071 (https://world.openfoodfacts.org/product/5038862600071), values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.5) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "innocent-orange-juice.jpg",
+  "imageMediaType": "image/jpeg",
+  "expected": {
+    "foodName": "Orange Juice",
+    "brand": "Innocent",
+    "basisUnit": "ml",
+    "servingSize": 180,
+    "nutrients": [
+      { "code": "energy_kcal", "value": 45, "unit": "kcal" },
+      { "code": "protein_g", "value": 0.4, "unit": "g" },
+      { "code": "carbohydrate_g", "value": 10, "unit": "g" },
+      { "code": "sugars_g", "value": 8.7, "unit": "g" },
+      { "code": "fat_g", "value": 0, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 0, "unit": "g" },
+      { "code": "fibre_g", "value": 0.9, "unit": "g" },
+      { "code": "salt_g", "value": 0, "unit": "g" }
+    ]
+  }
+}

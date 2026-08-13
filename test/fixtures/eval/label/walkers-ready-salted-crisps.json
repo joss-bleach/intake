@@ -1,0 +1,23 @@
+{
+  "id": "label-walkers-ready-salted-crisps",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5000328992402 (https://world.openfoodfacts.org/product/5000328992402), values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.11) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "walkers-ready-salted-crisps.jpg",
+  "imageMediaType": "image/jpeg",
+  "expected": {
+    "foodName": "Ready Salted Crisps",
+    "brand": "Walkers",
+    "basisUnit": "g",
+    "servingSize": 25,
+    "nutrients": [
+      { "code": "energy_kcal", "value": 521, "unit": "kcal" },
+      { "code": "protein_g", "value": 6.1, "unit": "g" },
+      { "code": "carbohydrate_g", "value": 53, "unit": "g" },
+      { "code": "sugars_g", "value": 0.4, "unit": "g" },
+      { "code": "fat_g", "value": 31, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 2.5, "unit": "g" },
+      { "code": "fibre_g", "value": 3.7, "unit": "g" },
+      { "code": "salt_g", "value": 1.3, "unit": "g" }
+    ]
+  }
+}

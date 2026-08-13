@@ -11,11 +11,11 @@
       { "code": "energy_kcal", "value": 362, "unit": "kcal", "confidence": "confident" },
       { "code": "protein_g", "value": 12, "unit": "g", "confidence": "confident" },
       { "code": "carbohydrate_g", "value": 69, "unit": "g", "confidence": "confident" },
-      { "code": "sugars_g", "value": 4.4, "unit": "g", "confidence": "confident" },
+      { "code": "sugars_g", "value": 4.2, "unit": "g", "confidence": "confident" },
       { "code": "fat_g", "value": 2, "unit": "g", "confidence": "confident" },
-      { "code": "saturated_fat_g", "value": 0.4, "unit": "g", "confidence": "confident" },
+      { "code": "saturated_fat_g", "value": 0.6, "unit": "g", "confidence": "confident" },
       { "code": "fibre_g", "value": 10, "unit": "g", "confidence": "needs_review" },
-      { "code": "salt_g", "value": 0.5, "unit": "g", "confidence": "confident" }
+      { "code": "salt_g", "value": 0.28, "unit": "g", "confidence": "confident" }
     ]
   }
 }

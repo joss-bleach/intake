@@ -1,9 +1,9 @@
 {
   "id": "label-weetabix-original",
-  "groundTruthReviewed": true,
-  "groundTruthSource": "off:5010026500019 (see test/fixtures/off-sample.jsonl), spot-checked against the printed UK pack by Joss 2026-08-13",
-  "imageFile": "weetabix-original.png",
-  "imageMediaType": "image/png",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5010029201772 (https://world.openfoodfacts.org/product/5010029201772), countries_tags=en:united-kingdom, values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.7) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "weetabix-original.jpg",
+  "imageMediaType": "image/jpeg",
   "expected": {
     "foodName": "Weetabix Original",
     "brand": "Weetabix",
@@ -13,11 +13,11 @@
       { "code": "energy_kcal", "value": 362, "unit": "kcal" },
       { "code": "protein_g", "value": 12, "unit": "g" },
       { "code": "carbohydrate_g", "value": 69, "unit": "g" },
-      { "code": "sugars_g", "value": 4.4, "unit": "g" },
+      { "code": "sugars_g", "value": 4.2, "unit": "g" },
       { "code": "fat_g", "value": 2, "unit": "g" },
-      { "code": "saturated_fat_g", "value": 0.4, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 0.6, "unit": "g" },
       { "code": "fibre_g", "value": 10, "unit": "g" },
-      { "code": "salt_g", "value": 0.5, "unit": "g" }
+      { "code": "salt_g", "value": 0.28, "unit": "g" }
     ]
   }
 }

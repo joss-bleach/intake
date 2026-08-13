@@ -1,0 +1,15 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "ingredients": [
+      {
+        "name": "oat milk latte",
+        "nameConfidence": "confident",
+        "quantity": 450,
+        "quantityUnit": "ml",
+        "quantityConfidence": "needs_review"
+      }
+    ]
+  }
+}

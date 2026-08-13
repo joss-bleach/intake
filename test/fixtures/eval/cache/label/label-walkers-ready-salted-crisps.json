@@ -1,0 +1,21 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "foodName": "Walkers Ready Salted Crisps",
+    "foodNameConfidence": "confident",
+    "brand": { "value": "Walkers", "confidence": "confident" },
+    "basisUnit": "g",
+    "servingSize": { "value": 25, "confidence": "confident" },
+    "nutrients": [
+      { "code": "energy_kcal", "value": 521, "unit": "kcal", "confidence": "confident" },
+      { "code": "protein_g", "value": 6.1, "unit": "g", "confidence": "confident" },
+      { "code": "carbohydrate_g", "value": 53, "unit": "g", "confidence": "confident" },
+      { "code": "sugars_g", "value": 0.4, "unit": "g", "confidence": "needs_review" },
+      { "code": "fat_g", "value": 31, "unit": "g", "confidence": "confident" },
+      { "code": "saturated_fat_g", "value": 2.5, "unit": "g", "confidence": "confident" },
+      { "code": "fibre_g", "value": 3.7, "unit": "g", "confidence": "confident" },
+      { "code": "salt_g", "value": 1.3, "unit": "g", "confidence": "confident" }
+    ]
+  }
+}

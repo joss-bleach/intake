@@ -15,7 +15,12 @@ pnpm eval --pipeline=label   # just one pipeline
 
 No `OPENROUTER_API_KEY` needed for the above — every fixture already has a
 cached model response committed at `test/fixtures/eval/cache/`, and the
-default run never calls a model.
+default run never calls a model. Every cache entry today has
+`"model": "seed/manually-authored"` — hand-written to match ground truth,
+not yet a real model response — so a passing `pnpm eval` score confirms the
+harness and its scoring rules, not that a configured model actually reads
+these inputs correctly. Run `--refresh` (below) against a real model to
+get a genuine accuracy read.
 
 To update the cache (a new fixture, or a real model-selection change):
 
@@ -42,12 +47,12 @@ Tolerances (see `src/eval/scoring.ts`): label reads ±2%, description parses
 ±15% — the label already is the fact, so its bar for "close enough" is
 tighter than an estimate parsed from free text.
 
-**Seed dataset only.** This ships with three placeholder fixtures (two
-description, one label) to prove the harness end to end — enough to gate CI
-today, not enough to trust the accuracy numbers themselves yet. The label
-fixture's photo (`weetabix-original.png`) is a synthetic placeholder, not a
-real nutrition-label photo — growing this into a real, representative
-dataset (real label photos included) is tracked as a fast-follow.
+This ships with 6 label fixtures (real UK nutrition-panel photos sourced
+from Open Food Facts, spanning packaging types — cereal box, crisp bag,
+juice carton, bread bag, cheese pack, yogurt pot) and 12 description
+fixtures (a spread of free-text logging phrasing). Not every fixture's
+ground truth has been spot-checked against the physical pack yet — see
+each fixture's `groundTruthReviewed`.
 
 ## Scoring
 

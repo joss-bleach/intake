@@ -1,0 +1,12 @@
+{
+  "id": "description-toast-peanut-butter",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "llm_generated_pending_human_review: compound snack phrasing, standard bread-slice and tablespoon weights, 2026-08-13",
+  "input": "a slice of toast with peanut butter",
+  "expected": {
+    "ingredients": [
+      { "name": "toast", "quantity": 36, "quantityUnit": "g" },
+      { "name": "peanut butter", "quantity": 16, "quantityUnit": "g" }
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "model": "seed/manually-authored",
+  "cachedAt": "2026-08-13T00:00:00.000Z",
+  "response": {
+    "foodName": "Yeo Valley Natural Yogurt",
+    "foodNameConfidence": "confident",
+    "brand": { "value": "Yeo Valley", "confidence": "confident" },
+    "basisUnit": "g",
+    "nutrients": [
+      { "code": "energy_kcal", "value": 72, "unit": "kcal", "confidence": "confident" },
+      { "code": "protein_g", "value": 4.2, "unit": "g", "confidence": "confident" },
+      { "code": "carbohydrate_g", "value": 4.9, "unit": "g", "confidence": "confident" },
+      { "code": "sugars_g", "value": 4.9, "unit": "g", "confidence": "needs_review" },
+      { "code": "fat_g", "value": 3.8, "unit": "g", "confidence": "confident" },
+      { "code": "saturated_fat_g", "value": 2.5, "unit": "g", "confidence": "confident" },
+      { "code": "salt_g", "value": 0.12, "unit": "g", "confidence": "confident" }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "id": "label-yeo-valley-natural-yogurt",
+  "groundTruthReviewed": false,
+  "groundTruthSource": "off:5014067153802 (https://world.openfoodfacts.org/product/5014067153802), values cross-checked by Claude against the OFF-hosted pack photo (nutrition_en.40) 2026-08-13 — not yet spot-checked by Joss against the physical pack",
+  "imageFile": "yeo-valley-natural-yogurt.jpg",
+  "imageMediaType": "image/jpeg",
+  "expected": {
+    "foodName": "Natural Yogurt",
+    "brand": "Yeo Valley",
+    "basisUnit": "g",
+    "nutrients": [
+      { "code": "energy_kcal", "value": 72, "unit": "kcal" },
+      { "code": "protein_g", "value": 4.2, "unit": "g" },
+      { "code": "carbohydrate_g", "value": 4.9, "unit": "g" },
+      { "code": "sugars_g", "value": 4.9, "unit": "g" },
+      { "code": "fat_g", "value": 3.8, "unit": "g" },
+      { "code": "saturated_fat_g", "value": 2.5, "unit": "g" },
+      { "code": "salt_g", "value": 0.12, "unit": "g" }
+    ]
+  }
+}
