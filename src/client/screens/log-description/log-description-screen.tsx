@@ -484,11 +484,14 @@ function CorrectFoodForm({
   diaryEntryId: string;
   onDone: (items: ReadonlyArray<SavedItem>) => void;
 }) {
+  // A field the food has no nutrient row for starts blank, not "0" — the
+  // food genuinely doesn't have that value yet, and defaulting it to zero
+  // would submit a confident zero for a field the user never touched.
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       MACRO_FIELDS.map((field) => [
         field.code,
-        String(item.nutrition?.find((n) => n.code === field.code)?.value ?? 0),
+        item.nutrition?.find((n) => n.code === field.code)?.value.toString() ?? "",
       ]),
     ),
   );
@@ -497,8 +500,11 @@ function CorrectFoodForm({
   const submit = async () => {
     const nutrients = MACRO_FIELDS.map((field) => ({
       code: field.code,
+      raw: values[field.code],
       value: Number(values[field.code]),
-    })).filter((n) => Number.isFinite(n.value) && n.value >= 0);
+    }))
+      .filter((n) => n.raw.trim() !== "" && Number.isFinite(n.value) && n.value >= 0)
+      .map(({ code, value }) => ({ code, value }));
     if (nutrients.length === 0) return;
 
     const updated = await correctFood.mutateAsync({ foodId: item.foodId, nutrients, diaryEntryId });

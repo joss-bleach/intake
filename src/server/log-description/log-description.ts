@@ -336,7 +336,9 @@ export interface DiaryEntrySnapshot {
  * points at (issue #50): the original a correction was made *from* stays in
  * the table for audit (src/eval/corrections-queue.ts reads it), but is never
  * part of what a diary entry currently totals, or it would double-count
- * alongside its correction.
+ * alongside its correction. If a race leaves two corrections pointing at the
+ * same original (a double-submit), only the newest child counts as current
+ * too — otherwise the same logged occasion would double-count instead.
  */
 export const getDiaryEntryEffect = (
   id: string,
@@ -355,11 +357,27 @@ export const getDiaryEntryEffect = (
         .where(eq(loggedItems.diaryEntryId, id)),
     ).pipe(Effect.orDie);
 
-    const supersededIds = new Set(
-      allRows
-        .map((row) => row.item.correctedFromId)
-        .filter((correctedFromId): correctedFromId is string => correctedFromId !== null),
-    );
+    // Group children by the original they corrected. Normally there's one
+    // child per original, but a double-submit (or any other race) can leave
+    // two corrections pointing at the same original — keep only the newest
+    // child so a single logged occasion is never shown, or totaled, twice.
+    const childrenByParent = new Map<string, typeof allRows>();
+    for (const row of allRows) {
+      const parentId = row.item.correctedFromId;
+      if (parentId === null) continue;
+      const siblings = childrenByParent.get(parentId) ?? [];
+      siblings.push(row);
+      childrenByParent.set(parentId, siblings);
+    }
+
+    const supersededIds = new Set<string>();
+    for (const [parentId, children] of childrenByParent) {
+      supersededIds.add(parentId);
+      const stale = [...children]
+        .sort((a, b) => b.item.createdAt.getTime() - a.item.createdAt.getTime())
+        .slice(1);
+      stale.forEach((row) => supersededIds.add(row.item.id));
+    }
     const rows = allRows.filter((row) => !supersededIds.has(row.item.id));
 
     const foodIds = rows.map((row) => row.food.id);
