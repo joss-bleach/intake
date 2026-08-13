@@ -381,9 +381,22 @@ export const getDiaryEntryEffect = (
     const rows = allRows.filter((row) => !supersededIds.has(row.item.id));
 
     const foodIds = rows.map((row) => row.food.id);
-    const nutrients = foodIds.length
+    const foodNutrients = foodIds.length
       ? yield* Effect.tryPromise(() =>
           db.select().from(nutrientValues).where(inArray(nutrientValues.foodId, foodIds)),
+        ).pipe(Effect.orDie)
+      : [];
+
+    // Nutrients attached to a logged item are that log's own corrected
+    // values and override the shared food's — nutrient_values' exactly-one-
+    // parent rule means an item either has a complete own set or none.
+    const itemIds = rows.map((row) => row.item.id);
+    const itemNutrients = itemIds.length
+      ? yield* Effect.tryPromise(() =>
+          db
+            .select()
+            .from(nutrientValues)
+            .where(inArray(nutrientValues.loggedItemId, itemIds)),
         ).pipe(Effect.orDie)
       : [];
 
@@ -391,21 +404,25 @@ export const getDiaryEntryEffect = (
       id: diaryEntry.id,
       loggedAt: diaryEntry.loggedAt.toISOString(),
       entryMethod: diaryEntry.entryMethod,
-      items: rows.map((row) => ({
-        id: row.item.id,
-        foodId: row.food.id,
-        foodName: row.food.name,
-        quantity: Number(row.item.quantity),
-        quantityUnit: row.item.quantityUnit,
-        confidence: row.item.confidence,
-        source: toStage3Source(row.item, row.food.provenance),
-        nutrition: nutrients
-          .filter((nutrient) => nutrient.foodId === row.food.id)
-          .map((nutrient) => ({
+      items: rows.map((row) => {
+        const own = itemNutrients.filter((nutrient) => nutrient.loggedItemId === row.item.id);
+        const nutrition = own.length
+          ? own
+          : foodNutrients.filter((nutrient) => nutrient.foodId === row.food.id);
+        return {
+          id: row.item.id,
+          foodId: row.food.id,
+          foodName: row.food.name,
+          quantity: Number(row.item.quantity),
+          quantityUnit: row.item.quantityUnit,
+          confidence: row.item.confidence,
+          source: toStage3Source(row.item, row.food.provenance),
+          nutrition: nutrition.map((nutrient) => ({
             code: nutrient.code,
             value: Number(nutrient.value),
             unit: nutrient.unit,
           })),
-      })),
+        };
+      }),
     };
   });

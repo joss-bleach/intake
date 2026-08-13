@@ -4,6 +4,7 @@ import { publicProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import { extractLabelReading } from "../label-photo/label-ocr";
 import { saveLabelPhotoEntry } from "../label-photo/save-label-photo";
+import { correctLabelPhotoFood, correctLabelPhotoInstance } from "../label-photo/correct-label-photo";
 import { ParsedLabelReading, QuantityUnit } from "../../ai/schemas";
 
 class DbError extends Data.TaggedError("DbError")<{ readonly cause: unknown }> {
@@ -32,6 +33,31 @@ const saveInput = Schema.standardSchemaV1(
   }),
 );
 
+// Corrections (issue #51) reuse the same reading/amount shape as save — a
+// correction is the same Stage 2 data, just written to a different place.
+const correctInstanceInput = Schema.standardSchemaV1(
+  Schema.Struct({
+    // The diary entry and food are read off this row server-side rather
+    // than taken from the client — see correct-label-photo.ts.
+    originalLoggedItemId: Schema.String,
+    reading: ParsedLabelReading,
+    quantity: Schema.Positive,
+    quantityUnit: QuantityUnit,
+    // Which nutrient codes the user actually edited — see
+    // correct-label-photo.ts for why an untouched field can't just inherit
+    // "user_corrected"/"confident" from riding along in the same reading.
+    editedNutrientCodes: Schema.Array(Schema.String),
+  }),
+);
+
+const correctFoodInput = Schema.standardSchemaV1(
+  Schema.Struct({
+    foodId: Schema.String,
+    reading: ParsedLabelReading,
+    editedNutrientCodes: Schema.Array(Schema.String),
+  }),
+);
+
 export const labelPhotoRouter = router({
   // Stage 1→2: OCR the photo into a ParsedLabelReading for the confirm
   // screen. Deliberately skips food-database resolution (issue #44) — see
@@ -50,6 +76,38 @@ export const labelPhotoRouter = router({
           saveLabelPhotoEntry(ctx.db, input.reading, {
             quantity: input.quantity,
             quantityUnit: input.quantityUnit,
+          }),
+        catch: (cause) => new DbError({ cause }),
+      }),
+    ),
+  ),
+
+  // Instance-level correction ("just this log") — see correct-label-photo.ts.
+  correctInstance: publicProcedure.input(correctInstanceInput).mutation(({ ctx, input }) =>
+    runEffect(
+      Effect.tryPromise({
+        try: () =>
+          correctLabelPhotoInstance(ctx.db, {
+            originalLoggedItemId: input.originalLoggedItemId,
+            reading: input.reading,
+            amount: { quantity: input.quantity, quantityUnit: input.quantityUnit },
+            editedNutrientCodes: input.editedNutrientCodes,
+          }),
+        catch: (cause) => new DbError({ cause }),
+      }),
+    ),
+  ),
+
+  // Food-level correction ("this product, going forward") — see
+  // correct-label-photo.ts.
+  correctFood: publicProcedure.input(correctFoodInput).mutation(({ ctx, input }) =>
+    runEffect(
+      Effect.tryPromise({
+        try: () =>
+          correctLabelPhotoFood(ctx.db, {
+            foodId: input.foodId,
+            reading: input.reading,
+            editedNutrientCodes: input.editedNutrientCodes,
           }),
         catch: (cause) => new DbError({ cause }),
       }),

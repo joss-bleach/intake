@@ -41,9 +41,18 @@ function NeedsReviewIcon() {
  * food-level corrections available afterward. See reducer.ts for the phase
  * machine this renders.
  */
-export function LogDescriptionScreen({ onSaved }: { onSaved: () => void }) {
+export function LogDescriptionScreen({
+  onSaved,
+  initialText,
+}: {
+  onSaved: () => void;
+  // Pre-fills the text box when this screen is reached via the label-photo
+  // path's incomplete-read handoff (issue #51), so the session carries
+  // forward whatever was extracted instead of starting blank.
+  initialText?: string;
+}) {
   const [session, dispatch] = useReducer(reduce, undefined, initialSession);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText ?? "");
   const parseMutation = useMutation(trpc.logDescription.parse.mutationOptions());
   const confirmMutation = useMutation(trpc.logDescription.confirm.mutationOptions());
 
