@@ -1,4 +1,5 @@
 import { Schema } from "effect";
+import { NUTRIENT_CODES, NUTRIENT_UNITS } from "../server/food/nutrient-codes";
 
 // Shared LLM-output contract (ADR 0001, issue #43): raw model response ->
 // Effect-Schema-validated Stage 2 intermediate -> trusted Stage 3
@@ -53,11 +54,16 @@ export class ParsedDescription extends Schema.Class<ParsedDescription>(
 // Matches nutrient_values' (code, value, unit) shape (src/server/db/schema.ts)
 // so Stage 3 label-extraction NutritionFacts carry these straight through
 // (ADR 0001: "the printed panel already is the fact").
+//
+// `code` is the app's fixed nutrient vocabulary (nutrient-codes.ts), the same
+// list the OCR prompt constrains the model to — a pure constants module, so
+// this validates against one vocabulary rather than restating it. `value` is
+// non-negative: no printed panel carries a negative amount.
 export class ExtractedNutrient extends Schema.Class<ExtractedNutrient>(
   "ExtractedNutrient",
 )({
-  code: Schema.String,
-  value: Schema.Number,
+  code: Schema.Literal(...Object.values(NUTRIENT_CODES)),
+  value: Schema.NonNegative,
   unit: Schema.String,
   confidence: ConfidenceLevel,
 }) {}
@@ -79,7 +85,26 @@ export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
   // router (issue #47) round-trips this exact shape from the client, whose
   // tRPC-inferred copy of it (lib/router-types.ts) isn't tuple-typed — a
   // tuple type here would make that legitimate round-trip a type error.
-  nutrients: Schema.Array(ExtractedNutrient).pipe(Schema.minItems(1)),
+  nutrients: Schema.Array(ExtractedNutrient).pipe(
+    Schema.minItems(1),
+    // Two cross-nutrient rules the per-item schema can't state. One entry per
+    // code: nutrient_values is uniquely indexed on (food_id, code), so a
+    // duplicate would abort the confirmed save at the database instead of
+    // here. And each code's unit is fixed (nutrient-codes.ts) — "salt in
+    // kcal" must not reach the totals the confirm screen adds up.
+    Schema.filter((nutrients) => {
+      const codes = new Set(nutrients.map((nutrient) => nutrient.code));
+      if (codes.size !== nutrients.length) {
+        return "a label panel prints each nutrient once — duplicate code";
+      }
+      const mismatch = nutrients.find(
+        (nutrient) => nutrient.unit !== NUTRIENT_UNITS[nutrient.code],
+      );
+      return mismatch
+        ? `${mismatch.code} is measured in ${NUTRIENT_UNITS[mismatch.code]}, not ${mismatch.unit}`
+        : true;
+    }),
+  ),
 }) {}
 
 // Stage 3 (ADR 0001): the trusted, per-nutrient fact a diary entry is

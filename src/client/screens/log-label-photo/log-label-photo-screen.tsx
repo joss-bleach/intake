@@ -101,7 +101,21 @@ export function LogLabelPhotoScreen({
   const saveMutation = useMutation(trpc.labelPhoto.save.mutationOptions());
 
   const handleFile = async (file: File) => {
-    const photo = await readPhoto(file);
+    let photo;
+    // Reading the file can fail on its own (an unreadable file, an
+    // unexpected data URL) before there is anything to extract — that has to
+    // show a capture error, not leave the screen sitting idle.
+    try {
+      photo = await readPhoto(file);
+    } catch (error) {
+      dispatch({
+        type: "CAPTURE_FAILURE",
+        message:
+          error instanceof Error ? error.message : "Couldn't read that photo.",
+      });
+      return;
+    }
+
     dispatch({ type: "CAPTURE_PHOTO", photo });
     try {
       const reading = await extractMutation.mutateAsync({

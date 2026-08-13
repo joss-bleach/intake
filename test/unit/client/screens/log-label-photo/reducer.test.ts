@@ -89,6 +89,17 @@ describe("reduce — capture and extraction", () => {
     expect(session.error).toBe("Couldn't read that label.");
   });
 
+  it("CAPTURE_FAILURE hard-fails from idle, before any extraction starts", () => {
+    const session = reduce(initialSession(), {
+      type: "CAPTURE_FAILURE",
+      message: "Couldn't read that photo.",
+    });
+
+    expect(session.phase).toBe("hard_failed");
+    expect(session.error).toBe("Couldn't read that photo.");
+    expect(session.photo).toBeNull();
+  });
+
   it("RETAKE_PHOTO resets a hard-failed session back to idle", () => {
     const extracting = reduce(initialSession(), { type: "CAPTURE_PHOTO", photo });
     const failed = reduce(extracting, { type: "EXTRACT_FAILURE", message: "nope" });

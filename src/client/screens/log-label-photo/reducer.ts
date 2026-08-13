@@ -39,6 +39,7 @@ export interface Session {
 export type Action =
   | { readonly type: "CAPTURE_PHOTO"; readonly photo: CapturedPhoto }
   | { readonly type: "EXTRACT_SUCCESS"; readonly reading: ParsedLabelReading }
+  | { readonly type: "CAPTURE_FAILURE"; readonly message: string }
   | { readonly type: "EXTRACT_FAILURE"; readonly message: string }
   | { readonly type: "RETAKE_PHOTO" }
   | { readonly type: "SET_UNIT"; readonly unit: Unit }
@@ -98,6 +99,15 @@ export function reduce(session: Session, action: Action): Session {
         error: null,
       };
     }
+
+    // The photo never became a data URL, so extraction never started —
+    // same hard_failed rest state, but reachable from idle, which
+    // EXTRACT_FAILURE is not.
+    case "CAPTURE_FAILURE":
+      if (session.phase !== "idle" && session.phase !== "hard_failed") {
+        return session;
+      }
+      return { ...initialSession(), phase: "hard_failed", error: action.message };
 
     case "EXTRACT_FAILURE":
       if (session.phase !== "extracting") return session;
