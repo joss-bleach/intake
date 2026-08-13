@@ -6,6 +6,7 @@ import { goalsRouter, profileRouter } from "./routers/goals";
 import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
 import { dashboardRouter } from "./routers/dashboard";
+import { savedMealsRouter } from "./routers/saved-meals";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -42,6 +43,11 @@ export const appRouter = router({
 
   // Dashboard (#53): rolling-7-day activity aggregation for the home screen.
   dashboard: dashboardRouter,
+
+  // Saved meals & recently-logged (#52): search over logging history,
+  // frequency/recency-ranked suggestions, and named multi-item SavedMeals —
+  // see routers/saved-meals.ts.
+  savedMeals: savedMealsRouter,
 });
 
 export type AppRouter = typeof appRouter;
