@@ -1,16 +1,20 @@
-import { useReducer, useRef } from "react";
+import { useReducer, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Beef, Camera, Check, Droplet, Sparkles, Wheat, X } from "lucide-react";
 import { AppShell, GlassPanel } from "@/components/shell";
 import { Button } from "@/components/ui/button";
+import { Toast } from "@/components/ui/toast";
 import { theme, reviewBadgeClass, confidentDotClass } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
 import {
   availableUnits,
   computeTotals,
+  describeForHandoff,
   initialSession,
+  isIncompleteReading,
   reduce,
   resolveBasisAmount,
+  type CorrectionScope,
   type ParsedLabelReading,
   type Unit,
 } from "./reducer";
@@ -83,22 +87,30 @@ function readPhoto(file: File): Promise<{ data: string; mediaType: string }> {
 
 /**
  * Photograph a nutrition label, confirm the serving amount, save — the
- * confident-case flow (issue #47). Capture uses a plain
- * `<input capture>` rather than a live getUserMedia stream: simpler, and
- * the acceptance criteria names either as acceptable.
+ * confident-case flow (issue #47) plus corrections and the incomplete-read
+ * handoff (issue #51). Capture uses a plain `<input capture>` rather than a
+ * live getUserMedia stream: simpler, and the acceptance criteria names
+ * either as acceptable.
  */
 export function LogLabelPhotoScreen({
   onDiscard,
   onSaved,
+  onIncompleteRead,
 }: {
   onDiscard: () => void;
   onSaved: () => void;
+  // A successful-but-incomplete read (issue #51) — the caller switches to
+  // the description path with this as its starting text, rather than this
+  // screen ever showing a confirm view for it.
+  onIncompleteRead: (initialDescription: string) => void;
 }) {
   const [session, dispatch] = useReducer(reduce, undefined, initialSession);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const extractMutation = useMutation(trpc.labelPhoto.extract.mutationOptions());
   const saveMutation = useMutation(trpc.labelPhoto.save.mutationOptions());
+  const correctInstanceMutation = useMutation(trpc.labelPhoto.correctInstance.mutationOptions());
+  const correctFoodMutation = useMutation(trpc.labelPhoto.correctFood.mutationOptions());
 
   const handleFile = async (file: File) => {
     let photo;
@@ -122,6 +134,18 @@ export function LogLabelPhotoScreen({
         photoBase64: photo.data,
         mediaType: photo.mediaType,
       });
+
+      // A decodable-but-incomplete read (no energy_kcal) never reaches the
+      // confirm screen — hand off to the description path with whatever was
+      // extracted, no tap required, and no food-database fallback of our
+      // own (the description path's own resolveFood call is the only
+      // lookup that happens from here).
+      if (isIncompleteReading(reading)) {
+        dispatch({ type: "EXTRACT_INCOMPLETE" });
+        onIncompleteRead(describeForHandoff(reading));
+        return;
+      }
+
       dispatch({ type: "EXTRACT_SUCCESS", reading });
     } catch (error) {
       dispatch({
@@ -146,17 +170,59 @@ export function LogLabelPhotoScreen({
 
     dispatch({ type: "SAVE" });
     try {
-      await saveMutation.mutateAsync({
+      const entry = await saveMutation.mutateAsync({
         reading,
         quantity: session.unit === "serving" ? session.amount : basisAmount,
         quantityUnit: session.unit === "serving" ? "serving" : reading.basisUnit,
       });
-      dispatch({ type: "SAVE_SUCCESS" });
-      onSaved();
+      dispatch({ type: "SAVE_SUCCESS", entry });
     } catch (error) {
       dispatch({
         type: "SAVE_FAILURE",
         message: error instanceof Error ? error.message : "Couldn't save that entry.",
+      });
+    }
+  };
+
+  const saveCorrection = async () => {
+    const reading = session.reading;
+    const entry = session.savedEntry;
+    const basisAmount = resolveBasisAmount(session);
+    if (!reading || !entry || basisAmount === null) return;
+
+    dispatch({ type: "SAVE_CORRECTION" });
+    const amount = {
+      quantity: session.unit === "serving" ? session.amount : basisAmount,
+      quantityUnit: session.unit === "serving" ? "serving" : reading.basisUnit,
+    } as const;
+
+    try {
+      if (session.correctionScope === "instance") {
+        const result = await correctInstanceMutation.mutateAsync({
+          originalLoggedItemId: entry.loggedItemId,
+          diaryEntryId: entry.diaryEntryId,
+          foodId: entry.foodId,
+          reading,
+          ...amount,
+          editedNutrientCodes: session.editedNutrientCodes,
+        });
+        dispatch({
+          type: "CORRECTION_SUCCESS",
+          scope: "instance",
+          loggedItemId: result.loggedItemId,
+        });
+      } else {
+        await correctFoodMutation.mutateAsync({
+          foodId: entry.foodId,
+          reading,
+          editedNutrientCodes: session.editedNutrientCodes,
+        });
+        dispatch({ type: "CORRECTION_SUCCESS", scope: "food" });
+      }
+    } catch (error) {
+      dispatch({
+        type: "CORRECTION_FAILURE",
+        message: error instanceof Error ? error.message : "Couldn't save that correction.",
       });
     }
   };
@@ -200,11 +266,37 @@ export function LogLabelPhotoScreen({
             saving={session.phase === "saving"}
             onUnitChange={(unit) => dispatch({ type: "SET_UNIT", unit })}
             onAmountChange={(amount) => dispatch({ type: "SET_AMOUNT", amount })}
+            onEditFoodName={(name) => dispatch({ type: "EDIT_FOOD_NAME", name })}
+            onEditBrand={(value) => dispatch({ type: "EDIT_BRAND", value })}
+            onEditNutrient={(code, value) => dispatch({ type: "EDIT_NUTRIENT", code, value })}
             onRetake={retake}
             onDiscard={onDiscard}
             onSave={save}
           />
         )}
+
+      {(session.phase === "saved" || session.phase === "correcting") &&
+        session.reading && (
+          <SavedView
+            reading={session.reading}
+            basisAmount={resolveBasisAmount(session) ?? 0}
+            error={session.error}
+            correcting={session.phase === "correcting"}
+            dirty={session.dirty}
+            correctionScope={session.correctionScope}
+            instanceCorrected={session.instanceCorrected}
+            onEditNutrient={(code, value) => dispatch({ type: "EDIT_NUTRIENT", code, value })}
+            onScopeChange={(scope) => dispatch({ type: "SET_CORRECTION_SCOPE", scope })}
+            onSaveCorrection={saveCorrection}
+            onDone={onSaved}
+          />
+        )}
+
+      {session.toast && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-24 flex justify-center px-4">
+          <Toast message={session.toast} onDismiss={() => dispatch({ type: "DISMISS_TOAST" })} />
+        </div>
+      )}
     </AppShell>
   );
 }
@@ -256,6 +348,177 @@ function ExtractingView() {
   );
 }
 
+// Tap-to-edit affordance shared by the food name/brand and every nutrient
+// value (issue #51's "one-tap correction") — click into a plain text input,
+// commit on blur/Enter, discard on Escape. Mirrors amount-stepper.tsx's
+// editing mechanics, generalized to any string value rather than a
+// stepped numeric amount.
+function EditableValue({
+  value,
+  onCommit,
+  ariaLabel,
+  className,
+  inputMode = "text",
+}: {
+  value: string;
+  onCommit: (raw: string) => void;
+  ariaLabel: string;
+  className?: string;
+  inputMode?: "text" | "decimal";
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const startEdit = () => {
+    setDraft(value);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onCommit(trimmed);
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        autoFocus
+        inputMode={inputMode}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setEditing(false);
+        }}
+        aria-label={ariaLabel}
+        className={`rounded-lg bg-white text-right tabular-nums ring-1 ring-inset ring-black/10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${className ?? ""}`}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startEdit}
+      aria-label={ariaLabel}
+      className={`rounded-lg text-right transition-colors hover:bg-white/60 ${className ?? ""}`}
+    >
+      {value}
+    </button>
+  );
+}
+
+// One nutrient row: label + confidence badge on the left, the tappable
+// scaled value on the right. Shared by ConfirmView and SavedView so a
+// correction edits the same control the confirm screen already showed.
+// `basisAmount` converts between the per-100(g|ml) value the reading
+// actually stores and the scaled total shown/edited here.
+function NutrientRow({
+  code,
+  reading,
+  basisAmount,
+  onEditNutrient,
+}: {
+  code: string;
+  reading: ParsedLabelReading;
+  basisAmount: number;
+  onEditNutrient: (code: string, value: number) => void;
+}) {
+  const nutrient = reading.nutrients.find((n) => n.code === code);
+  if (!nutrient) return null;
+  const factor = basisAmount / 100;
+  const scaledValue = nutrient.value * factor;
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="flex items-center gap-1.5" style={{ color: theme.text.label }}>
+        {nutrientLabel(code)}
+        {nutrient.confidence === "needs_review" && (
+          <span className={reviewBadgeClass}>
+            <Sparkles className="h-2.5 w-2.5" /> estimated
+          </span>
+        )}
+        {nutrient.confidence === "confident" && (
+          <Check className={`h-3 w-3 ${confidentDotClass}`} aria-hidden="true" />
+        )}
+      </span>
+      <span className="flex items-center gap-1 tabular-nums" style={{ color: theme.text.heading }}>
+        <EditableValue
+          value={String(Math.round(scaledValue * 10) / 10)}
+          inputMode="decimal"
+          ariaLabel={`Edit ${nutrientLabel(code)}`}
+          className="w-16"
+          onCommit={(raw) => {
+            const parsed = Number(raw);
+            if (!Number.isFinite(parsed) || parsed < 0 || factor === 0) return;
+            onEditNutrient(code, parsed / factor);
+          }}
+        />
+        {nutrient.unit}
+      </span>
+    </div>
+  );
+}
+
+// Editable name/brand (issue #51) — pre-save only, since a name/brand
+// correction has nowhere to persist once the log is saved (see reducer.ts's
+// nameEditable). SavedView shows the same two lines read-only instead.
+function EditableFoodHeader({
+  reading,
+  onEditFoodName,
+  onEditBrand,
+}: {
+  reading: ParsedLabelReading;
+  onEditFoodName: (name: string) => void;
+  onEditBrand: (value: string) => void;
+}) {
+  return (
+    <div>
+      <EditableValue
+        value={reading.foodName}
+        ariaLabel="Edit food name"
+        className="font-display text-2xl leading-tight text-left"
+        onCommit={onEditFoodName}
+      />
+      <EditableValue
+        value={reading.brand?.value ?? "Add a brand"}
+        ariaLabel="Edit brand"
+        className="block text-sm text-left"
+        onCommit={onEditBrand}
+      />
+    </div>
+  );
+}
+
+// The tappable nutrient list, shared by ConfirmView and SavedView so a
+// correction edits the same control the confirm screen already showed.
+function NutrientPanel({
+  reading,
+  basisAmount,
+  onEditNutrient,
+}: {
+  reading: ParsedLabelReading;
+  basisAmount: number;
+  onEditNutrient: (code: string, value: number) => void;
+}) {
+  const totals = computeTotals(reading, basisAmount);
+  return (
+    <GlassPanel className="flex flex-col gap-3">
+      {totals.map((t) => (
+        <NutrientRow
+          key={t.code}
+          code={t.code}
+          reading={reading}
+          basisAmount={basisAmount}
+          onEditNutrient={onEditNutrient}
+        />
+      ))}
+    </GlassPanel>
+  );
+}
+
 function ConfirmView({
   reading,
   unit,
@@ -265,6 +528,9 @@ function ConfirmView({
   saving,
   onUnitChange,
   onAmountChange,
+  onEditFoodName,
+  onEditBrand,
+  onEditNutrient,
   onRetake,
   onDiscard,
   onSave,
@@ -277,6 +543,9 @@ function ConfirmView({
   saving: boolean;
   onUnitChange: (unit: Unit) => void;
   onAmountChange: (amount: number) => void;
+  onEditFoodName: (name: string) => void;
+  onEditBrand: (value: string) => void;
+  onEditNutrient: (code: string, value: number) => void;
   onRetake: () => void;
   onDiscard: () => void;
   onSave: () => void;
@@ -292,41 +561,9 @@ function ConfirmView({
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div>
-        <p className="font-display text-2xl leading-tight" style={{ color: theme.text.heading }}>
-          {reading.foodName}
-        </p>
-        {reading.brand && (
-          <p className="text-sm" style={{ color: theme.text.faint }}>
-            {reading.brand.value}
-          </p>
-        )}
-      </div>
+      <EditableFoodHeader reading={reading} onEditFoodName={onEditFoodName} onEditBrand={onEditBrand} />
 
-      <GlassPanel className="flex flex-col gap-3">
-        {totals.map((t) => {
-          const nutrient = reading.nutrients.find((n) => n.code === t.code);
-          return (
-            <div key={t.code} className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-1.5" style={{ color: theme.text.label }}>
-                {nutrientLabel(t.code)}
-                {nutrient?.confidence === "needs_review" && (
-                  <span className={reviewBadgeClass}>
-                    <Sparkles className="h-2.5 w-2.5" /> estimated
-                  </span>
-                )}
-                {nutrient?.confidence === "confident" && (
-                  <Check className={`h-3 w-3 ${confidentDotClass}`} aria-hidden="true" />
-                )}
-              </span>
-              <span className="tabular-nums" style={{ color: theme.text.heading }}>
-                {Math.round(t.value * 10) / 10}
-                {t.unit}
-              </span>
-            </div>
-          );
-        })}
-      </GlassPanel>
+      <NutrientPanel reading={reading} basisAmount={basisAmount} onEditNutrient={onEditNutrient} />
 
       {units.length > 1 && (
         <div className="flex gap-1 rounded-full bg-white/50 p-1 ring-1 ring-inset ring-white/70">
@@ -420,6 +657,110 @@ function ConfirmView({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Shown once the entry is saved (issue #51): the same tap-to-edit fields as
+// ConfirmView, plus the two correction scopes. Choosing a scope only
+// matters once something's actually been edited (`dirty`) — the toggle
+// stays hidden until then so a freshly-saved, untouched entry reads exactly
+// like #47's plain "saved" state.
+function SavedView({
+  reading,
+  basisAmount,
+  error,
+  correcting,
+  dirty,
+  correctionScope,
+  instanceCorrected,
+  onEditNutrient,
+  onScopeChange,
+  onSaveCorrection,
+  onDone,
+}: {
+  reading: ParsedLabelReading;
+  basisAmount: number;
+  error: string | null;
+  correcting: boolean;
+  dirty: boolean;
+  correctionScope: CorrectionScope;
+  instanceCorrected: boolean;
+  onEditNutrient: (code: string, value: number) => void;
+  onScopeChange: (scope: CorrectionScope) => void;
+  onSaveCorrection: () => void;
+  onDone: () => void;
+}) {
+  return (
+    <div className="flex flex-1 flex-col gap-4">
+      <div>
+        <p className="text-sm" style={{ color: theme.text.body }}>
+          Saved
+          {/* Quiet persistent indicator (issue #51) for an instance-level
+              correction — deliberately plain text, not a badge, so it never
+              reads as another needs_review nudge. */}
+          {instanceCorrected && (
+            <span className="ml-2" style={{ color: theme.text.faint }}>
+              · corrected for this log
+            </span>
+          )}
+        </p>
+        {/* Read-only here (unlike ConfirmView's EditableFoodHeader) — a
+            name/brand correction has nowhere to persist post-save. */}
+        <p className="font-display text-2xl leading-tight" style={{ color: theme.text.heading }}>
+          {reading.foodName}
+        </p>
+        {reading.brand?.value && (
+          <p className="text-sm" style={{ color: theme.text.faint }}>
+            {reading.brand.value}
+          </p>
+        )}
+      </div>
+
+      <NutrientPanel reading={reading} basisAmount={basisAmount} onEditNutrient={onEditNutrient} />
+
+      {dirty && (
+        <GlassPanel className="flex flex-col gap-3">
+          <p className="text-sm" style={{ color: theme.text.label }}>
+            Apply this correction to
+          </p>
+          <div className="flex gap-1 rounded-full bg-white/50 p-1 ring-1 ring-inset ring-white/70">
+            <button
+              type="button"
+              onClick={() => onScopeChange("instance")}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${
+                correctionScope === "instance" ? "bg-white shadow-sm" : ""
+              }`}
+              style={{ color: correctionScope === "instance" ? theme.text.heading : theme.text.faint }}
+            >
+              Just this log
+            </button>
+            <button
+              type="button"
+              onClick={() => onScopeChange("food")}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium transition-colors ${
+                correctionScope === "food" ? "bg-white shadow-sm" : ""
+              }`}
+              style={{ color: correctionScope === "food" ? theme.text.heading : theme.text.faint }}
+            >
+              This product, going forward
+            </button>
+          </div>
+          <Button onClick={onSaveCorrection} disabled={correcting}>
+            {correcting ? "Saving correction…" : "Save correction"}
+          </Button>
+        </GlassPanel>
+      )}
+
+      {error && (
+        <p className="text-sm text-red-500" role="alert">
+          {error}
+        </p>
+      )}
+
+      <Button className="mt-auto" onClick={onDone} disabled={correcting}>
+        Done
+      </Button>
     </div>
   );
 }

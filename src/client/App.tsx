@@ -25,6 +25,11 @@ type Route =
 function App() {
   const goalsQuery = useQuery(trpc.goals.get.queryOptions());
   const [route, setRoute] = useState<Route>("dashboard");
+  // Set only by the label-photo path's incomplete-read handoff (issue #51),
+  // and cleared whenever the description screen is entered any other way —
+  // otherwise a stale extraction would resurface on the next unrelated
+  // visit to "Describe a meal".
+  const [handoffText, setHandoffText] = useState<string | null>(null);
 
   if (goalsQuery.isPending) {
     return null;
@@ -82,8 +87,21 @@ function App() {
         </h1>
 
         <GlassPanel className="mt-7 flex flex-col gap-3">
-          <Button onClick={() => setRoute("log-description")}>Describe a meal</Button>
-          <Button variant="outline" onClick={() => setRoute("log-label-photo")}>
+          <Button
+            onClick={() => {
+              setHandoffText(null);
+              setRoute("log-description");
+            }}
+          >
+            Describe a meal
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setHandoffText(null);
+              setRoute("log-label-photo");
+            }}
+          >
             Scan a label
           </Button>
           <Button variant="outline" onClick={() => setRoute("dashboard")}>
@@ -95,7 +113,12 @@ function App() {
   }
 
   if (route === "log-description") {
-    return <LogDescriptionScreen onSaved={() => setRoute("dashboard")} />;
+    return (
+      <LogDescriptionScreen
+        onSaved={() => setRoute("dashboard")}
+        initialText={handoffText ?? undefined}
+      />
+    );
   }
 
   if (route === "log-label-photo") {
@@ -103,6 +126,10 @@ function App() {
       <LogLabelPhotoScreen
         onDiscard={() => setRoute("dashboard")}
         onSaved={() => setRoute("dashboard")}
+        onIncompleteRead={(text) => {
+          setHandoffText(text);
+          setRoute("log-description");
+        }}
       />
     );
   }

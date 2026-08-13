@@ -12,9 +12,18 @@ import { initialSession, reduce } from "./reducer";
 // (src/server/log-description), so the reducer's phase machine only has to
 // model idle/submitting/saved/hard_failed — see reducer.ts's comment for why
 // that's a deliberate simplification from the prototype it's ported from.
-export function LogDescriptionScreen({ onSaved }: { onSaved: () => void }) {
+export function LogDescriptionScreen({
+  onSaved,
+  initialText,
+}: {
+  onSaved: () => void;
+  // Pre-fills the text box when this screen is reached via the label-photo
+  // path's incomplete-read handoff (issue #51), so the session carries
+  // forward whatever was extracted instead of starting blank.
+  initialText?: string;
+}) {
   const [session, dispatch] = useReducer(reduce, undefined, initialSession);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText ?? "");
   const createEntry = useMutation(trpc.logDescription.create.mutationOptions());
 
   const submit = async () => {

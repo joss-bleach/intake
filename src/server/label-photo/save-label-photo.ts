@@ -13,6 +13,7 @@ export interface ConfirmedAmount {
 export interface SavedLabelPhotoEntry {
   readonly diaryEntryId: string;
   readonly foodId: string;
+  readonly loggedItemId: string;
 }
 
 /**
@@ -69,13 +70,20 @@ export const saveLabelPhotoEntry = (
       throw new Error("Insert into diary_entries returned no row.");
     }
 
-    await tx.insert(loggedItems).values({
-      diaryEntryId: entry.id,
-      foodId: food.id,
-      quantity: String(amount.quantity),
-      quantityUnit: amount.quantityUnit,
-      confidence: anyFieldNeedsReview(reading) ? "needs_review" : "confident",
-    });
+    const [item] = await tx
+      .insert(loggedItems)
+      .values({
+        diaryEntryId: entry.id,
+        foodId: food.id,
+        quantity: String(amount.quantity),
+        quantityUnit: amount.quantityUnit,
+        confidence: anyFieldNeedsReview(reading) ? "needs_review" : "confident",
+      })
+      .returning();
 
-    return { diaryEntryId: entry.id, foodId: food.id };
+    if (!item) {
+      throw new Error("Insert into logged_items returned no row.");
+    }
+
+    return { diaryEntryId: entry.id, foodId: food.id, loggedItemId: item.id };
   });

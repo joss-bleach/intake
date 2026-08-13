@@ -25,3 +25,19 @@ export function anyFieldNeedsReview(reading: ReadingConfidenceFields): boolean {
   if (reading.servingSize?.confidence === "needs_review") return true;
   return reading.nutrients.some((nutrient) => nutrient.confidence === "needs_review");
 }
+
+// Structural, like ReadingConfidenceFields above — only needs each
+// nutrient's code.
+interface ReadingNutrientCodes {
+  readonly nutrients: ReadonlyArray<{ readonly code: string }>;
+}
+
+// A read that decoded successfully (it's not a ParseFailure) but is missing
+// the one nutrient the rest of the app can't do without: without energy_kcal
+// there's nothing meaningful to total or log against a calorie goal, unlike
+// a missing macro which the confirm screen can just show as absent (issue
+// #51). Drives the auto-handoff to the description path — see
+// log-label-photo-screen.tsx.
+export function isIncompleteReading(reading: ReadingNutrientCodes): boolean {
+  return !reading.nutrients.some((nutrient) => nutrient.code === "energy_kcal");
+}

@@ -82,6 +82,7 @@ describe("saveLabelPhotoEntry", () => {
       .from(loggedItems)
       .where(eq(loggedItems.diaryEntryId, result.diaryEntryId));
     expect(item).toMatchObject({
+      id: result.loggedItemId,
       foodId: result.foodId,
       quantityUnit: "g",
       // A needs_review nutrient rolls the whole logged item up to
