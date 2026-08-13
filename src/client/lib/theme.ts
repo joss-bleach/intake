@@ -33,3 +33,10 @@ export const theme = {
 export const reviewBadgeClass =
   "inline-flex items-center gap-1 rounded-full bg-amber-100/80 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200";
 export const confidentDotClass = "text-emerald-500";
+
+// The log-description screen's own needs_review treatment (issue #50, per
+// prototype/log-description-look's later commit): a bare amber Sparkles
+// icon next to the item name, no pill/badge background or label — distinct
+// from reviewBadgeClass above, which log-label-photo (#47) keeps using for
+// its per-field totals panel, where there's room for the "estimated" text.
+export const needsReviewIconClass = "h-3.5 w-3.5 shrink-0 text-amber-500";

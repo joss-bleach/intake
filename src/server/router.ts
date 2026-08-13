@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./trpc";
 import { goalsRouter, profileRouter } from "./routers/goals";
 import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
+import { savedMealsRouter } from "./routers/saved-meals";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -31,13 +32,19 @@ export const appRouter = router({
   goals: goalsRouter,
   profile: profileRouter,
 
-  // Log by description, happy path (#46): free-text -> parse -> resolve ->
-  // save. Ambiguity/correction UI is #50's concern, not this router's.
+  // Log by description (#46's happy path, #50's ambiguity/correction UI):
+  // free-text -> Stage 1/2 parse -> clarify-up-front chip (if ambiguous) ->
+  // Stage 3 resolve + save -> instance/food-level corrections afterward.
   logDescription: logDescriptionRouter,
 
   // Log by label photo (#47): OCR extraction + confirmed-amount save, no
   // food-database resolution — see routers/label-photo.ts.
   labelPhoto: labelPhotoRouter,
+
+  // Saved meals & recently-logged (#52): search over logging history,
+  // frequency/recency-ranked suggestions, and named multi-item SavedMeals —
+  // see routers/saved-meals.ts.
+  savedMeals: savedMealsRouter,
 });
 
 export type AppRouter = typeof appRouter;
