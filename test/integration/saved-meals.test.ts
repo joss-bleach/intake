@@ -41,10 +41,10 @@ describe("saved meals & recently-logged", () => {
   };
 
   const logFood = async (foodId: string, loggedAt?: Date) => {
-    const [entry] = await db
-      .insert(diaryEntries)
-      .values({ entryMethod: "description", ...(loggedAt ? { loggedAt } : {}) })
-      .returning();
+    const values = loggedAt
+      ? { entryMethod: "description" as const, loggedAt }
+      : { entryMethod: "description" as const };
+    const [entry] = await db.insert(diaryEntries).values(values).returning();
     await db.insert(loggedItems).values({
       diaryEntryId: entry.id,
       foodId,
