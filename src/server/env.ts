@@ -27,13 +27,16 @@ export const env = createEnv({
     // CI intentionally runs without one (no OpenRouter account provisioned
     // yet), which is why the ADR 0001 real-round-trip test is skipped there.
     OPENROUTER_API_KEY: z.string().min(1).optional(),
-    // Label-photo OCR (issue #47) model roles. ADR 0005's actual picks are
-    // still TBD pending the model-selection bake-off (#54) — these defaults
-    // are placeholders drawn from that ADR's vision candidate shortlist (a
-    // cheap/fast primary, a cost-agnostic-accuracy fallback), overridable so
-    // swapping in the real bake-off picks doesn't need a code change.
+    // Label-photo OCR (issue #47) model roles — ADR 0005's actual bake-off
+    // picks (issue #54): cheapest working candidate for the primary tier,
+    // highest-accuracy-among-equals for the cost-agnostic fallback tier.
+    // Still overridable, e.g. for a future re-run once ADR 0005's trigger
+    // conditions fire (deprecation, price shift, notable new entrant).
     LABEL_VISION_MODEL: z.string().min(1).default("google/gemini-2.5-flash-lite"),
-    LABEL_VISION_FALLBACK_MODEL: z.string().min(1).default("google/gemini-2.5-pro"),
+    LABEL_VISION_FALLBACK_MODEL: z
+      .string()
+      .min(1)
+      .default("qwen/qwen3-vl-235b-a22b-instruct"),
     // Optional (issue #49): the self-hosted GlitchTip project DSN.
     // captureEffectFailure (src/server/observability/glitchtip.ts) no-ops
     // without one — real GlitchTip deployment on the VPS is infra
@@ -47,12 +50,12 @@ export const env = createEnv({
       .int()
       .positive()
       .default(500_000),
-    // ADR 0005's text/description-parsing pick is still TBD, pending the
-    // real model-selection bake-off (issue #54) — this default is a
-    // placeholder from that ADR's candidate shortlist (cheapest-tiebreak
-    // tier), not a considered choice, and env-overridable so swapping it
-    // once the bake-off runs needs no code change.
-    DESCRIPTION_PARSE_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
+    // Text/description-parsing model — ADR 0005's actual bake-off pick
+    // (issue #54): best real accuracy among candidates that actually work
+    // against our schema (two OpenAI-family candidates were disqualified by
+    // a live structured-output schema incompatibility uncovered during the
+    // bake-off — see ADR 0005). Overridable for a future re-run.
+    DESCRIPTION_PARSE_MODEL: z.string().min(1).default("deepseek/deepseek-chat-v3.1"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
