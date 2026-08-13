@@ -1,8 +1,9 @@
 import { Effect } from "effect";
-import { eq, gte, inArray } from "drizzle-orm";
+import { gte } from "drizzle-orm";
 import type { db as Db } from "../db";
-import { diaryEntries, foods, loggedItems, nutrientValues } from "../db/schema";
-import { computeConsumedMacros, sumMacros, type ConsumedMacros, type NutrientRow } from "../food/nutrient-scaling";
+import { diaryEntries } from "../db/schema";
+import { computeConsumedMacros, sumMacros, type ConsumedMacros } from "../food/nutrient-scaling";
+import { loadActiveWindowRows, type ActiveWindowRow } from "../logging/active-window-rows";
 import { mealForLoggedAt, MEAL_NAMES, type MealName } from "./meal-bucket";
 import { computeStreak } from "./streak";
 import { addUtcDays, startOfUtcDay, toIsoDate } from "./date-window";
@@ -44,19 +45,6 @@ export interface DashboardSnapshot {
   readonly macroSplit: { readonly proteinG: number; readonly carbsG: number; readonly fatG: number };
 }
 
-interface JoinedRow {
-  readonly entryId: string;
-  readonly loggedAt: Date;
-  readonly itemId: string;
-  readonly foodId: string;
-  readonly foodName: string;
-  readonly servingSize: number | null;
-  readonly quantity: number;
-  readonly quantityUnit: "g" | "ml" | "serving";
-  readonly confidence: "confident" | "needs_review" | null;
-  readonly correctedFromId: string | null;
-}
-
 /**
  * On-demand aggregation (per build-plan.md's "Dashboard & insights
  * computation" — no rollup job): one query over the 7-day window for
@@ -73,58 +61,7 @@ export const getDashboardSnapshotEffect = (
     const windowStart = addUtcDays(todayStart, -(ROLLING_WINDOW_DAYS - 1));
     const todayIso = toIsoDate(todayStart);
 
-    const rows = yield* Effect.tryPromise(() =>
-      db
-        .select({
-          entryId: diaryEntries.id,
-          loggedAt: diaryEntries.loggedAt,
-          itemId: loggedItems.id,
-          foodId: loggedItems.foodId,
-          foodName: foods.name,
-          servingSize: foods.servingSize,
-          quantity: loggedItems.quantity,
-          quantityUnit: loggedItems.quantityUnit,
-          confidence: loggedItems.confidence,
-          correctedFromId: loggedItems.correctedFromId,
-        })
-        .from(diaryEntries)
-        .innerJoin(loggedItems, eq(loggedItems.diaryEntryId, diaryEntries.id))
-        .innerJoin(foods, eq(loggedItems.foodId, foods.id))
-        .where(gte(diaryEntries.loggedAt, windowStart)),
-    ).pipe(Effect.orDie);
-
-    const foodIds = [...new Set(rows.map((row) => row.foodId))];
-    const nutrientRows = foodIds.length
-      ? yield* Effect.tryPromise(() =>
-          db.select().from(nutrientValues).where(inArray(nutrientValues.foodId, foodIds)),
-        ).pipe(Effect.orDie)
-      : [];
-    const nutrientsByFoodId = new Map<string, NutrientRow[]>();
-    for (const n of nutrientRows) {
-      // nutrient_values.food_id is nullable in general (a row can instead
-      // attach to a logged_item — schema.ts's exactly-one-parent check), but
-      // this query filtered to foodIds, so it's never null here.
-      if (n.foodId === null) continue;
-      const bucket = nutrientsByFoodId.get(n.foodId) ?? [];
-      bucket.push({ code: n.code, value: Number(n.value) });
-      nutrientsByFoodId.set(n.foodId, bucket);
-    }
-
-    // A row that's been instance-corrected (schema.ts's correctedFromId) is
-    // superseded by whichever row points back at it — kept for audit, but
-    // excluded here so a correction doesn't double-count alongside the
-    // original it replaced. No write path produces these yet (that's #50),
-    // so today this is a no-op filter, not dead logic.
-    const supersededIds = new Set(
-      rows.map((row) => row.correctedFromId).filter((id): id is string => id !== null),
-    );
-    const activeRows: JoinedRow[] = rows
-      .filter((row) => !supersededIds.has(row.itemId))
-      .map((row) => ({
-        ...row,
-        servingSize: row.servingSize === null ? null : Number(row.servingSize),
-        quantity: Number(row.quantity),
-      }));
+    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart);
 
     const macrosByItem = new Map<string, ConsumedMacros>(
       activeRows.map((row) => [
@@ -132,12 +69,12 @@ export const getDashboardSnapshotEffect = (
         computeConsumedMacros(
           { quantity: row.quantity, quantityUnit: row.quantityUnit },
           { servingSize: row.servingSize },
-          nutrientsByFoodId.get(row.foodId) ?? [],
+          nutrientsByItemId.get(row.itemId) ?? [],
         ),
       ]),
     );
 
-    const byDate = new Map<string, JoinedRow[]>();
+    const byDate = new Map<string, ActiveWindowRow[]>();
     for (const row of activeRows) {
       const date = toIsoDate(row.loggedAt);
       const bucket = byDate.get(date) ?? [];

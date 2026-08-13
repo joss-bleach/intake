@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { theme, needsReviewIconClass } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
+import { OFFLINE_LOG_MESSAGE, useOnlineStatus } from "@/lib/offline";
 import type { FoodSearchResult } from "@/lib/router-types";
 import { initialSession, reduce, type Action, type ReviewIngredient, type SavedItem } from "./reducer";
 
@@ -53,11 +54,12 @@ export function LogDescriptionScreen({
 }) {
   const [session, dispatch] = useReducer(reduce, undefined, initialSession);
   const [text, setText] = useState(initialText ?? "");
+  const online = useOnlineStatus();
   const parseMutation = useMutation(trpc.logDescription.parse.mutationOptions());
   const confirmMutation = useMutation(trpc.logDescription.confirm.mutationOptions());
 
   const submit = async () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !online) return;
     dispatch({ type: "SUBMIT_DESCRIPTION", text });
     try {
       const parsed = await parseMutation.mutateAsync({ description: text });
@@ -71,7 +73,7 @@ export function LogDescriptionScreen({
   };
 
   const confirm = async () => {
-    if (session.phase !== "reviewing") return;
+    if (session.phase !== "reviewing" || !online) return;
     dispatch({ type: "CONFIRM_START" });
     // session.ingredients is always non-empty (the `parse` mutation's own
     // ParsedDescription schema guarantees at least one) — the confirm
@@ -127,9 +129,14 @@ export function LogDescriptionScreen({
             onChange={(event) => setText(event.target.value)}
             disabled={session.phase === "parsing"}
           />
-          <Button onClick={submit} disabled={session.phase === "parsing" || !text.trim()}>
+          <Button onClick={submit} disabled={session.phase === "parsing" || !text.trim() || !online}>
             {session.phase === "parsing" ? "Reading…" : "Log entry"}
           </Button>
+          {!online && (
+            <p className="text-sm" style={{ color: theme.text.faint }} role="alert">
+              {OFFLINE_LOG_MESSAGE}
+            </p>
+          )}
           {session.phase === "hard_failed" && (
             <p className="text-sm text-red-600" data-testid="log-description-error">
               {session.error}
@@ -148,9 +155,14 @@ export function LogDescriptionScreen({
               {session.error}
             </p>
           )}
-          <Button onClick={confirm} disabled={session.confirming}>
+          <Button onClick={confirm} disabled={session.confirming || !online}>
             {session.confirming ? "Logging…" : "Log entry"}
           </Button>
+          {!online && (
+            <p className="text-sm" style={{ color: theme.text.faint }} role="alert">
+              {OFFLINE_LOG_MESSAGE}
+            </p>
+          )}
         </div>
       )}
 

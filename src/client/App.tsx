@@ -7,6 +7,7 @@ import { DashboardScreen } from "@/screens/dashboard/dashboard-screen";
 import { ProfileScreen } from "@/screens/profile/profile-screen";
 import { LogDescriptionScreen } from "@/screens/log-description/log-description-screen";
 import { LogLabelPhotoScreen } from "@/screens/log-label-photo/log-label-photo-screen";
+import { InsightsScreen } from "@/screens/insights/insights-screen";
 import { theme } from "@/lib/theme";
 import { trpc, queryClient } from "@/lib/trpc";
 
@@ -15,7 +16,8 @@ type Route =
   | "profile"
   | "log-choice"
   | "log-description"
-  | "log-label-photo";
+  | "log-label-photo"
+  | "insights";
 
 // Top-level screen switch, driven by whether a goal has been set (#45):
 // no `user_goals` row means onboarding hasn't run yet, so that's shown
@@ -112,6 +114,10 @@ function App() {
     );
   }
 
+  if (route === "insights") {
+    return <InsightsScreen onBack={() => setRoute("dashboard")} />;
+  }
+
   if (route === "log-description") {
     return (
       <LogDescriptionScreen
@@ -139,6 +145,7 @@ function App() {
       goals={goalsQuery.data}
       onOpenProfile={() => setRoute("profile")}
       onLogFood={() => setRoute("log-choice")}
+      onInsights={() => setRoute("insights")}
     />
   );
 }

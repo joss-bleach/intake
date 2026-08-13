@@ -62,4 +62,28 @@ test.describe.serial("app shell", () => {
 
     await expect(page.getByRole("heading", { name: "Intake" })).toBeVisible();
   });
+
+  // Issue #56: offline reads are in, offline writes are out — a plain
+  // indicator, and both logging entry points disabled with a message
+  // instead of accepting a submit that would fail (ADR 0003).
+  test("shows an offline indicator and disables the logging entry point when the network drops", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "Intake" })).toBeVisible();
+
+    await context.setOffline(true);
+    try {
+      await expect(page.getByText("offline", { exact: true })).toBeVisible();
+
+      await page.getByRole("button", { name: "Log food" }).click();
+      await page.getByRole("button", { name: "Describe a meal" }).click();
+
+      await expect(page.getByRole("button", { name: "Log entry" })).toBeDisabled();
+      await expect(page.getByText(/No internet/)).toBeVisible();
+    } finally {
+      await context.setOffline(false);
+    }
+  });
 });

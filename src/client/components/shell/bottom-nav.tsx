@@ -11,17 +11,24 @@ export function BottomNav({
   active,
   onLogFood,
   onProfile,
+  onInsights,
 }: {
   active?: BottomNavActiveTab;
   onLogFood?: () => void;
   onProfile?: () => void;
+  onInsights?: () => void;
 }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-white/60 bg-white/80 backdrop-blur-2xl">
       <div className="relative mx-auto flex max-w-[420px] items-center justify-between px-8 pb-[max(1.125rem,env(safe-area-inset-bottom))] pt-4">
         <div className="flex items-center gap-8">
           <NavIcon icon={Home} label="Home" active={active === "home"} />
-          <NavIcon icon={LineChart} label="Insights" active={active === "insights"} />
+          <NavIcon
+            icon={LineChart}
+            label="Insights"
+            active={active === "insights"}
+            onClick={onInsights}
+          />
         </div>
         <div className="flex items-center gap-8">
           <NavIcon icon={BookOpen} label="Log" active={active === "log"} />
