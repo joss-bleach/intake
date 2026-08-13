@@ -40,6 +40,12 @@ export const env = createEnv({
       .int()
       .positive()
       .default(500_000),
+    // ADR 0005's text/description-parsing pick is still TBD, pending the
+    // real model-selection bake-off (issue #54) — this default is a
+    // placeholder from that ADR's candidate shortlist (cheapest-tiebreak
+    // tier), not a considered choice, and env-overridable so swapping it
+    // once the bake-off runs needs no code change.
+    DESCRIPTION_PARSE_MODEL: z.string().min(1).default("openai/gpt-4o-mini"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
