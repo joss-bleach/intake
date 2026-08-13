@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./trpc";
 import { goalsRouter, profileRouter } from "./routers/goals";
 import { labelPhotoRouter } from "./routers/label-photo";
 import { logDescriptionRouter } from "./routers/log-description";
+import { savedMealsRouter } from "./routers/saved-meals";
 
 export const appRouter = router({
   // Trivial smoke-test procedure: proves the client/server/query-layer wiring
@@ -38,6 +39,11 @@ export const appRouter = router({
   // Log by label photo (#47): OCR extraction + confirmed-amount save, no
   // food-database resolution — see routers/label-photo.ts.
   labelPhoto: labelPhotoRouter,
+
+  // Saved meals & recently-logged (#52): search over logging history,
+  // frequency/recency-ranked suggestions, and named multi-item SavedMeals —
+  // see routers/saved-meals.ts.
+  savedMeals: savedMealsRouter,
 });
 
 export type AppRouter = typeof appRouter;
