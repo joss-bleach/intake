@@ -120,17 +120,16 @@ export function LogDescriptionScreen({
         Log a meal
       </h1>
 
-      {(session.phase === "idle" || session.phase === "parsing" || session.phase === "hard_failed") && (
+      {(session.phase === "idle" || session.phase === "hard_failed") && (
         <GlassPanel className="mt-7 flex flex-col gap-4">
           <textarea
             className="min-h-32 w-full resize-none rounded-xl border border-white/70 bg-white/50 p-3.5 text-base text-[var(--shell-text-body)] outline-none placeholder:text-[var(--shell-text-faint)] focus-visible:border-purple-400 focus-visible:bg-white/80"
             placeholder="Grilled chicken breast, 150g, with steamed broccoli"
             value={text}
             onChange={(event) => setText(event.target.value)}
-            disabled={session.phase === "parsing"}
           />
-          <Button onClick={submit} disabled={session.phase === "parsing" || !text.trim() || !online}>
-            {session.phase === "parsing" ? "Reading…" : "Log entry"}
+          <Button onClick={submit} disabled={!text.trim() || !online}>
+            Log entry
           </Button>
           {!online && (
             <p className="text-sm" style={{ color: theme.text.faint }} role="alert">
@@ -144,6 +143,10 @@ export function LogDescriptionScreen({
           )}
         </GlassPanel>
       )}
+
+      {/* Distinct "reading" state (issue #82), matching log-label-photo's
+          full-screen ExtractingView rather than just relabeling the button. */}
+      {session.phase === "parsing" && <ReadingView />}
 
       {session.phase === "reviewing" && (
         <div className="mt-7 flex flex-col gap-3" data-testid="log-description-reviewing">
@@ -175,6 +178,19 @@ export function LogDescriptionScreen({
         </div>
       )}
     </AppShell>
+  );
+}
+
+// Mirrors log-label-photo-screen.tsx's ExtractingView (issue #82) — a
+// distinct "reading" screen while the description is parsed, instead of
+// just relabeling the submit button in place.
+function ReadingView() {
+  return (
+    <div className="mt-7 flex flex-1 flex-col items-center justify-center gap-3 text-center">
+      <p className="text-sm" style={{ color: theme.text.body }}>
+        Reading your description…
+      </p>
+    </div>
   );
 }
 
