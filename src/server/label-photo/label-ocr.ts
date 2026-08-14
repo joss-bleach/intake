@@ -39,8 +39,9 @@ export const buildLabelOcrPrompt = (): string =>
   `- "of which saturates" belongs to saturated fat and "of which sugars" ` +
   `to sugars — do not confuse them with the parent fat/carbohydrate rows.\n` +
   `- Transcribe salt as printed under "Salt". If the panel prints sodium ` +
-  `instead, do not convert it to salt yourself — report what's printed and ` +
-  `mark it "needs_review".\n` +
+  `instead of salt, there is no sodium code to report it under — omit the ` +
+  `salt_g entry entirely rather than converting the sodium value or ` +
+  `reporting it as salt.\n` +
   `- Values printed as "<0.5" / "trace" / "nil": report as 0 and mark ` +
   `"needs_review".\n` +
   `- Watch for decimal commas ("0,7g") and OCR-style confusions (0/O, ` +
