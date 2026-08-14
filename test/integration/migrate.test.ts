@@ -36,6 +36,7 @@ describe("migrate", () => {
     );
 
     expect(rows.map((row) => row.table_name)).toEqual([
+      "account",
       "diary_entries",
       "food_lookup_rate_limit_windows",
       "foods",
@@ -44,8 +45,11 @@ describe("migrate", () => {
       "nutrient_values",
       "saved_meal_items",
       "saved_meals",
+      "session",
+      "user",
       "user_goals",
       "user_profile",
+      "verification",
     ]);
   });
 

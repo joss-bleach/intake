@@ -9,7 +9,7 @@ import { appRouter } from "../../src/server/router";
 // zero-log-day-exclusion averaging, and more-of/less-of/on-target grouping
 // at the procedure layer.
 describe("insights router", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, session: null, user: null });
 
   const addUtcDays = (date: Date, days: number) => {
     const next = new Date(date);

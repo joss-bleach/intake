@@ -56,6 +56,22 @@ export const env = createEnv({
     // a live structured-output schema incompatibility uncovered during the
     // bake-off — see ADR 0005). Overridable for a future re-run.
     DESCRIPTION_PARSE_MODEL: z.string().min(1).default("deepseek/deepseek-chat-v3.1"),
+    // Sign-in (issue #87, ADR 0006): signs betterauth's session cookies.
+    // Defaulted like DATABASE_URL for local dev/CI convenience — a real
+    // deployment must override this with a private, generated secret.
+    BETTER_AUTH_SECRET: z.string().min(1).default("dev-secret-change-in-production"),
+    // Where betterauth's own /api/auth/* handler is reachable from — used to
+    // build its cookies/redirects, not the app's public URL.
+    BETTER_AUTH_URL: z.url().default("http://localhost:3001"),
+    // The client origin allowed to make credentialed auth requests
+    // (trustedOrigins + CORS) — Vite's dev server by default.
+    CLIENT_ORIGIN: z.url().default("http://localhost:5173"),
+    // Optional — unset locally/CI is fine; sending an OTP email throws until
+    // one is provisioned, matching OPENROUTER_API_KEY's pattern. Tests build
+    // their own auth instance with a stub mailer (see src/server/auth), so
+    // they never touch this.
+    RESEND_API_KEY: z.string().min(1).optional(),
+    RESEND_FROM_EMAIL: z.string().min(1).default("Intake <onboarding@resend.dev>"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

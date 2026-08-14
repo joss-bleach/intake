@@ -51,6 +51,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/trpc/, ""),
       },
+      // betterauth's own endpoints (issue #87) — kept at their real path,
+      // unlike /trpc above, since betterauth matches routes against it.
+      "/api/auth": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
     },
   },
 });
