@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { MacroRatioEditor } from "@/components/goals/macro-ratio-editor";
 import { theme } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
+import { signOut } from "@/lib/auth-client";
 import type { MacroPresetId } from "@/lib/macro-presets";
 import type { ProteinOverrideInput } from "@/lib/router-types";
 
@@ -245,6 +246,15 @@ export function ProfileScreen({
             {isSubmitting ? "Saving…" : "Save changes"}
           </Button>
         </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="self-start"
+          onClick={() => signOut()}
+        >
+          Sign out
+        </Button>
       </GlassPanel>
     </AppShell>
   );

@@ -1,19 +1,45 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
-import { userGoals, userProfile } from "../../src/server/db/schema";
+import { user, userGoals, userProfile } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { appRouter } from "../../src/server/router";
+import type { Context } from "../../src/server/context";
 
-// Exercises goals/profile end-to-end through the real tRPC router against a
-// real Postgres (see test/integration/migrate.test.ts for the same
-// pattern) — proves the onboarding acceptance criteria (#45) at the
-// procedure layer, independent of the client UI.
+// No real betterauth session is exercised here (that's auth.test.ts's job)
+// — just enough of a session/user shape to satisfy protectedProcedure and
+// carry a real user_id, so goals/profile writes land against a real FK.
+const authedContext = async (email: string): Promise<Context> => {
+  const [row] = await db
+    .insert(user)
+    .values({ id: crypto.randomUUID(), name: "Test User", email })
+    .returning();
+
+  const session = {
+    id: crypto.randomUUID(),
+    token: crypto.randomUUID(),
+    userId: row.id,
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ipAddress: null,
+    userAgent: null,
+  };
+
+  return { db, session, user: row };
+};
+
+// Exercises goals/profile through the real tRPC router against a real
+// Postgres — proves onboarding (#45) and per-user scoping (#88).
 describe("goals & profile routers", () => {
-  const caller = appRouter.createCaller({ db, session: null, user: null });
+  let ctx: Context;
+  let caller: ReturnType<typeof appRouter.createCaller>;
 
   beforeAll(async () => {
     await migrate();
+    ctx = await authedContext("owner@example.com");
+    caller = appRouter.createCaller(ctx);
   });
 
   afterEach(async () => {
@@ -22,7 +48,71 @@ describe("goals & profile routers", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user);
     await pool.end();
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    const anonCaller = appRouter.createCaller({
+      db,
+      session: null,
+      user: null,
+    });
+
+    await expect(anonCaller.goals.get()).rejects.toMatchObject({
+      constructor: TRPCError,
+      code: "UNAUTHORIZED",
+    });
+    await expect(
+      anonCaller.goals.upsert({
+        calorieGoal: 2000,
+        macroRatio: { preset: "balanced", proteinOverride: null },
+      }),
+    ).rejects.toMatchObject({ constructor: TRPCError, code: "UNAUTHORIZED" });
+    await expect(anonCaller.profile.get()).rejects.toMatchObject({
+      constructor: TRPCError,
+      code: "UNAUTHORIZED",
+    });
+  });
+
+  it("keeps two accounts' goals and profile fully independent", async () => {
+    const otherCtx = await authedContext("other@example.com");
+    const otherCaller = appRouter.createCaller(otherCtx);
+
+    await caller.goals.upsert({
+      calorieGoal: 2000,
+      macroRatio: { preset: "balanced", proteinOverride: null },
+    });
+    await caller.profile.upsert({ currentWeightKg: 80, targetWeightKg: 70 });
+
+    // The second account has set nothing yet — it must not see the first
+    // account's goal/profile, not even partially.
+    await expect(otherCaller.goals.get()).resolves.toBeNull();
+    await expect(otherCaller.profile.get()).resolves.toBeNull();
+
+    await otherCaller.goals.upsert({
+      calorieGoal: 3000,
+      macroRatio: { preset: "high_protein", proteinOverride: null },
+    });
+    await otherCaller.profile.upsert({
+      currentWeightKg: 60,
+      targetWeightKg: 55,
+    });
+
+    await expect(caller.goals.get()).resolves.toMatchObject({
+      calorieGoal: 2000,
+    });
+    await expect(otherCaller.goals.get()).resolves.toMatchObject({
+      calorieGoal: 3000,
+    });
+    await expect(caller.profile.get()).resolves.toMatchObject({
+      currentWeightKg: 80,
+    });
+    await expect(otherCaller.profile.get()).resolves.toMatchObject({
+      currentWeightKg: 60,
+    });
+
+    await db.delete(user).where(eq(user.id, otherCtx.user!.id));
   });
 
   it("reports no goal set until onboarding writes one", async () => {
@@ -47,7 +137,7 @@ describe("goals & profile routers", () => {
     });
   });
 
-  it("editing the goal later overwrites the same singleton row", async () => {
+  it("editing the goal later overwrites the same per-user row", async () => {
     await caller.goals.upsert({
       calorieGoal: 2000,
       macroRatio: { preset: "balanced", proteinOverride: null },
@@ -58,7 +148,10 @@ describe("goals & profile routers", () => {
     });
 
     expect(updated.calorieGoal).toBe(2400);
-    const { rows } = await pool.query("SELECT count(*) FROM user_goals");
+    const { rows } = await pool.query(
+      "SELECT count(*) FROM user_goals WHERE user_id = $1",
+      [ctx.user!.id],
+    );
     expect(rows[0].count).toBe("1");
   });
 

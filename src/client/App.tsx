@@ -8,8 +8,10 @@ import { ProfileScreen } from "@/screens/profile/profile-screen";
 import { LogDescriptionScreen } from "@/screens/log-description/log-description-screen";
 import { LogLabelPhotoScreen } from "@/screens/log-label-photo/log-label-photo-screen";
 import { InsightsScreen } from "@/screens/insights/insights-screen";
+import { SignInScreen } from "@/screens/sign-in/sign-in-screen";
 import { theme } from "@/lib/theme";
 import { trpc, queryClient } from "@/lib/trpc";
+import { useSession } from "@/lib/auth-client";
 
 type Route =
   | "dashboard"
@@ -24,14 +26,36 @@ type Route =
 // instead of the dashboard until it completes. No router library — the app
 // only has these few destinations so far; #53 can graduate this once
 // there's enough surface to need one.
+
+// Persisted queries carry no user-specific key (lib/trpc.ts) — clear the
+// cache on a session swap without sign-out, before goalsQuery can read it.
+const LAST_USER_ID_KEY = "intake-last-user-id";
+
 function App() {
-  const goalsQuery = useQuery(trpc.goals.get.queryOptions());
+  const { data: session, isPending: sessionIsPending } = useSession();
+
+  if (session && localStorage.getItem(LAST_USER_ID_KEY) !== session.user.id) {
+    queryClient.clear();
+    localStorage.setItem(LAST_USER_ID_KEY, session.user.id);
+  }
+
+  const goalsQuery = useQuery(
+    trpc.goals.get.queryOptions(undefined, { enabled: !!session }),
+  );
   const [route, setRoute] = useState<Route>("dashboard");
   // Set only by the label-photo path's incomplete-read handoff (issue #51),
   // and cleared whenever the description screen is entered any other way —
   // otherwise a stale extraction would resurface on the next unrelated
   // visit to "Describe a meal".
   const [handoffText, setHandoffText] = useState<string | null>(null);
+
+  if (sessionIsPending) {
+    return null;
+  }
+
+  if (!session) {
+    return <SignInScreen />;
+  }
 
   if (goalsQuery.isPending) {
     return null;

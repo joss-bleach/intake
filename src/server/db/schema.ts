@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean,
   check,
   index,
   integer,
@@ -13,6 +12,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { user } from "./auth-schema";
 
 // Core data model (issue #41, per issue #8's shape decisions): foods,
 // nutrient_values, diary_entries, logged_items, saved_meals,
@@ -266,37 +266,33 @@ export const savedMealItems = pgTable(
   ],
 );
 
-// user_goals and user_profile are each a single current-value row, no
-// history. The `id boolean primary key ... check (id)` shape is a
-// singleton-table pattern: the primary key forbids a second row, and the
-// check forbids an id=false row, so at most one row can ever exist.
-export const userGoals = pgTable(
-  "user_goals",
-  {
-    id: boolean("id").primaryKey().default(true),
-    calorieGoal: integer("calorie_goal").notNull(),
-    macroRatio: jsonb("macro_ratio"),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [check("user_goals_singleton", sql`${table.id}`)],
-);
+// user_goals and user_profile are each a single current-value row per user,
+// no history. Keyed directly by user_id (issue #88/ADR 0007, replacing the
+// old global `id boolean primary key` singleton) — the FK's own
+// primary-key-ness forbids a second row per user.
+export const userGoals = pgTable("user_goals", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  calorieGoal: integer("calorie_goal").notNull(),
+  macroRatio: jsonb("macro_ratio"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // Deliberately separate from user_goals — current/target weight, not a
 // calorie/macro target.
-export const userProfile = pgTable(
-  "user_profile",
-  {
-    id: boolean("id").primaryKey().default(true),
-    currentWeightKg: numeric("current_weight_kg"),
-    targetWeightKg: numeric("target_weight_kg"),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [check("user_profile_singleton", sql`${table.id}`)],
-);
+export const userProfile = pgTable("user_profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  currentWeightKg: numeric("current_weight_kg"),
+  targetWeightKg: numeric("target_weight_kg"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 
 // Backs the food-resolution rate limiter (issue #44's Postgres-table-backed
 // Effect service, not Effect's built-in `RateLimiter`, per the ticket's own
