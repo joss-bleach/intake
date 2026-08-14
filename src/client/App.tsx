@@ -26,8 +26,19 @@ type Route =
 // instead of the dashboard until it completes. No router library — the app
 // only has these few destinations so far; #53 can graduate this once
 // there's enough surface to need one.
+
+// Persisted queries carry no user-specific key (lib/trpc.ts) — clear the
+// cache on a session swap without sign-out, before goalsQuery can read it.
+const LAST_USER_ID_KEY = "intake-last-user-id";
+
 function App() {
   const { data: session, isPending: sessionIsPending } = useSession();
+
+  if (session && localStorage.getItem(LAST_USER_ID_KEY) !== session.user.id) {
+    queryClient.clear();
+    localStorage.setItem(LAST_USER_ID_KEY, session.user.id);
+  }
+
   const goalsQuery = useQuery(
     trpc.goals.get.queryOptions(undefined, { enabled: !!session }),
   );

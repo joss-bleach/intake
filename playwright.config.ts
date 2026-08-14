@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { STORAGE_STATE_PATH } from "./e2e/auth-setup";
 
 const PORT = 5173;
 
@@ -8,9 +9,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: "html",
+  // Signs a test user in once (see e2e/auth-setup.ts) so every test starts
+  // past the sign-in gate added in #87, instead of repeating OTP UI per test.
+  globalSetup: "./e2e/auth-setup.ts",
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: "on-first-retry",
+    storageState: STORAGE_STATE_PATH,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // Two independent servers, each with its own readiness check — the smoke
