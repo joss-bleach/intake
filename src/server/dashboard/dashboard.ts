@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { gte } from "drizzle-orm";
+import { and, gte, eq } from "drizzle-orm";
 import type { db as Db } from "../db";
 import { diaryEntries } from "../db/schema";
 import { computeConsumedMacros, sumMacros, type ConsumedMacros } from "../food/nutrient-scaling";
@@ -55,13 +55,14 @@ export interface DashboardSnapshot {
 export const getDashboardSnapshotEffect = (
   db: typeof Db,
   now: Date,
+  userId: string,
 ): Effect.Effect<DashboardSnapshot> =>
   Effect.gen(function* () {
     const todayStart = startOfUtcDay(now);
     const windowStart = addUtcDays(todayStart, -(ROLLING_WINDOW_DAYS - 1));
     const todayIso = toIsoDate(todayStart);
 
-    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart);
+    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart, userId);
 
     const macrosByItem = new Map<string, ConsumedMacros>(
       activeRows.map((row) => [
@@ -98,7 +99,7 @@ export const getDashboardSnapshotEffect = (
       db
         .select({ loggedAt: diaryEntries.loggedAt })
         .from(diaryEntries)
-        .where(gte(diaryEntries.loggedAt, streakWindowStart)),
+        .where(and(gte(diaryEntries.loggedAt, streakWindowStart), eq(diaryEntries.userId, userId))),
     ).pipe(Effect.orDie);
     const streakDates = new Set(streakRows.map((row) => toIsoDate(row.loggedAt)));
     const streakDays = computeStreak(streakDates, todayIso);

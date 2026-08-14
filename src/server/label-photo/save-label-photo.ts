@@ -32,6 +32,7 @@ export const saveLabelPhotoEntry = (
   db: DbClient,
   reading: ParsedLabelReading,
   amount: ConfirmedAmount,
+  userId: string,
 ): Promise<SavedLabelPhotoEntry> =>
   db.transaction(async (tx) => {
     const [food] = await tx
@@ -63,7 +64,7 @@ export const saveLabelPhotoEntry = (
 
     const [entry] = await tx
       .insert(diaryEntries)
-      .values({ entryMethod: "label_photo" })
+      .values({ entryMethod: "label_photo", userId })
       .returning();
 
     if (!entry) {

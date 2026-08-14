@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
-import { diaryEntries, foods, loggedItems, nutrientValues } from "../../src/server/db/schema";
+import { diaryEntries, foods, loggedItems, nutrientValues, user } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { saveLabelPhotoEntry } from "../../src/server/label-photo/save-label-photo";
 import {
@@ -27,8 +27,15 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
     ],
   };
 
+  let userId: string;
+
   beforeAll(async () => {
     await migrate();
+    const [row] = await db
+      .insert(user)
+      .values({ id: crypto.randomUUID(), name: "Test User", email: "label-correct@example.com" })
+      .returning();
+    userId = row.id;
   });
 
   afterEach(async () => {
@@ -37,11 +44,17 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user).where(eq(user.id, userId));
     await pool.end();
   });
 
   it("correctLabelPhotoInstance inserts a new logged item pointing at the original, leaving it and the shared food untouched", async () => {
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
     // Only sugars_g was actually edited — energy_kcal just rode along in the
     // reading unchanged.
@@ -53,12 +66,16 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
       ],
     };
 
-    const result = await correctLabelPhotoInstance(db, {
-      originalLoggedItemId: original.loggedItemId,
-      reading: corrected,
-      amount: { quantity: 40, quantityUnit: "g" },
-      editedNutrientCodes: ["sugars_g"],
-    });
+    const result = await correctLabelPhotoInstance(
+      db,
+      {
+        originalLoggedItemId: original.loggedItemId,
+        reading: corrected,
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: ["sugars_g"],
+      },
+      userId,
+    );
 
     expect(result.loggedItemId).not.toBe(original.loggedItemId);
 
@@ -105,18 +122,27 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
   });
 
   it("an untouched needs_review nutrient keeps its confidence, never silently becomes confident", async () => {
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
     // Only the food name was edited — sugars_g (needs_review) rides along
     // untouched.
     const corrected: ParsedLabelReading = { ...reading, foodName: "Granola Bar" };
 
-    const result = await correctLabelPhotoInstance(db, {
-      originalLoggedItemId: original.loggedItemId,
-      reading: corrected,
-      amount: { quantity: 40, quantityUnit: "g" },
-      editedNutrientCodes: [],
-    });
+    const result = await correctLabelPhotoInstance(
+      db,
+      {
+        originalLoggedItemId: original.loggedItemId,
+        reading: corrected,
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: [],
+      },
+      userId,
+    );
 
     const [item] = await db.select().from(loggedItems).where(eq(loggedItems.id, result.loggedItemId));
     // Nothing was actually verified — the correction as a whole still needs
@@ -132,7 +158,12 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
   });
 
   it("correctLabelPhotoFood updates the shared food row in place, touching only the edited nutrient", async () => {
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
     const corrected: ParsedLabelReading = {
       ...reading,
@@ -173,7 +204,12 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
   });
 
   it("a corrected diary entry reads back once, with the correction's own values", async () => {
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
     const corrected: ParsedLabelReading = {
       ...reading,
@@ -183,14 +219,18 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
       ],
     };
 
-    await correctLabelPhotoInstance(db, {
-      originalLoggedItemId: original.loggedItemId,
-      reading: corrected,
-      amount: { quantity: 40, quantityUnit: "g" },
-      editedNutrientCodes: ["sugars_g"],
-    });
+    await correctLabelPhotoInstance(
+      db,
+      {
+        originalLoggedItemId: original.loggedItemId,
+        reading: corrected,
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: ["sugars_g"],
+      },
+      userId,
+    );
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId, userId));
     // The superseded original is still on disk for audit, but the entry is
     // one item — showing both would double-count the log.
     expect(snapshot?.items).toHaveLength(1);
@@ -201,9 +241,14 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
   });
 
   it("an uncorrected entry still reads its nutrition off the shared food", async () => {
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(original.diaryEntryId, userId));
     expect(snapshot?.items).toHaveLength(1);
     const sugars = snapshot?.items[0]?.nutrition.find((n) => n.code === "sugars_g");
     expect(sugars?.value).toBe(22);
@@ -211,12 +256,50 @@ describe("correctLabelPhotoInstance / correctLabelPhotoFood", () => {
 
   it("correctLabelPhotoInstance rejects an originalLoggedItemId that doesn't exist", async () => {
     await expect(
-      correctLabelPhotoInstance(db, {
-        originalLoggedItemId: "00000000-0000-0000-0000-000000000000",
-        reading,
-        amount: { quantity: 40, quantityUnit: "g" },
-        editedNutrientCodes: [],
-      }),
+      correctLabelPhotoInstance(
+        db,
+        {
+          originalLoggedItemId: "00000000-0000-0000-0000-000000000000",
+          reading,
+          amount: { quantity: 40, quantityUnit: "g" },
+          editedNutrientCodes: [],
+        },
+        userId,
+      ),
     ).rejects.toThrow("No logged item to correct.");
+  });
+
+  it("correctLabelPhotoInstance and getDiaryEntryEffect treat another user's entry as not found", async () => {
+    const [otherUser] = await db
+      .insert(user)
+      .values({ id: crypto.randomUUID(), name: "Other User", email: "label-correct-b@example.com" })
+      .returning();
+
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
+
+    await expect(
+      correctLabelPhotoInstance(
+        db,
+        {
+          originalLoggedItemId: original.loggedItemId,
+          reading,
+          amount: { quantity: 40, quantityUnit: "g" },
+          editedNutrientCodes: [],
+        },
+        otherUser.id,
+      ),
+    ).rejects.toThrow("No logged item to correct.");
+
+    const snapshot = await Effect.runPromise(
+      getDiaryEntryEffect(original.diaryEntryId, otherUser.id),
+    );
+    expect(snapshot).toBeNull();
+
+    await db.delete(user).where(eq(user.id, otherUser.id));
   });
 });

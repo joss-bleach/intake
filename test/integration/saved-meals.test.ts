@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
 import { migrate } from "../../src/server/db/migrate";
@@ -7,17 +8,40 @@ import {
   loggedItems,
   savedMealItems,
   savedMeals,
+  user,
 } from "../../src/server/db/schema";
 import { appRouter } from "../../src/server/router";
 
 // Exercises search/recently-logged/saved-meals end-to-end through the real
 // tRPC router against a real Postgres (issue #52) — same pattern as
-// test/integration/goals-router.test.ts.
+// test/integration/goals-router.test.ts. Uses an authenticated caller since
+// relog is protectedProcedure (issue #89); search/create remain public.
 describe("saved meals & recently-logged", () => {
-  const caller = appRouter.createCaller({ db, session: null, user: null });
+  let userId: string;
+  let caller: ReturnType<typeof appRouter.createCaller>;
 
   beforeAll(async () => {
     await migrate();
+    const [row] = await db
+      .insert(user)
+      .values({
+        id: crypto.randomUUID(),
+        name: "Test User",
+        email: "saved-meals@example.com",
+      })
+      .returning();
+    userId = row.id;
+    const session = {
+      id: crypto.randomUUID(),
+      token: crypto.randomUUID(),
+      userId: row.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ipAddress: null,
+      userAgent: null,
+    };
+    caller = appRouter.createCaller({ db, session, user: row });
   });
 
   afterEach(async () => {
@@ -29,6 +53,7 @@ describe("saved meals & recently-logged", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user);
     await pool.end();
   });
 
@@ -42,8 +67,8 @@ describe("saved meals & recently-logged", () => {
 
   const logFood = async (foodId: string, loggedAt?: Date) => {
     const values = loggedAt
-      ? { entryMethod: "description" as const, loggedAt }
-      : { entryMethod: "description" as const };
+      ? { entryMethod: "description" as const, loggedAt, userId }
+      : { entryMethod: "description" as const, userId };
     const [entry] = await db.insert(diaryEntries).values(values).returning();
     await db.insert(loggedItems).values({
       diaryEntryId: entry.id,
@@ -189,6 +214,18 @@ describe("saved meals & recently-logged", () => {
       await expect(
         caller.savedMeals.relog({ savedMealId: crypto.randomUUID() }),
       ).rejects.toThrow();
+    });
+
+    it("rejects an unauthenticated caller", async () => {
+      const anonCaller = appRouter.createCaller({
+        db,
+        session: null,
+        user: null,
+      });
+
+      await expect(
+        anonCaller.savedMeals.relog({ savedMealId: crypto.randomUUID() }),
+      ).rejects.toMatchObject({ constructor: TRPCError, code: "UNAUTHORIZED" });
     });
   });
 });

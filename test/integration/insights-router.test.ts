@@ -1,15 +1,42 @@
+import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
-import { diaryEntries, foods, loggedItems, nutrientValues } from "../../src/server/db/schema";
+import { diaryEntries, foods, loggedItems, nutrientValues, user } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { appRouter } from "../../src/server/router";
+import type { Context } from "../../src/server/context";
+
+// No real betterauth session is exercised here (that's auth.test.ts's job)
+// — just enough of a session/user shape to satisfy protectedProcedure and
+// carry a real user_id, so diary entries land against a real FK.
+const authedContext = async (email: string): Promise<Context> => {
+  const [row] = await db
+    .insert(user)
+    .values({ id: crypto.randomUUID(), name: "Test User", email })
+    .returning();
+
+  const session = {
+    id: crypto.randomUUID(),
+    token: crypto.randomUUID(),
+    userId: row.id,
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ipAddress: null,
+    userAgent: null,
+  };
+
+  return { db, session, user: row };
+};
 
 // Exercises the insights router end-to-end against a real Postgres (same
 // pattern as dashboard-router.test.ts) — proves #55's %NRV computation,
-// zero-log-day-exclusion averaging, and more-of/less-of/on-target grouping
-// at the procedure layer.
+// zero-log-day-exclusion averaging, more-of/less-of/on-target grouping, and
+// per-user scoping (#89) at the procedure layer.
 describe("insights router", () => {
-  const caller = appRouter.createCaller({ db, session: null, user: null });
+  let ctx: Context;
+  let caller: ReturnType<typeof appRouter.createCaller>;
 
   const addUtcDays = (date: Date, days: number) => {
     const next = new Date(date);
@@ -23,6 +50,7 @@ describe("insights router", () => {
   // value, logged at 100g quantity — so consumed == the per-100g value,
   // keeping the test math simple.
   const seedNrvFood = async (opts: {
+    userId: string;
     loggedAt: Date;
     proteinGPer100: number;
     fatGPer100: number;
@@ -37,7 +65,7 @@ describe("insights router", () => {
     ]);
     const [entry] = await db
       .insert(diaryEntries)
-      .values({ loggedAt: opts.loggedAt, entryMethod: "description" })
+      .values({ userId: opts.userId, loggedAt: opts.loggedAt, entryMethod: "description" })
       .returning();
     await db.insert(loggedItems).values({
       diaryEntryId: entry.id,
@@ -50,6 +78,8 @@ describe("insights router", () => {
 
   beforeAll(async () => {
     await migrate();
+    ctx = await authedContext("owner@example.com");
+    caller = appRouter.createCaller(ctx);
   });
 
   afterEach(async () => {
@@ -60,6 +90,7 @@ describe("insights router", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user);
     await pool.end();
   });
 
@@ -78,7 +109,7 @@ describe("insights router", () => {
     const now = new Date();
     // Protein NRV is 50g, so 50g consumed reads exactly 100% (on target).
     // Fat NRV is 70g, so 35g consumed reads 50% (get more of).
-    await seedNrvFood({ loggedAt: atHour(now, 12), proteinGPer100: 50, fatGPer100: 35 });
+    await seedNrvFood({ userId: ctx.user!.id, loggedAt: atHour(now, 12), proteinGPer100: 50, fatGPer100: 35 });
 
     const snapshot = await caller.insights.get();
 
@@ -93,8 +124,13 @@ describe("insights router", () => {
     const today = new Date();
 
     // Logged on only 2 of the 7 rolling-window days, 50g protein each time.
-    await seedNrvFood({ loggedAt: atHour(today, 12), proteinGPer100: 50, fatGPer100: 0 });
-    await seedNrvFood({ loggedAt: atHour(addUtcDays(today, -3), 12), proteinGPer100: 50, fatGPer100: 0 });
+    await seedNrvFood({ userId: ctx.user!.id, loggedAt: atHour(today, 12), proteinGPer100: 50, fatGPer100: 0 });
+    await seedNrvFood({
+      userId: ctx.user!.id,
+      loggedAt: atHour(addUtcDays(today, -3), 12),
+      proteinGPer100: 50,
+      fatGPer100: 0,
+    });
 
     const snapshot = await caller.insights.get();
 
@@ -108,7 +144,7 @@ describe("insights router", () => {
     const now = new Date();
     // Protein NRV 50g: 5g consumed -> 10% ("more", distance 90).
     // Fat NRV 70g: 140g consumed -> 200% ("less", distance 100).
-    await seedNrvFood({ loggedAt: atHour(now, 12), proteinGPer100: 5, fatGPer100: 140 });
+    await seedNrvFood({ userId: ctx.user!.id, loggedAt: atHour(now, 12), proteinGPer100: 5, fatGPer100: 140 });
 
     const snapshot = await caller.insights.get();
 
@@ -121,5 +157,31 @@ describe("insights router", () => {
     const moreDistances = byDirection("more").map((item) => item.distanceFromTarget);
     expect(moreDistances).toEqual([...moreDistances].sort((a, b) => b - a));
     expect(byDirection("more").map((item) => item.code)).toContain("protein_g");
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    const anonCaller = appRouter.createCaller({ db, session: null, user: null });
+
+    await expect(anonCaller.insights.get()).rejects.toMatchObject({
+      constructor: TRPCError,
+      code: "UNAUTHORIZED",
+    });
+  });
+
+  it("keeps two accounts' insights fully independent", async () => {
+    const otherCtx = await authedContext("other@example.com");
+    const otherCaller = appRouter.createCaller(otherCtx);
+
+    const now = new Date();
+    await seedNrvFood({ userId: ctx.user!.id, loggedAt: atHour(now, 12), proteinGPer100: 50, fatGPer100: 0 });
+    await seedNrvFood({ userId: otherCtx.user!.id, loggedAt: atHour(now, 12), proteinGPer100: 20, fatGPer100: 0 });
+
+    const snapshot = await caller.insights.get();
+    const otherSnapshot = await otherCaller.insights.get();
+
+    expect(snapshot.today.macroSplit.proteinG).toBe(50);
+    expect(otherSnapshot.today.macroSplit.proteinG).toBe(20);
+
+    await db.delete(user).where(eq(user.id, otherCtx.user!.id));
   });
 });

@@ -97,9 +97,13 @@ describe("migrate", () => {
       .insert(foods)
       .values({ name: "Test food", provenance: "off", basisUnit: "g" })
       .returning();
+    const [owner] = await db
+      .insert(user)
+      .values({ id: "test-user-2", name: "Test User", email: "test2@example.com" })
+      .returning();
     const [entry] = await db
       .insert(diaryEntries)
-      .values({ entryMethod: "description" })
+      .values({ entryMethod: "description", userId: owner.id })
       .returning();
     const [original] = await db
       .insert(loggedItems)
@@ -126,5 +130,6 @@ describe("migrate", () => {
     // diary_entries -> logged_items cascades; foods doesn't, so drop it last.
     await db.delete(diaryEntries).where(eq(diaryEntries.id, entry.id));
     await db.delete(foods).where(eq(foods.id, food.id));
+    await db.delete(user).where(eq(user.id, owner.id));
   });
 });

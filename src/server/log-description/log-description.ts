@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { parseDescriptionEffect } from "../../ai/parse-description";
 import { generateObjectEffect, type AiSdkError } from "../../ai/effect-ai-sdk";
 import { ClarifiedIngredient, ParsedIngredient, type QuantityUnit } from "../../ai/schemas";
@@ -57,6 +57,7 @@ export interface SavedDiaryEntry {
  */
 export const saveResolvedIngredientsEffect = (
   ingredients: ReadonlyArray<ParsedIngredient>,
+  userId: string,
   estimateAttempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<SavedDiaryEntry, never, FoodLookupRateLimiter | OffLiveClient> =>
   Effect.gen(function* () {
@@ -80,7 +81,7 @@ export const saveResolvedIngredientsEffect = (
       db.transaction(async (tx) => {
         const [diaryEntry] = await tx
           .insert(diaryEntries)
-          .values({ entryMethod: "description" })
+          .values({ entryMethod: "description", userId })
           .returning();
 
         await tx.insert(loggedItems).values(
@@ -117,6 +118,7 @@ export const saveResolvedIngredientsEffect = (
 // the whole pipeline can be exercised without a network call or an API key.
 export const logDescriptionEffect = (
   description: string,
+  userId: string,
   parseAttempt: typeof generateObjectEffect = generateObjectEffect,
   estimateAttempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<
@@ -129,7 +131,7 @@ export const logDescriptionEffect = (
       Effect.mapError((cause) => new DescriptionParseFailedError({ description, cause })),
     );
 
-    return yield* saveResolvedIngredientsEffect(parsed.ingredients, estimateAttempt);
+    return yield* saveResolvedIngredientsEffect(parsed.ingredients, userId, estimateAttempt);
   });
 
 // A clarification answer (a chip's searchTerm, or "Something else…" free
@@ -159,9 +161,10 @@ const applyClarification = (ingredient: ClarifiedIngredient): ParsedIngredient =
  */
 export const confirmDescriptionEffect = (
   ingredients: ReadonlyArray<ClarifiedIngredient>,
+  userId: string,
   estimateAttempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<SavedDiaryEntry, never, FoodLookupRateLimiter | OffLiveClient> =>
-  saveResolvedIngredientsEffect(ingredients.map(applyClarification), estimateAttempt);
+  saveResolvedIngredientsEffect(ingredients.map(applyClarification), userId, estimateAttempt);
 
 // Either an already-known food (a clarify chip's candidate, a "Something
 // else…" search result the user picked) or free text to resolve fresh
@@ -192,6 +195,7 @@ export const correctLoggedItemEffect = (
   resolution: CorrectionResolution,
   quantity: number,
   quantityUnit: QuantityUnit,
+  userId: string,
   estimateAttempt: typeof generateObjectEffect = generateObjectEffect,
 ): Effect.Effect<
   { readonly diaryEntryId: string },
@@ -199,8 +203,15 @@ export const correctLoggedItemEffect = (
   FoodLookupRateLimiter | OffLiveClient
 > =>
   Effect.gen(function* () {
+    // Joined to diaryEntries so a loggedItemId owned by another user resolves
+    // the same as a missing one (#89) — no separate "forbidden" branch.
     const [original] = yield* Effect.tryPromise(() =>
-      db.select().from(loggedItems).where(eq(loggedItems.id, loggedItemId)),
+      db
+        .select({ item: loggedItems })
+        .from(loggedItems)
+        .innerJoin(diaryEntries, eq(loggedItems.diaryEntryId, diaryEntries.id))
+        .where(and(eq(loggedItems.id, loggedItemId), eq(diaryEntries.userId, userId)))
+        .then((rows) => rows.map((row) => row.item)),
     ).pipe(Effect.orDie);
     if (!original) {
       return yield* Effect.fail(new LoggedItemNotFoundError({ loggedItemId }));
@@ -342,10 +353,14 @@ export interface DiaryEntrySnapshot {
  */
 export const getDiaryEntryEffect = (
   id: string,
+  userId: string,
 ): Effect.Effect<DiaryEntrySnapshot | null> =>
   Effect.gen(function* () {
     const [diaryEntry] = yield* Effect.tryPromise(() =>
-      db.select().from(diaryEntries).where(eq(diaryEntries.id, id)),
+      db
+        .select()
+        .from(diaryEntries)
+        .where(and(eq(diaryEntries.id, id), eq(diaryEntries.userId, userId))),
     ).pipe(Effect.orDie);
     if (!diaryEntry) return null;
 

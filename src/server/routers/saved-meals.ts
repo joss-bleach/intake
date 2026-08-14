@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import { getDiaryEntryEffect } from "../log-description/log-description";
 import {
@@ -43,12 +43,13 @@ export const savedMealsRouter = router({
 
   // Re-logs a saved meal's items in one action and returns the resulting
   // diary entry snapshot, same shape logDescription/labelPhoto save return,
-  // so the client renders all three the same way.
-  relog: publicProcedure.input(relogInput).mutation(({ input }) =>
+  // so the client renders all three the same way. Scoped to the caller
+  // (#89/ADR 0007) — search/create stay public, diary writes don't.
+  relog: protectedProcedure.input(relogInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.gen(function* () {
-        const { diaryEntryId } = yield* relogSavedMealEffect(input.savedMealId);
-        const snapshot = yield* getDiaryEntryEffect(diaryEntryId);
+        const { diaryEntryId } = yield* relogSavedMealEffect(input.savedMealId, ctx.user.id);
+        const snapshot = yield* getDiaryEntryEffect(diaryEntryId, ctx.user.id);
         // The diary entry was just created above in the same request — a
         // miss here means it vanished mid-request, not a normal not-found.
         return snapshot ?? (yield* Effect.die(new Error("Re-logged diary entry not found immediately after creation")));

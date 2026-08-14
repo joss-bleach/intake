@@ -1,12 +1,24 @@
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { listCorrectionsForReview } from "../../src/eval/corrections-queue";
 import { db, pool } from "../../src/server/db";
 import { migrate } from "../../src/server/db/migrate";
-import { diaryEntries, foods, loggedItems } from "../../src/server/db/schema";
+import { diaryEntries, foods, loggedItems, user } from "../../src/server/db/schema";
 
 describe("listCorrectionsForReview", () => {
+  let ownerId: string;
+
   beforeAll(async () => {
     await migrate();
+    const [owner] = await db
+      .insert(user)
+      .values({
+        id: crypto.randomUUID(),
+        name: "Test User",
+        email: "corrections-queue-test@example.com",
+      })
+      .returning();
+    ownerId = owner.id;
   });
 
   afterEach(async () => {
@@ -16,6 +28,7 @@ describe("listCorrectionsForReview", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user).where(eq(user.id, ownerId));
     await pool.end();
   });
 
@@ -26,7 +39,7 @@ describe("listCorrectionsForReview", () => {
       .returning();
     const [entry] = await db
       .insert(diaryEntries)
-      .values({ entryMethod: "label_photo" })
+      .values({ entryMethod: "label_photo", userId: ownerId })
       .returning();
     return { food, entry };
   };

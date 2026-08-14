@@ -10,6 +10,7 @@ import {
   foodLookupRateLimitWindows,
   loggedItems,
   nutrientValues,
+  user,
 } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { ingestCofidCsv } from "../../src/server/food/cofid-ingest";
@@ -63,6 +64,8 @@ type EstimatedNutritionFixture = {
 
 const estimateNutrition = (estimate: EstimatedNutritionFixture) => fakeAttempt(() => estimate);
 
+let userId: string;
+
 const runLogDescription = (
   description: string,
   parseAttempt: ReturnType<typeof fakeAttempt> | typeof alwaysFailingAttempt,
@@ -74,7 +77,7 @@ const runLogDescription = (
   }),
 ) =>
   Effect.runPromiseExit(
-    logDescriptionEffect(description, parseAttempt, estimateAttempt).pipe(
+    logDescriptionEffect(description, userId, parseAttempt, estimateAttempt).pipe(
       Effect.provide(FoodLookupRateLimiter.Default),
       Effect.provide(Layer.succeed(OffLiveClient, { _tag: "OffLiveClient", search: () => Effect.succeed([]) })),
     ),
@@ -85,6 +88,11 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     await migrate();
     await ingestOffDump(path.join(fixturesDir, "off-sample.jsonl"));
     await ingestCofidCsv(path.join(fixturesDir, "cofid-sample.csv"));
+    const [row] = await db
+      .insert(user)
+      .values({ id: crypto.randomUUID(), name: "Test User", email: "log-description@example.com" })
+      .returning();
+    userId = row.id;
   });
 
   afterEach(async () => {
@@ -102,6 +110,7 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
   afterAll(async () => {
     await db.delete(nutrientValues);
     await db.delete(foods);
+    await db.delete(user);
     await pool.end();
   });
 
@@ -117,7 +126,7 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     expect(exit._tag).toBe("Success");
     if (exit._tag !== "Success") throw new Error("unreachable");
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
     expect(snapshot?.items).toHaveLength(2);
     expect(snapshot?.items.every((item) => item.source === "database")).toBe(true);
     expect(snapshot?.items.every((item) => item.confidence === "confident")).toBe(true);
@@ -137,7 +146,7 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     expect(exit._tag).toBe("Success");
     if (exit._tag !== "Success") throw new Error("unreachable");
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
     expect(snapshot?.items[0]?.confidence).toBe("needs_review");
     expect(snapshot?.items[0]?.source).toBe("database");
   });
@@ -160,7 +169,7 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     expect(exit._tag).toBe("Success");
     if (exit._tag !== "Success") throw new Error("unreachable");
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
     const item = snapshot?.items[0];
     expect(item?.source).toBe("llm_estimate_fallback");
     expect(item?.confidence).toBe("needs_review");
@@ -200,7 +209,7 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     expect(exit._tag).toBe("Success");
     if (exit._tag !== "Success") throw new Error("unreachable");
 
-    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
     const item = snapshot?.items[0];
     expect(item?.source).toBe("llm_estimate_fallback");
     expect(item?.quantityUnit).toBe("serving");

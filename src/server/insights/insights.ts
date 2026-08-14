@@ -50,13 +50,14 @@ const nrvItemsFor = (totals: Record<NutrientCode, number>): NrvComparisonItem[] 
 export const getInsightsSnapshotEffect = (
   db: typeof Db,
   now: Date,
+  userId: string,
 ): Effect.Effect<InsightsSnapshot> =>
   Effect.gen(function* () {
     const todayStart = startOfUtcDay(now);
     const windowStart = addUtcDays(todayStart, -(ROLLING_WINDOW_DAYS - 1));
     const todayIso = toIsoDate(todayStart);
 
-    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart);
+    const { rows: activeRows, nutrientsByItemId } = yield* loadActiveWindowRows(db, windowStart, userId);
 
     const nutrientsByItem = new Map<string, Record<NutrientCode, number>>(
       activeRows.map((row) => [

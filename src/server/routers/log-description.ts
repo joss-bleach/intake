@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import { FoodLookupRateLimiter } from "../food/rate-limiter";
 import { OffLiveClient } from "../food/off-client";
@@ -70,30 +70,34 @@ const withFoodLookup = <A, E>(
     Effect.provide(OffLiveClient.Default),
   );
 
+// All procedures require a session (#89/ADR 0007) — even parse/searchFood,
+// which don't touch diaryEntries directly, per the router-level gate.
 export const logDescriptionRouter = router({
   // Stage 1/2 only (issue #50): parses the description and returns its
   // ingredient guesses, clarifyOptions included — no database resolution,
   // no save. The client shows a clarifying chip for any ingredient that has
   // clarifyOptions, then round-trips the (possibly answered/edited)
   // ingredient array to `confirm`.
-  parse: publicProcedure.input(parseInput).mutation(({ input }) =>
+  parse: protectedProcedure.input(parseInput).mutation(({ input }) =>
     runEffect(parseDescriptionEffect(input.description)),
   ),
 
   // Stage 3 + save over an already-parsed ingredient array (issue #50).
   // Returns the saved entry's full snapshot (not just its id) so the client
   // can render the result in one round trip.
-  confirm: publicProcedure.input(confirmInput).mutation(({ input }) =>
+  confirm: protectedProcedure.input(confirmInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.gen(function* () {
-        const saved = yield* withFoodLookup(confirmDescriptionEffect(input.ingredients));
-        return yield* getDiaryEntryEffect(saved.id);
+        const saved = yield* withFoodLookup(
+          confirmDescriptionEffect(input.ingredients, ctx.user.id),
+        );
+        return yield* getDiaryEntryEffect(saved.id, ctx.user.id);
       }),
     ),
   ),
 
-  get: publicProcedure.input(getInput).query(({ input }) =>
-    runEffect(getDiaryEntryEffect(input.id)),
+  get: protectedProcedure.input(getInput).query(({ ctx, input }) =>
+    runEffect(getDiaryEntryEffect(input.id, ctx.user.id)),
   ),
 
   // "Something else…" free-text search (issue #50) — used both to answer a
@@ -103,7 +107,7 @@ export const logDescriptionRouter = router({
   // results, and correctItem/confirm's own resolution still falls through
   // to the LLM-estimate fallback if the user proceeds with the free text
   // anyway.
-  searchFood: publicProcedure.input(searchFoodInput).query(({ input }) =>
+  searchFood: protectedProcedure.input(searchFoodInput).query(({ input }) =>
     runEffect(
       withFoodLookup(
         resolveFood(input.query).pipe(
@@ -125,7 +129,7 @@ export const logDescriptionRouter = router({
   // original — see correctLoggedItemEffect's own comment for why. Returns
   // the updated diary entry snapshot so the client can re-render in one
   // round trip.
-  correctItem: publicProcedure.input(correctItemInput).mutation(({ input }) =>
+  correctItem: protectedProcedure.input(correctItemInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.gen(function* () {
         const { diaryEntryId } = yield* withFoodLookup(
@@ -134,9 +138,10 @@ export const logDescriptionRouter = router({
             input.resolution,
             input.quantity,
             input.quantityUnit as typeof QuantityUnit.Type,
+            ctx.user.id,
           ),
         );
-        return yield* getDiaryEntryEffect(diaryEntryId);
+        return yield* getDiaryEntryEffect(diaryEntryId, ctx.user.id);
       }),
     ),
   ),
@@ -145,13 +150,13 @@ export const logDescriptionRouter = router({
   // directly, so it applies to every future log of this food, not just one
   // instance. Returns the updated diary entry snapshot so an in-progress
   // view refreshes with the corrected numbers.
-  correctFood: publicProcedure
+  correctFood: protectedProcedure
     .input(correctFoodInput.and(z.object({ diaryEntryId: z.string().uuid() })))
-    .mutation(({ input }) =>
+    .mutation(({ ctx, input }) =>
       runEffect(
         Effect.gen(function* () {
           yield* correctFoodNutrientsEffect(input.foodId, input.nutrients);
-          return yield* getDiaryEntryEffect(input.diaryEntryId);
+          return yield* getDiaryEntryEffect(input.diaryEntryId, ctx.user.id);
         }),
       ),
     ),

@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { eq, gte, inArray, or } from "drizzle-orm";
+import { and, eq, gte, inArray, or } from "drizzle-orm";
 import type { db as Db } from "../db";
 import { diaryEntries, foods, loggedItems, nutrientValues } from "../db/schema";
 import type { NutrientRow } from "../food/nutrient-scaling";
@@ -26,6 +26,7 @@ export interface ActiveWindowRow {
 export const loadActiveWindowRows = (
   db: typeof Db,
   windowStart: Date,
+  userId: string,
 ): Effect.Effect<{
   readonly rows: ReadonlyArray<ActiveWindowRow>;
   readonly nutrientsByItemId: ReadonlyMap<string, NutrientRow[]>;
@@ -49,7 +50,7 @@ export const loadActiveWindowRows = (
         .from(diaryEntries)
         .innerJoin(loggedItems, eq(loggedItems.diaryEntryId, diaryEntries.id))
         .innerJoin(foods, eq(loggedItems.foodId, foods.id))
-        .where(gte(diaryEntries.loggedAt, windowStart)),
+        .where(and(gte(diaryEntries.loggedAt, windowStart), eq(diaryEntries.userId, userId))),
     ).pipe(Effect.orDie);
 
     // Every original with at least one replacement is superseded; among
