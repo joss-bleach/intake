@@ -1,6 +1,7 @@
 import { createAuthClient } from "better-auth/react";
 import { emailOTPClient } from "better-auth/client/plugins";
 import { queryClient } from "./trpc";
+import { clearPersistedSignIn } from "./sign-in-persistence";
 
 // Proxied by Vite's dev server to the standalone server (see vite.config.ts
 // and src/server/auth/index.ts) — same-origin, so no baseURL override needed.
@@ -16,4 +17,5 @@ export const { useSession } = authClient;
 export const signOut = async () => {
   await authClient.signOut();
   queryClient.clear();
+  clearPersistedSignIn();
 };

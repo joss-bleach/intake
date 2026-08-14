@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQueryState, parseAsStringLiteral } from "nuqs";
 import { AppShell, GlassPanel } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,23 +9,36 @@ import {
 } from "@/components/ui/input-otp";
 import { theme } from "@/lib/theme";
 import { authClient } from "@/lib/auth-client";
-
-const STEPS = ["email", "otp"] as const;
+import {
+  type SignInStep,
+  readPersistedStep,
+  readPersistedEmail,
+  persistStep,
+  persistEmail,
+  clearPersistedSignIn,
+} from "@/lib/sign-in-persistence";
 
 // Minimal email-OTP sign-in (#88) — request a code, then verify it. No
 // password/OAuth (ADR 0006), so this is the only entry point into the app.
 export function SignInScreen() {
-  // step/email live in the URL, not plain state (#95) — a backgrounded tab
-  // reload on mobile would otherwise wipe a code that's already been sent.
-  // `otp` stays local; the user re-checks it from their inbox each time.
-  const [step, setStep] = useQueryState(
-    "step",
-    parseAsStringLiteral(STEPS).withDefault("email"),
-  );
-  const [email, setEmail] = useQueryState("email", { defaultValue: "" });
+  // step/email persist in sessionStorage, not plain state (#95) — a
+  // backgrounded tab reload on mobile would otherwise wipe a code that's
+  // already been sent. `otp` stays local; the user re-checks it from their
+  // inbox each time.
+  const [step, setStepState] = useState(readPersistedStep);
+  const [email, setEmailState] = useState(readPersistedEmail);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const setStep = (next: SignInStep) => {
+    persistStep(next);
+    setStepState(next);
+  };
+  const setEmail = (next: string) => {
+    persistEmail(next);
+    setEmailState(next);
+  };
 
   const requestOtp = async () => {
     setError(null);
@@ -40,7 +52,7 @@ export function SignInScreen() {
         setError(sendError.message ?? "Couldn't send the code.");
         return;
       }
-      await setStep("otp");
+      setStep("otp");
     } catch {
       setError("Couldn't send the code.");
     } finally {
@@ -58,6 +70,8 @@ export function SignInScreen() {
       });
       if (verifyError) {
         setError(verifyError.message ?? "That code didn't work.");
+      } else {
+        clearPersistedSignIn();
       }
       // On success, betterauth's session signal updates useSession() itself —
       // App.tsx's gate re-renders past this screen without any callback here.
