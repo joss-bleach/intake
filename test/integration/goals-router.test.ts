@@ -10,7 +10,7 @@ import { appRouter } from "../../src/server/router";
 // pattern) — proves the onboarding acceptance criteria (#45) at the
 // procedure layer, independent of the client UI.
 describe("goals & profile routers", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, session: null, user: null });
 
   beforeAll(async () => {
     await migrate();

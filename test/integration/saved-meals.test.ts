@@ -14,7 +14,7 @@ import { appRouter } from "../../src/server/router";
 // tRPC router against a real Postgres (issue #52) — same pattern as
 // test/integration/goals-router.test.ts.
 describe("saved meals & recently-logged", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, session: null, user: null });
 
   beforeAll(async () => {
     await migrate();

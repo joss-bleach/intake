@@ -20,6 +20,12 @@ import {
 // — `pnpm db:generate` derives SQL migrations from it (see drizzle.config.ts
 // and src/server/db/migrate.ts).
 
+// betterauth's own tables (issue #87) — generated via `npx @better-auth/cli
+// generate`, re-exported here so `db`'s single schema object covers both.
+// Regenerate auth-schema.ts (don't hand-edit) if src/server/auth's config
+// changes shape.
+export * from "./auth-schema";
+
 const quantityUnit = ["g", "ml", "serving"] as const;
 const confidenceLevel = ["confident", "needs_review"] as const;
 

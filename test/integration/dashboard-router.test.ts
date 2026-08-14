@@ -16,7 +16,7 @@ import type { ParsedLabelReading } from "../../src/ai/schemas";
 // food) actually write them (see log-description.ts / save-label-photo.ts),
 // not a fixture format specific to this test.
 describe("dashboard router", () => {
-  const caller = appRouter.createCaller({ db });
+  const caller = appRouter.createCaller({ db, session: null, user: null });
 
   const addUtcDays = (date: Date, days: number) => {
     const next = new Date(date);
