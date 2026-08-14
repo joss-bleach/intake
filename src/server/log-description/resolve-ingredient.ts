@@ -31,26 +31,18 @@ type FallbackNutrientRow = {
 };
 
 // Writes a one-off `foods` row for a total-database-gap ingredient (issue
-// #44's LLM-estimate fallback), normalized to the same per-100-basisUnit
-// convention every OFF/CoFID row uses (schema.ts). Inserts its nutrient_values
-// rows directly rather than through writeFoodNutrients — that helper's
-// contract is specifically for `database`-provenance rows (upsert + prune
-// against a refreshed dataset); reusing it here would mislabel a model
-// estimate's nutrient rows as `database`, the exact distinction ADR 0001's
-// provenance enum exists to keep. The AI estimates the *whole logged
-// quantity* (e.g. "500ml smoothie -> 320kcal total"), not a per-100 rate, so
-// it's scaled down here by quantity/100; basisUnit mirrors quantityUnit for
-// g/ml, and defaults to "g" for "serving" quantities, since foods.basisUnit
-// only allows g/ml — this food is synthetic and single-use (resolve-food.ts's
-// cache search skips llm_estimate_fallback rows, so it is never returned for
-// a later query), so that label is approximate, but scaling the same quantity
-// back up on read reconstructs the model's original estimate exactly. Always
-// needs_review at the call site regardless, so the approximation doesn't
-// masquerade as a confident number.
+// #44's LLM-estimate fallback), normalized like every OFF/CoFID row to
+// per-100-basisUnit (schema.ts). Inserts nutrient_values directly, not via
+// writeFoodNutrients — its `database`-provenance contract would mislabel this.
+
+// Scales the AI's *whole logged quantity* estimate down to per-100-basisUnit.
+// A "serving" quantity isn't itself in basisUnit terms, so this food also
+// gets a synthetic servingSize (100 basisUnit) to convert back through on
+// read (nutrient-scaling.ts) — g/ml quantities need no such conversion.
 const createFallbackFood = (
   ingredient: ParsedIngredient,
   estimateAttempt: typeof generateObjectEffect,
-): Effect.Effect<string, AiSdkError> =>
+): Effect.Effect<{ readonly foodId: string }, AiSdkError> =>
   Effect.gen(function* () {
     const estimate = yield* estimateNutritionEffect(
       ingredient.name,
@@ -58,8 +50,13 @@ const createFallbackFood = (
       ingredient.quantityUnit,
       estimateAttempt,
     );
+    const isServing = ingredient.quantityUnit === "serving";
     const basisUnit = ingredient.quantityUnit === "ml" ? "ml" : "g";
-    const scale = 100 / ingredient.quantity;
+    const servingSize = isServing ? 100 : null;
+    // Non-serving: quantity is already basisUnit-denominated, scale by
+    // 100/quantity. Serving: quantity*servingSize(100) is the basisUnit
+    // amount, so scale by 1/quantity to hit the same per-100 target.
+    const scale = (isServing ? 1 : 100) / ingredient.quantity;
 
     const nutrients: FallbackNutrientRow[] = [
       { code: NUTRIENT_CODES.energyKcal, value: estimate.energyKcal * scale, unit: NUTRIENT_UNITS[NUTRIENT_CODES.energyKcal] },
@@ -68,11 +65,16 @@ const createFallbackFood = (
       { code: NUTRIENT_CODES.fat, value: estimate.fatG * scale, unit: NUTRIENT_UNITS[NUTRIENT_CODES.fat] },
     ];
 
-    return yield* Effect.tryPromise(() =>
+    const foodId = yield* Effect.tryPromise(() =>
       db.transaction(async (tx) => {
         const [food] = await tx
           .insert(foods)
-          .values({ name: ingredient.name, provenance: "llm_estimate_fallback", basisUnit })
+          .values({
+            name: ingredient.name,
+            provenance: "llm_estimate_fallback",
+            basisUnit,
+            servingSize: servingSize === null ? null : String(servingSize),
+          })
           .returning();
         await tx.insert(nutrientValues).values(
           nutrients.map((nutrient) => ({
@@ -86,6 +88,7 @@ const createFallbackFood = (
         return food.id;
       }),
     ).pipe(Effect.orDie);
+    return { foodId };
   });
 
 /**
@@ -114,7 +117,7 @@ export const resolveIngredientEffect = (
       };
     }
 
-    const foodId = yield* createFallbackFood(ingredient, estimateAttempt);
+    const { foodId } = yield* createFallbackFood(ingredient, estimateAttempt);
     return {
       foodId,
       quantity: ingredient.quantity,
