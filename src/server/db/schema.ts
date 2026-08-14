@@ -237,20 +237,32 @@ export const nutrientValues = pgTable(
 // Reserved for deliberately named, multi-item bundles. A single re-logged
 // food is *not* a saved_meal — it's a query over logged_items grouped by
 // food_id, ranked by frequency/recency.
-export const savedMeals = pgTable("saved_meals", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  timesLogged: integer("times_logged").notNull().default(0),
-  lastLoggedAt: timestamp("last_logged_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
+export const savedMeals = pgTable(
+  "saved_meals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    timesLogged: integer("times_logged").notNull().default(0),
+    lastLoggedAt: timestamp("last_logged_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("saved_meals_user_id_idx").on(table.userId)],
+);
 
 export const savedMealItems = pgTable(
   "saved_meal_items",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    // Denormalized from the parent savedMeal (issue #90/ADR 0007) so every
+    // query can filter directly on this column, not just via savedMealId.
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     savedMealId: uuid("saved_meal_id")
       .notNull()
       .references(() => savedMeals.id, { onDelete: "cascade" }),
@@ -262,6 +274,7 @@ export const savedMealItems = pgTable(
   },
   (table) => [
     index("saved_meal_items_saved_meal_id_idx").on(table.savedMealId),
+    index("saved_meal_items_user_id_idx").on(table.userId),
     check("saved_meal_items_quantity_positive", sql`${table.quantity} > 0`),
     check(
       "saved_meal_items_quantity_unit_check",

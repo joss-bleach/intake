@@ -57,6 +57,13 @@
       "when": 1786790400001,
       "tag": "0007_diary-entries-user-scoped",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786790400002,
+      "tag": "0008_saved-meals-user-scoped",
+      "breakpoints": true
     }
   ]
 }
