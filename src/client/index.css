@@ -54,6 +54,13 @@
   --shell-text-faint: #8480ad;
 }
 
+/* Tailwind only generates a `border-border` utility from a --color-*
+   theme token, not a bare :root custom property — map it so the
+   outline-button contrast fix (#81) actually takes effect. */
+@theme inline {
+  --color-border: var(--border);
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
