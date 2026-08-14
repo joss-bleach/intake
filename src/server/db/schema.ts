@@ -98,6 +98,9 @@ export const diaryEntries = pgTable(
   "diary_entries",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
     loggedAt: timestamp("logged_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -109,6 +112,7 @@ export const diaryEntries = pgTable(
       .defaultNow(),
   },
   (table) => [
+    index("diary_entries_user_id_idx").on(table.userId),
     check(
       "diary_entries_entry_method_check",
       inCheck(table.entryMethod, ["description", "label_photo", "saved_meal"]),

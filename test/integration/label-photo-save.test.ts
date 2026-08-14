@@ -6,6 +6,7 @@ import {
   foods,
   loggedItems,
   nutrientValues,
+  user,
 } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { saveLabelPhotoEntry } from "../../src/server/label-photo/save-label-photo";
@@ -32,8 +33,15 @@ describe("saveLabelPhotoEntry", () => {
     ],
   };
 
+  let userId: string;
+
   beforeAll(async () => {
     await migrate();
+    const [row] = await db
+      .insert(user)
+      .values({ id: crypto.randomUUID(), name: "Test User", email: "label-save@example.com" })
+      .returning();
+    userId = row.id;
   });
 
   afterEach(async () => {
@@ -42,14 +50,17 @@ describe("saveLabelPhotoEntry", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user).where(eq(user.id, userId));
     await pool.end();
   });
 
   it("writes a food, its nutrients, a diary entry and a logged item, skipping food-database resolution", async () => {
-    const result = await saveLabelPhotoEntry(db, reading, {
-      quantity: 40,
-      quantityUnit: "g",
-    });
+    const result = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      userId,
+    );
 
     const [food] = await db.select().from(foods).where(eq(foods.id, result.foodId));
     expect(food).toMatchObject({
@@ -103,10 +114,12 @@ describe("saveLabelPhotoEntry", () => {
       ],
     };
 
-    const result = await saveLabelPhotoEntry(db, allConfident, {
-      quantity: 1,
-      quantityUnit: "serving",
-    });
+    const result = await saveLabelPhotoEntry(
+      db,
+      allConfident,
+      { quantity: 1, quantityUnit: "serving" },
+      userId,
+    );
 
     const [item] = await db
       .select()

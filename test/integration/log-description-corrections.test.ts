@@ -11,6 +11,7 @@ import {
   foodLookupRateLimitWindows,
   loggedItems,
   nutrientValues,
+  user,
 } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { ingestCofidCsv } from "../../src/server/food/cofid-ingest";
@@ -25,6 +26,7 @@ import {
   correctFoodNutrientsEffect,
   correctLoggedItemEffect,
   getDiaryEntryEffect,
+  LoggedItemNotFoundError,
 } from "../../src/server/log-description/log-description";
 
 const fixturesDir = path.resolve(
@@ -56,11 +58,18 @@ const runWithFoodLayers = <A, E>(effect: Effect.Effect<A, E, FoodLookupRateLimit
     ),
   );
 
+let userId: string;
+
 describe("issue #50: clarify-up-front confirm + corrections", () => {
   beforeAll(async () => {
     await migrate();
     await ingestOffDump(path.join(fixturesDir, "off-sample.jsonl"));
     await ingestCofidCsv(path.join(fixturesDir, "cofid-sample.csv"));
+    const [row] = await db
+      .insert(user)
+      .values({ id: crypto.randomUUID(), name: "Test User", email: "log-description-corrections@example.com" })
+      .returning();
+    userId = row.id;
   });
 
   afterEach(async () => {
@@ -76,28 +85,32 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
   afterAll(async () => {
     await db.delete(nutrientValues);
     await db.delete(foods);
+    await db.delete(user);
     await pool.end();
   });
 
   describe("confirmDescriptionEffect", () => {
     it("a clarification answer resolves to the matching food, confidently", async () => {
       const exit = await runWithFoodLayers(
-        confirmDescriptionEffect([
-          new ClarifiedIngredient({
-            name: "Latte",
-            nameConfidence: "needs_review",
-            quantity: 350,
-            quantityUnit: "ml",
-            quantityConfidence: "confident",
-            clarificationSearchTerm: "Weetabix",
-          }),
-        ]),
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({
+              name: "Latte",
+              nameConfidence: "needs_review",
+              quantity: 350,
+              quantityUnit: "ml",
+              quantityConfidence: "confident",
+              clarificationSearchTerm: "Weetabix",
+            }),
+          ],
+          userId,
+        ),
       );
 
       expect(exit._tag).toBe("Success");
       if (exit._tag !== "Success") throw new Error("unreachable");
 
-      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       expect(snapshot?.items[0]?.foodName).toBe("Weetabix Original");
       expect(snapshot?.items[0]?.confidence).toBe("confident");
     });
@@ -115,6 +128,7 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
               clarificationSearchTerm: "soy milk latte from a place that does not exist",
             }),
           ],
+          userId,
           estimateNutrition({ energyKcal: 180, proteinG: 6, carbohydrateG: 17, fatG: 8 }),
         ),
       );
@@ -122,27 +136,30 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
       expect(exit._tag).toBe("Success");
       if (exit._tag !== "Success") throw new Error("unreachable");
 
-      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       expect(snapshot?.items[0]?.source).toBe("llm_estimate_fallback");
       expect(snapshot?.items[0]?.confidence).toBe("needs_review");
     });
 
     it("no clarification answer just resolves against the plain ingredient name, same as the non-ambiguous happy path", async () => {
       const exit = await runWithFoodLayers(
-        confirmDescriptionEffect([
-          new ClarifiedIngredient({
-            name: "Banana",
-            nameConfidence: "confident",
-            quantity: 100,
-            quantityUnit: "g",
-            quantityConfidence: "confident",
-          }),
-        ]),
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({
+              name: "Banana",
+              nameConfidence: "confident",
+              quantity: 100,
+              quantityUnit: "g",
+              quantityConfidence: "confident",
+            }),
+          ],
+          userId,
+        ),
       );
 
       expect(exit._tag).toBe("Success");
       if (exit._tag !== "Success") throw new Error("unreachable");
-      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       expect(snapshot?.items[0]?.foodName).toBe("Banana, raw");
     });
   });
@@ -150,15 +167,18 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
   describe("correctLoggedItemEffect (instance-level correction)", () => {
     it("is additive: writes a new row, excludes the superseded original from the diary entry, and keeps it for audit", async () => {
       const exit = await runWithFoodLayers(
-        confirmDescriptionEffect([
-          new ClarifiedIngredient({ name: "Cheddar Cheese", nameConfidence: "confident", quantity: 20, quantityUnit: "g", quantityConfidence: "confident" }),
-        ]),
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({ name: "Cheddar Cheese", nameConfidence: "confident", quantity: 20, quantityUnit: "g", quantityConfidence: "confident" }),
+          ],
+          userId,
+        ),
       );
       expect(exit._tag).toBe("Success");
       if (exit._tag !== "Success") throw new Error("unreachable");
       const diaryEntryId = exit.value.id;
 
-      const before = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId));
+      const before = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId, userId));
       const originalItemId = before?.items[0]?.id;
       expect(before?.items).toHaveLength(1);
 
@@ -168,11 +188,12 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
           { kind: "search", searchTerm: "Weetabix" },
           40,
           "g",
+          userId,
         ),
       );
       expect(correctExit._tag).toBe("Success");
 
-      const after = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId));
+      const after = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId, userId));
       expect(after?.items).toHaveLength(1);
       expect(after?.items[0]?.foodName).toBe("Weetabix Original");
       expect(after?.items[0]?.source).toBe("user_corrected");
@@ -190,24 +211,63 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
 
     it("picking an already-known food (kind: 'food') is confident, no re-resolution", async () => {
       const exit = await runWithFoodLayers(
-        confirmDescriptionEffect([
-          new ClarifiedIngredient({ name: "Cheddar Cheese", nameConfidence: "confident", quantity: 20, quantityUnit: "g", quantityConfidence: "confident" }),
-        ]),
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({ name: "Cheddar Cheese", nameConfidence: "confident", quantity: 20, quantityUnit: "g", quantityConfidence: "confident" }),
+          ],
+          userId,
+        ),
       );
       if (exit._tag !== "Success") throw new Error("unreachable");
-      const before = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const before = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       const originalItemId = before?.items[0]?.id;
 
       const [weetabix] = await db.select().from(foods).where(eq(foods.name, "Weetabix Original"));
 
       const correctExit = await runWithFoodLayers(
-        correctLoggedItemEffect(originalItemId!, { kind: "food", foodId: weetabix!.id }, 50, "g"),
+        correctLoggedItemEffect(originalItemId!, { kind: "food", foodId: weetabix!.id }, 50, "g", userId),
       );
       expect(correctExit._tag).toBe("Success");
 
-      const after = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const after = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       expect(after?.items[0]?.foodName).toBe("Weetabix Original");
       expect(after?.items[0]?.quantity).toBe(50);
+    });
+
+    it("fails as not-found when correcting a logged item owned by a different user (#89)", async () => {
+      const exit = await runWithFoodLayers(
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({ name: "Cheddar Cheese", nameConfidence: "confident", quantity: 20, quantityUnit: "g", quantityConfidence: "confident" }),
+          ],
+          userId,
+        ),
+      );
+      expect(exit._tag).toBe("Success");
+      if (exit._tag !== "Success") throw new Error("unreachable");
+      const diaryEntryId = exit.value.id;
+
+      const before = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId, userId));
+      const originalItemId = before?.items[0]?.id;
+      const originalFoodId = before?.items[0]?.foodId;
+
+      const [otherUserRow] = await db
+        .insert(user)
+        .values({ id: crypto.randomUUID(), name: "Other User", email: "log-description-corrections-other@example.com" })
+        .returning();
+      const otherUserId = otherUserRow.id;
+
+      const correctExit = await runWithFoodLayers(
+        correctLoggedItemEffect(originalItemId!, { kind: "food", foodId: originalFoodId! }, 40, "g", otherUserId),
+      );
+      expect(correctExit._tag).toBe("Failure");
+      const failure = correctExit._tag === "Failure" && correctExit.cause._tag === "Fail" ? correctExit.cause.error : null;
+      expect(failure).toBeInstanceOf(LoggedItemNotFoundError);
+
+      const otherView = await Effect.runPromise(getDiaryEntryEffect(diaryEntryId, otherUserId));
+      expect(otherView).toBeNull();
+
+      await db.delete(user).where(eq(user.id, otherUserId));
     });
   });
 
@@ -216,9 +276,12 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
       const [banana] = await db.select().from(foods).where(eq(foods.name, "Banana, raw"));
 
       const exit = await runWithFoodLayers(
-        confirmDescriptionEffect([
-          new ClarifiedIngredient({ name: "Banana", nameConfidence: "confident", quantity: 100, quantityUnit: "g", quantityConfidence: "confident" }),
-        ]),
+        confirmDescriptionEffect(
+          [
+            new ClarifiedIngredient({ name: "Banana", nameConfidence: "confident", quantity: 100, quantityUnit: "g", quantityConfidence: "confident" }),
+          ],
+          userId,
+        ),
       );
       if (exit._tag !== "Success") throw new Error("unreachable");
 
@@ -226,7 +289,7 @@ describe("issue #50: clarify-up-front confirm + corrections", () => {
         correctFoodNutrientsEffect(banana!.id, [{ code: NUTRIENT_CODES.energyKcal, value: 999 }]),
       );
 
-      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+      const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id, userId));
       const kcal = snapshot?.items[0]?.nutrition.find((n) => n.code === "energy_kcal");
       expect(kcal?.value).toBe(999);
 

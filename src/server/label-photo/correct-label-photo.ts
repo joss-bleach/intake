@@ -1,6 +1,6 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { db as Db } from "../db";
-import { foods, loggedItems, nutrientValues } from "../db/schema";
+import { diaryEntries, foods, loggedItems, nutrientValues } from "../db/schema";
 import type { ParsedLabelReading } from "../../ai/schemas";
 import { anyFieldNeedsReview } from "../../ai/label-reading";
 import type { ConfirmedAmount } from "./save-label-photo";
@@ -43,12 +43,19 @@ export interface CorrectLabelPhotoInstanceInput {
 export const correctLabelPhotoInstance = (
   db: DbClient,
   input: CorrectLabelPhotoInstanceInput,
+  userId: string,
 ): Promise<{ readonly loggedItemId: string }> =>
   db.transaction(async (tx) => {
-    const [original] = await tx
-      .select()
+    // Joined to diaryEntries so an id owned by another user throws the same
+    // "not found" error as a missing one (#89) — no separate forbidden case.
+    const [originalRow] = await tx
+      .select({ item: loggedItems })
       .from(loggedItems)
-      .where(eq(loggedItems.id, input.originalLoggedItemId));
+      .innerJoin(diaryEntries, eq(loggedItems.diaryEntryId, diaryEntries.id))
+      .where(
+        and(eq(loggedItems.id, input.originalLoggedItemId), eq(diaryEntries.userId, userId)),
+      );
+    const original = originalRow?.item;
 
     if (!original) {
       throw new Error("No logged item to correct.");

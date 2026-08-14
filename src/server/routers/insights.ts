@@ -1,9 +1,10 @@
 import { runEffect } from "../effect-trpc";
 import { getInsightsSnapshotEffect } from "../insights/insights";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 
+// Scoped to the caller's own logging (#89/ADR 0007).
 export const insightsRouter = router({
-  get: publicProcedure.query(({ ctx }) =>
-    runEffect(getInsightsSnapshotEffect(ctx.db, new Date())),
+  get: protectedProcedure.query(({ ctx }) =>
+    runEffect(getInsightsSnapshotEffect(ctx.db, new Date(), ctx.user.id)),
   ),
 });

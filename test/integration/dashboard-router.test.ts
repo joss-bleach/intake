@@ -1,22 +1,45 @@
+import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
-import { diaryEntries, foods, loggedItems, nutrientValues } from "../../src/server/db/schema";
+import { diaryEntries, foods, loggedItems, nutrientValues, user } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
 import { appRouter } from "../../src/server/router";
 import { saveLabelPhotoEntry } from "../../src/server/label-photo/save-label-photo";
 import { correctLabelPhotoInstance } from "../../src/server/label-photo/correct-label-photo";
 import type { ParsedLabelReading } from "../../src/ai/schemas";
+import type { Context } from "../../src/server/context";
+
+// No real betterauth session is exercised here (that's auth.test.ts's job)
+// — just enough of a session/user shape to satisfy protectedProcedure and
+// carry a real user_id, so diary entries land against a real FK.
+const authedContext = async (email: string): Promise<Context> => {
+  const [row] = await db
+    .insert(user)
+    .values({ id: crypto.randomUUID(), name: "Test User", email })
+    .returning();
+
+  const session = {
+    id: crypto.randomUUID(),
+    token: crypto.randomUUID(),
+    userId: row.id,
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ipAddress: null,
+    userAgent: null,
+  };
+
+  return { db, session, user: row };
+};
 
 // Exercises the dashboard router end-to-end against a real Postgres (same
 // pattern as goals-router.test.ts / label-photo-save.test.ts) — proves #53's
-// "renders real data from both logging paths" acceptance criterion at the
-// procedure layer: seeded rows are shaped exactly as the description path
-// (a database-resolved food) and the label-photo path (a label_extraction
-// food) actually write them (see log-description.ts / save-label-photo.ts),
-// not a fixture format specific to this test.
+// "renders real data from both logging paths" acceptance criterion, plus
+// #89's per-user scoping.
 describe("dashboard router", () => {
-  const caller = appRouter.createCaller({ db, session: null, user: null });
+  let ctx: Context;
+  let caller: ReturnType<typeof appRouter.createCaller>;
 
   const addUtcDays = (date: Date, days: number) => {
     const next = new Date(date);
@@ -30,6 +53,7 @@ describe("dashboard router", () => {
   // + its per-100(basisUnit) nutrients, a `diaryEntries` row, and one
   // `loggedItems` row quantifying how much of it was eaten.
   const seedLoggedItem = async (opts: {
+    userId: string;
     loggedAt: Date;
     foodName: string;
     provenance: "cofid" | "label_extraction";
@@ -60,6 +84,7 @@ describe("dashboard router", () => {
     const [entry] = await db
       .insert(diaryEntries)
       .values({
+        userId: opts.userId,
         loggedAt: opts.loggedAt,
         entryMethod: opts.provenance === "cofid" ? "description" : "label_photo",
       })
@@ -75,6 +100,8 @@ describe("dashboard router", () => {
 
   beforeAll(async () => {
     await migrate();
+    ctx = await authedContext("owner@example.com");
+    caller = appRouter.createCaller(ctx);
   });
 
   afterEach(async () => {
@@ -85,6 +112,7 @@ describe("dashboard router", () => {
   });
 
   afterAll(async () => {
+    await db.delete(user);
     await pool.end();
   });
 
@@ -106,6 +134,7 @@ describe("dashboard router", () => {
     const now = new Date();
 
     await seedLoggedItem({
+      userId: ctx.user!.id,
       loggedAt: atHour(now, 8),
       foodName: "Weetabix",
       provenance: "cofid",
@@ -114,6 +143,7 @@ describe("dashboard router", () => {
       quantity: 40,
     });
     await seedLoggedItem({
+      userId: ctx.user!.id,
       loggedAt: atHour(now, 19),
       foodName: "Granola Bar",
       provenance: "label_extraction",
@@ -143,6 +173,7 @@ describe("dashboard router", () => {
 
     for (const offset of [0, -1, -2, -4]) {
       await seedLoggedItem({
+        userId: ctx.user!.id,
         loggedAt: atHour(addUtcDays(today, offset), 12),
         foodName: `Lunch day ${offset}`,
         provenance: "cofid",
@@ -168,6 +199,7 @@ describe("dashboard router", () => {
 
     for (let offset = 0; offset >= -9; offset--) {
       await seedLoggedItem({
+        userId: ctx.user!.id,
         loggedAt: atHour(addUtcDays(today, offset), 12),
         foodName: `Lunch day ${offset}`,
         provenance: "cofid",
@@ -194,25 +226,38 @@ describe("dashboard router", () => {
       servingSize: { value: 40, confidence: "confident" },
       nutrients: [{ code: "energy_kcal", value: 425, unit: "kcal", confidence: "confident" }],
     };
-    const original = await saveLabelPhotoEntry(db, reading, { quantity: 40, quantityUnit: "g" });
+    const original = await saveLabelPhotoEntry(
+      db,
+      reading,
+      { quantity: 40, quantityUnit: "g" },
+      ctx.user!.id,
+    );
     await db.update(diaryEntries).set({ loggedAt: atHour(now, 8) }).where(
       eq(diaryEntries.id, original.diaryEntryId),
     );
 
     // Both corrections target the same original (e.g. corrected twice from
     // the diary's historical view) — two replacement siblings, not a chain.
-    await correctLabelPhotoInstance(db, {
-      originalLoggedItemId: original.loggedItemId,
-      reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 300, unit: "kcal", confidence: "confident" }] },
-      amount: { quantity: 40, quantityUnit: "g" },
-      editedNutrientCodes: ["energy_kcal"],
-    });
-    await correctLabelPhotoInstance(db, {
-      originalLoggedItemId: original.loggedItemId,
-      reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 200, unit: "kcal", confidence: "confident" }] },
-      amount: { quantity: 40, quantityUnit: "g" },
-      editedNutrientCodes: ["energy_kcal"],
-    });
+    await correctLabelPhotoInstance(
+      db,
+      {
+        originalLoggedItemId: original.loggedItemId,
+        reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 300, unit: "kcal", confidence: "confident" }] },
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: ["energy_kcal"],
+      },
+      ctx.user!.id,
+    );
+    await correctLabelPhotoInstance(
+      db,
+      {
+        originalLoggedItemId: original.loggedItemId,
+        reading: { ...reading, nutrients: [{ code: "energy_kcal", value: 200, unit: "kcal", confidence: "confident" }] },
+        amount: { quantity: 40, quantityUnit: "g" },
+        editedNutrientCodes: ["energy_kcal"],
+      },
+      ctx.user!.id,
+    );
 
     const snapshot = await caller.dashboard.get();
 
@@ -223,5 +268,51 @@ describe("dashboard router", () => {
     expect(items).toHaveLength(1);
     expect(items[0]?.calories).toBe(80);
     expect(snapshot.today.calories).toBe(80);
+  });
+
+  it("rejects an unauthenticated caller", async () => {
+    const anonCaller = appRouter.createCaller({ db, session: null, user: null });
+
+    await expect(anonCaller.dashboard.get()).rejects.toMatchObject({
+      constructor: TRPCError,
+      code: "UNAUTHORIZED",
+    });
+  });
+
+  it("keeps two accounts' dashboards fully independent", async () => {
+    const otherCtx = await authedContext("other@example.com");
+    const otherCaller = appRouter.createCaller(otherCtx);
+    const now = new Date();
+
+    await seedLoggedItem({
+      userId: ctx.user!.id,
+      loggedAt: atHour(now, 8),
+      foodName: "Weetabix",
+      provenance: "cofid",
+      energyKcalPer100: 360,
+      proteinGPer100: 12,
+      quantity: 40,
+    });
+    await seedLoggedItem({
+      userId: otherCtx.user!.id,
+      loggedAt: atHour(now, 8),
+      foodName: "Porridge",
+      provenance: "cofid",
+      energyKcalPer100: 100,
+      proteinGPer100: 4,
+      quantity: 40,
+    });
+
+    const snapshot = await caller.dashboard.get();
+    const otherSnapshot = await otherCaller.dashboard.get();
+
+    expect(snapshot.today.calories).toBe(144);
+    expect(otherSnapshot.today.calories).toBe(40);
+    const breakfast = snapshot.meals.find((m) => m.meal === "breakfast");
+    const otherBreakfast = otherSnapshot.meals.find((m) => m.meal === "breakfast");
+    expect(breakfast?.items).toMatchObject([{ foodName: "Weetabix" }]);
+    expect(otherBreakfast?.items).toMatchObject([{ foodName: "Porridge" }]);
+
+    await db.delete(user).where(eq(user.id, otherCtx.user!.id));
   });
 });

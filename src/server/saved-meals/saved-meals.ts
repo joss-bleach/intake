@@ -199,6 +199,7 @@ export interface RelogResult {
  */
 export const relogSavedMealEffect = (
   savedMealId: string,
+  userId: string,
 ): Effect.Effect<RelogResult, SavedMealNotFoundError> =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise(() =>
@@ -216,7 +217,7 @@ export const relogSavedMealEffect = (
 
         const [entry] = await tx
           .insert(diaryEntries)
-          .values({ entryMethod: "saved_meal" })
+          .values({ entryMethod: "saved_meal", userId })
           .returning();
 
         if (items.length > 0) {

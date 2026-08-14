@@ -1,6 +1,6 @@
 import { Data, Effect, Schema } from "effect";
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import { extractLabelReading } from "../label-photo/label-ocr";
 import { saveLabelPhotoEntry } from "../label-photo/save-label-photo";
@@ -62,37 +62,43 @@ export const labelPhotoRouter = router({
   // Stage 1→2: OCR the photo into a ParsedLabelReading for the confirm
   // screen. Deliberately skips food-database resolution (issue #44) — see
   // save-label-photo.ts's comment for why.
-  extract: publicProcedure.input(extractInput).mutation(({ input }) =>
+  extract: protectedProcedure.input(extractInput).mutation(({ input }) =>
     runEffect(
       extractLabelReading({ data: input.photoBase64, mediaType: input.mediaType }),
     ),
   ),
 
   // Confirmed reading + amount -> Food/NutrientValues/DiaryEntry/LoggedItem.
-  save: publicProcedure.input(saveInput).mutation(({ ctx, input }) =>
+  save: protectedProcedure.input(saveInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.tryPromise({
         try: () =>
-          saveLabelPhotoEntry(ctx.db, input.reading, {
-            quantity: input.quantity,
-            quantityUnit: input.quantityUnit,
-          }),
+          saveLabelPhotoEntry(
+            ctx.db,
+            input.reading,
+            { quantity: input.quantity, quantityUnit: input.quantityUnit },
+            ctx.user.id,
+          ),
         catch: (cause) => new DbError({ cause }),
       }),
     ),
   ),
 
   // Instance-level correction ("just this log") — see correct-label-photo.ts.
-  correctInstance: publicProcedure.input(correctInstanceInput).mutation(({ ctx, input }) =>
+  correctInstance: protectedProcedure.input(correctInstanceInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.tryPromise({
         try: () =>
-          correctLabelPhotoInstance(ctx.db, {
-            originalLoggedItemId: input.originalLoggedItemId,
-            reading: input.reading,
-            amount: { quantity: input.quantity, quantityUnit: input.quantityUnit },
-            editedNutrientCodes: input.editedNutrientCodes,
-          }),
+          correctLabelPhotoInstance(
+            ctx.db,
+            {
+              originalLoggedItemId: input.originalLoggedItemId,
+              reading: input.reading,
+              amount: { quantity: input.quantity, quantityUnit: input.quantityUnit },
+              editedNutrientCodes: input.editedNutrientCodes,
+            },
+            ctx.user.id,
+          ),
         catch: (cause) => new DbError({ cause }),
       }),
     ),
@@ -100,7 +106,7 @@ export const labelPhotoRouter = router({
 
   // Food-level correction ("this product, going forward") — see
   // correct-label-photo.ts.
-  correctFood: publicProcedure.input(correctFoodInput).mutation(({ ctx, input }) =>
+  correctFood: protectedProcedure.input(correctFoodInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.tryPromise({
         try: () =>
