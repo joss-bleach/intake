@@ -23,7 +23,7 @@ export const sendOtpEmail = async ({
   const { error } = await resend.emails.send({
     from: env.RESEND_FROM_EMAIL,
     to: email,
-    subject: `${otp} is your Intake sign-in code`,
+    subject: "Your Intake sign-in code",
     html,
   });
   if (error) {
