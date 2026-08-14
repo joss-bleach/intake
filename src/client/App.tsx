@@ -90,6 +90,7 @@ function App() {
 
         <GlassPanel className="mt-7 flex flex-col gap-3">
           <Button
+            variant="outline"
             onClick={() => {
               setHandoffText(null);
               setRoute("log-description");

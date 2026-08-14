@@ -34,7 +34,9 @@
   --foreground: oklch(0.145 0 0);
   --primary: oklch(0.5 0.15 275);
   --primary-foreground: oklch(0.985 0 0);
-  --border: oklch(0.9 0 0);
+  /* 0.6 (not the earlier 0.9) so outline buttons clear ~3:1 non-text
+     contrast against GlassPanel's translucent near-white fill (#81). */
+  --border: oklch(0.6 0 0);
   --radius: 0.75rem;
 
   /* C6-B1 theme tokens — cool-indigo colourway, ported verbatim from
@@ -50,6 +52,13 @@
   --shell-text-muted: #5a5490;
   --shell-text-muted-label: #4a4480;
   --shell-text-faint: #8480ad;
+}
+
+/* Tailwind only generates a `border-border` utility from a --color-*
+   theme token, not a bare :root custom property — map it so the
+   outline-button contrast fix (#81) actually takes effect. */
+@theme inline {
+  --color-border: var(--border);
 }
 
 body {
