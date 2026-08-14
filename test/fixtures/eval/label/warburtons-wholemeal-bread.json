@@ -9,6 +9,7 @@
     "brand": "Warburtons",
     "basisUnit": "g",
     "servingSize": 44.8,
+    "servingSizeDescriptor": "1 slice",
     "nutrients": [
       { "code": "energy_kcal", "value": 231, "unit": "kcal" },
       { "code": "protein_g", "value": 10.6, "unit": "g" },

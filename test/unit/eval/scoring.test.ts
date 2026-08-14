@@ -240,6 +240,60 @@ describe("scoreLabelItem", () => {
     expect(result.failures).toEqual([]);
   });
 
+  it("passes when the read reports the discrete-unit descriptor the panel prints", () => {
+    const fixture = Schema.decodeUnknownSync(LabelFixture)({
+      id: "label-bread",
+      groundTruthReviewed: true,
+      groundTruthSource: "hand-authored",
+      imageFile: "bread.jpg",
+      imageMediaType: "image/jpeg",
+      expected: {
+        foodName: "Wholemeal Bread",
+        basisUnit: "g",
+        servingSize: 44.8,
+        servingSizeDescriptor: "1 slice",
+        nutrients: [{ code: "energy_kcal", value: 231, unit: "kcal" }],
+      },
+    });
+    const parsed = Schema.decodeUnknownSync(ParsedLabelReading)({
+      foodName: "Wholemeal Bread",
+      foodNameConfidence: "confident",
+      basisUnit: "g",
+      servingSize: { value: 44.8, confidence: "confident" },
+      servingSizeDescriptor: { value: "1 slice", confidence: "confident" },
+      nutrients: [
+        { code: "energy_kcal", value: 231, unit: "kcal", confidence: "confident" },
+      ],
+    });
+
+    const result = scoreLabelItem(fixture, parsed);
+
+    expect(result.pass).toBe(true);
+  });
+
+  it("fails when the read invents a descriptor the panel does not print", () => {
+    const result = scoreLabelItem(
+      labelFixture,
+      Schema.decodeUnknownSync(ParsedLabelReading)({
+        foodName: "Weetabix Original",
+        foodNameConfidence: "confident",
+        brand: { value: "Weetabix", confidence: "confident" },
+        basisUnit: "g",
+        servingSize: { value: 37.5, confidence: "confident" },
+        servingSizeDescriptor: { value: "2 biscuits", confidence: "confident" },
+        nutrients: [
+          { code: "energy_kcal", value: 362, unit: "kcal", confidence: "confident" },
+          { code: "protein_g", value: 12, unit: "g", confidence: "needs_review" },
+        ],
+      }),
+    );
+
+    expect(result.pass).toBe(false);
+    expect(result.failures).toContain(
+      'unexpected servingSizeDescriptor "2 biscuits"',
+    );
+  });
+
   // Validation is disabled deliberately: ParsedLabelReading now rejects a
   // repeated nutrient code at decode time (see test/unit/ai/schemas.test.ts),
   // so this shape can't be built through the decoder any more. Scoring keeps

@@ -9,6 +9,7 @@
     "brand": "Weetabix",
     "basisUnit": "g",
     "servingSize": 37.5,
+    "servingSizeDescriptor": "2 biscuits",
     "nutrients": [
       { "code": "energy_kcal", "value": 362, "unit": "kcal" },
       { "code": "protein_g", "value": 12, "unit": "g" },

@@ -7,6 +7,7 @@
     "brand": { "value": "Weetabix", "confidence": "confident" },
     "basisUnit": "g",
     "servingSize": { "value": 37.5, "confidence": "confident" },
+    "servingSizeDescriptor": { "value": "2 biscuits", "confidence": "confident" },
     "nutrients": [
       { "code": "energy_kcal", "value": 362, "unit": "kcal", "confidence": "confident" },
       { "code": "protein_g", "value": 12, "unit": "g", "confidence": "confident" },

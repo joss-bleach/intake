@@ -363,7 +363,9 @@ export function describeForHandoff(reading: ParsedLabelReading): string {
     ? `${reading.foodName} (${reading.brand.value})`
     : reading.foodName;
   const amount = reading.servingSize?.value
-    ? `${reading.servingSize.value}${reading.basisUnit}`
+    ? reading.servingSizeDescriptor?.value
+      ? `${reading.servingSizeDescriptor.value} (${reading.servingSize.value}${reading.basisUnit})`
+      : `${reading.servingSize.value}${reading.basisUnit}`
     : `100${reading.basisUnit}`;
   return `${name}, ${amount}`;
 }
