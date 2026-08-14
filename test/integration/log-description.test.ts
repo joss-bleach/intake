@@ -182,6 +182,35 @@ describe("logDescriptionEffect (issue #46, happy path)", () => {
     expect(nutrientRows.every((row) => row.provenance === "llm_estimate_fallback")).toBe(true);
   });
 
+  it("keeps a fallback item's unit as 'serving', not silently swapped to the food's basisUnit (issue #79 review fix)", async () => {
+    const exit = await runLogDescription(
+      "A bowl of some homemade dal I can't find anywhere",
+      parseIngredients([
+        {
+          name: "Homemade dal",
+          nameConfidence: "needs_review",
+          quantity: 1,
+          quantityUnit: "serving",
+          quantityConfidence: "needs_review",
+        },
+      ]),
+      estimateNutrition({ energyKcal: 400, proteinG: 18, carbohydrateG: 50, fatG: 12 }),
+    );
+
+    expect(exit._tag).toBe("Success");
+    if (exit._tag !== "Success") throw new Error("unreachable");
+
+    const snapshot = await Effect.runPromise(getDiaryEntryEffect(exit.value.id));
+    const item = snapshot?.items[0];
+    expect(item?.source).toBe("llm_estimate_fallback");
+    expect(item?.quantityUnit).toBe("serving");
+
+    // A synthetic servingSize lets the "serving" quantity reconstruct the
+    // model's whole-quantity estimate exactly, same as the ml case above.
+    const kcal = item?.nutrition.find((n) => n.code === "energy_kcal");
+    expect(kcal?.value).toBeCloseTo(400, 5);
+  });
+
   it("hard-fails and saves nothing when the parse is malformed and the retry also fails", async () => {
     const exit = await runLogDescription("asdkjfh q98q3rkj not real food words", alwaysFailingAttempt);
 
