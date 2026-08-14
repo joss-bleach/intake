@@ -127,6 +127,9 @@ export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
   brand: OptionalWithConfidence(Schema.String),
   basisUnit: Schema.Literal("g", "ml"),
   servingSize: OptionalWithConfidence(Schema.Positive),
+  // Free-text discrete-unit descriptor ("1 slice") for the printed serving
+  // size, when the panel prints one — display-only (issue #80).
+  servingSizeDescriptor: OptionalWithConfidence(Schema.String),
   // Same "at least one" guarantee as Schema.NonEmptyArray, but typed as a
   // plain ReadonlyArray rather than a `[X, ...X[]]` tuple: the label-save
   // router (issue #47) round-trips this exact shape from the client, whose

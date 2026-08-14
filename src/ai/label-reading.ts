@@ -9,6 +9,7 @@ interface ReadingConfidenceFields {
   readonly foodNameConfidence: ConfidenceLevel;
   readonly brand?: { readonly confidence: ConfidenceLevel };
   readonly servingSize?: { readonly confidence: ConfidenceLevel };
+  readonly servingSizeDescriptor?: { readonly confidence: ConfidenceLevel };
   readonly nutrients: ReadonlyArray<{ readonly confidence: ConfidenceLevel }>;
 }
 
@@ -23,6 +24,7 @@ export function anyFieldNeedsReview(reading: ReadingConfidenceFields): boolean {
   if (reading.foodNameConfidence === "needs_review") return true;
   if (reading.brand?.confidence === "needs_review") return true;
   if (reading.servingSize?.confidence === "needs_review") return true;
+  if (reading.servingSizeDescriptor?.confidence === "needs_review") return true;
   return reading.nutrients.some((nutrient) => nutrient.confidence === "needs_review");
 }
 

@@ -1,6 +1,6 @@
 import { useReducer, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { Beef, Camera, Check, Droplet, Sparkles, Wheat, X } from "lucide-react";
+import { Beef, Camera, Check, Droplet, Pencil, Sparkles, Wheat, X } from "lucide-react";
 import { AppShell, GlassPanel } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
@@ -57,6 +57,15 @@ const unitToggleLabel = (unit: Unit, basisUnit: "g" | "ml"): string => {
   if (unit === "serving") return "Serving";
   if (unit === "100g") return `100${basisUnit}`;
   return basisUnit === "ml" ? "Millilitres" : "Grams";
+};
+
+// "Serving (1 slice · 30g)" when the label printed a discrete-unit
+// descriptor, else the plain weight — a bare "Serving (30g)" reads as
+// unclear for discrete items like bread slices (issue #80).
+const servingLabel = (reading: ParsedLabelReading): string => {
+  const weight = `${reading.servingSize?.value}${reading.basisUnit}`;
+  const descriptor = reading.servingSizeDescriptor?.value;
+  return descriptor ? `Serving (${descriptor} · ${weight})` : `Serving (${weight})`;
 };
 
 const stepperConfigFor = (basisUnit: "g" | "ml") =>
@@ -369,12 +378,14 @@ function EditableValue({
   ariaLabel,
   className,
   inputMode = "text",
+  showPencil = false,
 }: {
   value: string;
   onCommit: (raw: string) => void;
   ariaLabel: string;
   className?: string;
   inputMode?: "text" | "decimal";
+  showPencil?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
@@ -415,7 +426,10 @@ function EditableValue({
       aria-label={ariaLabel}
       className={`rounded-lg text-right transition-colors hover:bg-white/60 ${className ?? ""}`}
     >
-      {value}
+      <span className="inline-flex items-center gap-1">
+        {value}
+        {showPencil && <Pencil className="h-3 w-3 shrink-0 opacity-40" aria-hidden="true" />}
+      </span>
     </button>
   );
 }
@@ -491,12 +505,14 @@ function EditableFoodHeader({
         ariaLabel="Edit food name"
         className="font-display text-2xl leading-tight text-left"
         onCommit={onEditFoodName}
+        showPencil
       />
       <EditableValue
         value={reading.brand?.value ?? "Add a brand"}
         ariaLabel="Edit brand"
         className="block text-sm text-left"
         onCommit={onEditBrand}
+        showPencil
       />
     </div>
   );
@@ -596,7 +612,7 @@ function ConfirmView({
       )}
 
       <AmountStepper
-        label={unit === "serving" ? `Serving (${reading.servingSize?.value}${reading.basisUnit})` : "Amount"}
+        label={unit === "serving" ? servingLabel(reading) : "Amount"}
         value={amount}
         step={stepperConfig[unit].step}
         min={stepperConfig[unit].min}

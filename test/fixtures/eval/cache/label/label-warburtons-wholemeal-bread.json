@@ -7,6 +7,7 @@
     "brand": { "value": "Warburtons", "confidence": "confident" },
     "basisUnit": "g",
     "servingSize": { "value": 44.8, "confidence": "confident" },
+    "servingSizeDescriptor": { "value": "1 slice", "confidence": "confident" },
     "nutrients": [
       { "code": "energy_kcal", "value": 231, "unit": "kcal", "confidence": "confident" },
       { "code": "protein_g", "value": 10.6, "unit": "g", "confidence": "confident" },

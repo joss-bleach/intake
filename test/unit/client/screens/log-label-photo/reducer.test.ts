@@ -321,6 +321,16 @@ describe("describeForHandoff", () => {
     const noBrand: ParsedLabelReading = { ...readingWithServing, brand: undefined };
     expect(describeForHandoff(noBrand)).toBe("Oat & Berry Granola Bar, 40g");
   });
+
+  it("leads with the discrete-unit descriptor when the label prints one", () => {
+    const withDescriptor: ParsedLabelReading = {
+      ...readingWithServing,
+      servingSizeDescriptor: { value: "1 slice", confidence: "confident" },
+    };
+    expect(describeForHandoff(withDescriptor)).toBe(
+      "Oat & Berry Granola Bar (Nature Valley), 1 slice (40g)",
+    );
+  });
 });
 
 describe("reduce — field edits (issue #51)", () => {

@@ -158,6 +158,21 @@ export const scoreLabelItem = (
     );
   }
 
+  if (expected.servingSizeDescriptor === undefined) {
+    if (parsed.servingSizeDescriptor) {
+      failures.push(
+        `unexpected servingSizeDescriptor "${parsed.servingSizeDescriptor.value}"`,
+      );
+    }
+  } else if (
+    !parsed.servingSizeDescriptor ||
+    !nameMatches(parsed.servingSizeDescriptor.value, expected.servingSizeDescriptor)
+  ) {
+    failures.push(
+      `servingSizeDescriptor "${parsed.servingSizeDescriptor?.value}" !== expected "${expected.servingSizeDescriptor}"`,
+    );
+  }
+
   const matchedIndexes = new Set<number>();
 
   for (const expectedNutrient of expected.nutrients) {
@@ -198,6 +213,7 @@ export const scoreLabelItem = (
     (parsed.foodNameConfidence === "needs_review" ? 1 : 0) +
     (parsed.brand?.confidence === "needs_review" ? 1 : 0) +
     (parsed.servingSize?.confidence === "needs_review" ? 1 : 0) +
+    (parsed.servingSizeDescriptor?.confidence === "needs_review" ? 1 : 0) +
     parsed.nutrients.filter((n) => n.confidence === "needs_review").length;
 
   return {
