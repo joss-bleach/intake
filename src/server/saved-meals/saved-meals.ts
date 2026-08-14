@@ -1,5 +1,5 @@
 import { Data, Effect } from "effect";
-import { eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   diaryEntries,
@@ -63,10 +63,11 @@ const rankSuggestions = (a: Suggestion, b: Suggestion): number => {
  * food, merged with named `SavedMeal`s. Both are optionally filtered by
  * `query` (case-insensitive substring on name) and ranked by
  * times-logged/last-logged-at together, so whichever is used more often
- * surfaces first regardless of source.
+ * surfaces first regardless of source. Scoped to `userId` (issue #90).
  */
 export const searchSuggestionsEffect = (
   query: string | undefined,
+  userId: string,
 ): Effect.Effect<ReadonlyArray<Suggestion>> =>
   Effect.gen(function* () {
     // Escape ILIKE's own wildcards (%, _) in the user's text so e.g. a
@@ -89,12 +90,22 @@ export const searchSuggestionsEffect = (
           .from(loggedItems)
           .innerJoin(diaryEntries, eq(loggedItems.diaryEntryId, diaryEntries.id))
           .innerJoin(foods, eq(loggedItems.foodId, foods.id))
-          .where(namePattern ? ilike(foods.name, namePattern) : undefined)
+          .where(
+            and(
+              eq(diaryEntries.userId, userId),
+              namePattern ? ilike(foods.name, namePattern) : undefined,
+            ),
+          )
           .groupBy(loggedItems.foodId, foods.name),
         db
           .select()
           .from(savedMeals)
-          .where(namePattern ? ilike(savedMeals.name, namePattern) : undefined),
+          .where(
+            and(
+              eq(savedMeals.userId, userId),
+              namePattern ? ilike(savedMeals.name, namePattern) : undefined,
+            ),
+          ),
       ]),
     ).pipe(Effect.orDie);
 
@@ -141,21 +152,25 @@ export interface SavedMealSnapshot {
  * #52) — the items themselves aren't re-validated against logging history;
  * they're whatever the client gathered from prior logged/scanned items.
  */
-export const createSavedMealEffect = (input: {
-  readonly name: string;
-  readonly items: ReadonlyArray<SavedMealItemInput>;
-}): Effect.Effect<SavedMealSnapshot> =>
+export const createSavedMealEffect = (
+  input: {
+    readonly name: string;
+    readonly items: ReadonlyArray<SavedMealItemInput>;
+  },
+  userId: string,
+): Effect.Effect<SavedMealSnapshot> =>
   Effect.tryPromise(() =>
     db.transaction(async (tx) => {
       const [meal] = await tx
         .insert(savedMeals)
-        .values({ name: input.name })
+        .values({ userId, name: input.name })
         .returning();
 
       const itemRows = await tx
         .insert(savedMealItems)
         .values(
           input.items.map((item) => ({
+            userId,
             savedMealId: meal.id,
             foodId: item.foodId,
             quantity: String(item.quantity),
@@ -207,13 +222,18 @@ export const relogSavedMealEffect = (
         const [meal] = await tx
           .select({ id: savedMeals.id })
           .from(savedMeals)
-          .where(eq(savedMeals.id, savedMealId));
+          .where(and(eq(savedMeals.id, savedMealId), eq(savedMeals.userId, userId)));
         if (!meal) return null;
 
         const items = await tx
           .select()
           .from(savedMealItems)
-          .where(eq(savedMealItems.savedMealId, savedMealId));
+          .where(
+            and(
+              eq(savedMealItems.savedMealId, savedMealId),
+              eq(savedMealItems.userId, userId),
+            ),
+          );
 
         const [entry] = await tx
           .insert(diaryEntries)
@@ -241,7 +261,7 @@ export const relogSavedMealEffect = (
             timesLogged: sql`${savedMeals.timesLogged} + 1`,
             lastLoggedAt: entry.loggedAt,
           })
-          .where(eq(savedMeals.id, savedMealId));
+          .where(and(eq(savedMeals.id, savedMealId), eq(savedMeals.userId, userId)));
 
         return { diaryEntryId: entry.id };
       }),

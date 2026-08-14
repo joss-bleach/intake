@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import { getDiaryEntryEffect } from "../log-description/log-description";
 import {
@@ -28,23 +28,24 @@ const relogInput = z.object({
   savedMealId: z.string().uuid(),
 });
 
+// All procedures require a session and are scoped to ctx.user.id (issue
+// #90/ADR 0007) — two accounts' saved-meal libraries are fully independent.
 export const savedMealsRouter = router({
   // Search over logging history (issue #52): recently-logged foods grouped
   // from `logged_items`, merged with named SavedMeals, both ranked by
   // times-logged/last-logged-at. No `query` returns the full ranked list —
   // the "browse everything" case, not just the "type to search" one.
-  search: publicProcedure.input(searchInput).query(({ input }) =>
-    runEffect(searchSuggestionsEffect(input.query)),
+  search: protectedProcedure.input(searchInput).query(({ ctx, input }) =>
+    runEffect(searchSuggestionsEffect(input.query, ctx.user.id)),
   ),
 
-  create: publicProcedure.input(createInput).mutation(({ input }) =>
-    runEffect(createSavedMealEffect(input)),
+  create: protectedProcedure.input(createInput).mutation(({ ctx, input }) =>
+    runEffect(createSavedMealEffect(input, ctx.user.id)),
   ),
 
   // Re-logs a saved meal's items in one action and returns the resulting
   // diary entry snapshot, same shape logDescription/labelPhoto save return,
-  // so the client renders all three the same way. Scoped to the caller
-  // (#89/ADR 0007) — search/create stay public, diary writes don't.
+  // so the client renders all three the same way.
   relog: protectedProcedure.input(relogInput).mutation(({ ctx, input }) =>
     runEffect(
       Effect.gen(function* () {

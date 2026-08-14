@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { db, pool } from "../../src/server/db";
 import { migrate } from "../../src/server/db/migrate";
@@ -14,23 +15,17 @@ import { appRouter } from "../../src/server/router";
 
 // Exercises search/recently-logged/saved-meals end-to-end through the real
 // tRPC router against a real Postgres (issue #52) — same pattern as
-// test/integration/goals-router.test.ts. Uses an authenticated caller since
-// relog is protectedProcedure (issue #89); search/create remain public.
+// test/integration/goals-router.test.ts. All procedures are protectedProcedure
+// (issue #90), scoped to the calling user.
 describe("saved meals & recently-logged", () => {
   let userId: string;
   let caller: ReturnType<typeof appRouter.createCaller>;
 
-  beforeAll(async () => {
-    await migrate();
+  const authedCaller = async (email: string) => {
     const [row] = await db
       .insert(user)
-      .values({
-        id: crypto.randomUUID(),
-        name: "Test User",
-        email: "saved-meals@example.com",
-      })
+      .values({ id: crypto.randomUUID(), name: "Test User", email })
       .returning();
-    userId = row.id;
     const session = {
       id: crypto.randomUUID(),
       token: crypto.randomUUID(),
@@ -41,7 +36,17 @@ describe("saved meals & recently-logged", () => {
       ipAddress: null,
       userAgent: null,
     };
-    caller = appRouter.createCaller({ db, session, user: row });
+    return {
+      userId: row.id,
+      caller: appRouter.createCaller({ db, session, user: row }),
+    };
+  };
+
+  beforeAll(async () => {
+    await migrate();
+    const owner = await authedCaller("saved-meals@example.com");
+    userId = owner.userId;
+    caller = owner.caller;
   });
 
   afterEach(async () => {
@@ -224,8 +229,40 @@ describe("saved meals & recently-logged", () => {
       });
 
       await expect(
+        anonCaller.savedMeals.search({}),
+      ).rejects.toMatchObject({ constructor: TRPCError, code: "UNAUTHORIZED" });
+      await expect(
+        anonCaller.savedMeals.create({
+          name: "Anon meal",
+          items: [{ foodId: crypto.randomUUID(), quantity: 1, quantityUnit: "g" }],
+        }),
+      ).rejects.toMatchObject({ constructor: TRPCError, code: "UNAUTHORIZED" });
+      await expect(
         anonCaller.savedMeals.relog({ savedMealId: crypto.randomUUID() }),
       ).rejects.toMatchObject({ constructor: TRPCError, code: "UNAUTHORIZED" });
+    });
+  });
+
+  describe("cross-account isolation", () => {
+    it("never lets one account see or re-log another account's saved meals", async () => {
+      const rice = await seedFood("Rice");
+      const meal = await caller.savedMeals.create({
+        name: "Rice bowl",
+        items: [{ foodId: rice.id, quantity: 150, quantityUnit: "g" }],
+      });
+
+      const other = await authedCaller("other-saved-meals@example.com");
+
+      // The second account starts with an empty library — the first
+      // account's meal never appears in its search results.
+      await expect(other.caller.savedMeals.search({})).resolves.toEqual([]);
+
+      // Nor can it re-log a meal it doesn't own.
+      await expect(
+        other.caller.savedMeals.relog({ savedMealId: meal.id }),
+      ).rejects.toThrow();
+
+      await db.delete(user).where(eq(user.id, other.userId));
     });
   });
 });
