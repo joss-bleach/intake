@@ -6,6 +6,7 @@ import {
   foods,
   loggedItems,
   nutrientValues,
+  user,
   userGoals,
 } from "../../src/server/db/schema";
 import { migrate } from "../../src/server/db/migrate";
@@ -53,14 +54,19 @@ describe("migrate", () => {
     ]);
   });
 
-  it("enforces user_goals as a single current-value row", async () => {
-    await db.insert(userGoals).values({ calorieGoal: 2000 });
+  it("enforces user_goals as a single current-value row per user", async () => {
+    const [owner] = await db
+      .insert(user)
+      .values({ id: "test-user-1", name: "Test User", email: "test1@example.com" })
+      .returning();
+
+    await db.insert(userGoals).values({ userId: owner.id, calorieGoal: 2000 });
 
     await expect(
-      db.insert(userGoals).values({ id: false, calorieGoal: 1800 }),
+      db.insert(userGoals).values({ userId: owner.id, calorieGoal: 1800 }),
     ).rejects.toThrow();
 
-    await db.delete(userGoals);
+    await db.delete(user).where(eq(user.id, owner.id));
   });
 
   it("rejects an out-of-enum provenance", async () => {

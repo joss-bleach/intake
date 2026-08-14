@@ -1,6 +1,7 @@
+import { eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
 import { z } from "zod";
-import { publicProcedure, router } from "../trpc";
+import { protectedProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
 import type { db as Db } from "../db";
 import { userGoals, userProfile } from "../db/schema";
@@ -89,14 +90,18 @@ type ProfileRow = {
 type Tx = Parameters<Parameters<(typeof Db)["transaction"]>[0]>[0];
 type DbClient = typeof Db | Tx;
 
-const findProfile = (db: DbClient) =>
+const findProfile = (db: DbClient, userId: string) =>
   Effect.tryPromise({
-    try: () => db.query.userProfile.findFirst(),
+    try: () =>
+      db.query.userProfile.findFirst({
+        where: eq(userProfile.userId, userId),
+      }),
     catch: (cause) => new DbError({ cause }),
   });
 
 const writeProfile = (
   db: DbClient,
+  userId: string,
   input: z.infer<typeof upsertProfileInput>,
 ) => {
   const currentWeightKg =
@@ -106,23 +111,28 @@ const writeProfile = (
 
   return db
     .insert(userProfile)
-    .values({ currentWeightKg, targetWeightKg })
+    .values({ userId, currentWeightKg, targetWeightKg })
     .onConflictDoUpdate({
-      target: userProfile.id,
+      target: userProfile.userId,
       set: { currentWeightKg, targetWeightKg, updatedAt: new Date() },
     })
     .returning();
 };
 
-const writeGoals = (db: DbClient, input: z.infer<typeof upsertGoalsInput>) =>
+const writeGoals = (
+  db: DbClient,
+  userId: string,
+  input: z.infer<typeof upsertGoalsInput>,
+) =>
   db
     .insert(userGoals)
     .values({
+      userId,
       calorieGoal: input.calorieGoal,
       macroRatio: input.macroRatio,
     })
     .onConflictDoUpdate({
-      target: userGoals.id,
+      target: userGoals.userId,
       set: {
         calorieGoal: input.calorieGoal,
         macroRatio: input.macroRatio,
@@ -193,29 +203,32 @@ export const goalsRouter = router({
   // Null means "no goal set yet" — the client's onboarding-vs-dashboard
   // switch reads this directly rather than tracking a separate
   // "has onboarded" flag.
-  get: publicProcedure.query(({ ctx }) =>
+  get: protectedProcedure.query(({ ctx }) =>
     runEffect(
       Effect.gen(function* () {
         const row = yield* Effect.tryPromise({
-          try: () => ctx.db.query.userGoals.findFirst(),
+          try: () =>
+            ctx.db.query.userGoals.findFirst({
+              where: eq(userGoals.userId, ctx.user.id),
+            }),
           catch: (cause) => new DbError({ cause }),
         });
         if (!row) {
           return null;
         }
 
-        const profile = yield* findProfile(ctx.db);
+        const profile = yield* findProfile(ctx.db, ctx.user.id);
         return toGoalsSnapshot(row, profile);
       }),
     ),
   ),
 
-  upsert: publicProcedure
+  upsert: protectedProcedure
     .input(upsertGoalsInput)
     .mutation(({ ctx, input }) =>
       runEffect(
         Effect.gen(function* () {
-          const profile = yield* findProfile(ctx.db);
+          const profile = yield* findProfile(ctx.db, ctx.user.id);
 
           const invalidOverride = checkOverrideHasBodyweight(
             input.macroRatio.proteinOverride,
@@ -226,7 +239,7 @@ export const goalsRouter = router({
           }
 
           const [row] = yield* Effect.tryPromise({
-            try: () => writeGoals(ctx.db, input),
+            try: () => writeGoals(ctx.db, ctx.user.id, input),
             catch: (cause) => new DbError({ cause }),
           });
 
@@ -241,14 +254,18 @@ export const goalsRouter = router({
   // from different save attempts with no way to roll back. The override is
   // validated against the bodyweight being written in this same transaction,
   // so setting a weight and a g/kg override together succeeds on first save.
-  upsertWithProfile: publicProcedure
+  upsertWithProfile: protectedProcedure
     .input(upsertGoalsWithProfileInput)
     .mutation(({ ctx, input }) =>
       runEffect(
         Effect.tryPromise({
           try: () =>
             ctx.db.transaction(async (tx) => {
-              const [profileRow] = await writeProfile(tx, input.profile);
+              const [profileRow] = await writeProfile(
+                tx,
+                ctx.user.id,
+                input.profile,
+              );
 
               // Thrown, not returned: this rolls the transaction back, so a
               // rejected override leaves no bodyweight change behind either.
@@ -260,7 +277,7 @@ export const goalsRouter = router({
                 throw invalidOverride;
               }
 
-              const [goalsRow] = await writeGoals(tx, input);
+              const [goalsRow] = await writeGoals(tx, ctx.user.id, input);
 
               return {
                 goals: toGoalsSnapshot(goalsRow, profileRow),
@@ -277,13 +294,10 @@ export const goalsRouter = router({
 });
 
 export const profileRouter = router({
-  get: publicProcedure.query(({ ctx }) =>
+  get: protectedProcedure.query(({ ctx }) =>
     runEffect(
       Effect.gen(function* () {
-        const row = yield* Effect.tryPromise({
-          try: () => ctx.db.query.userProfile.findFirst(),
-          catch: (cause) => new DbError({ cause }),
-        });
+        const row = yield* findProfile(ctx.db, ctx.user.id);
         return row ? toProfileSnapshot(row) : null;
       }),
     ),
@@ -292,13 +306,13 @@ export const profileRouter = router({
   // Bodyweight is explicitly skippable at onboarding (issue #45), so both
   // fields are nullable — this both records a skip and clears a
   // previously-set value from the profile screen.
-  upsert: publicProcedure
+  upsert: protectedProcedure
     .input(upsertProfileInput)
     .mutation(({ ctx, input }) =>
       runEffect(
         Effect.gen(function* () {
           const [row] = yield* Effect.tryPromise({
-            try: () => writeProfile(ctx.db, input),
+            try: () => writeProfile(ctx.db, ctx.user.id, input),
             catch: (cause) => new DbError({ cause }),
           });
 
