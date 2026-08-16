@@ -17,21 +17,21 @@ const app = await alchemy("intake", {
 
 const APP_DOMAIN = alchemy.env("APP_DOMAIN");
 
-const neon = await NeonProject("db", {
-  name: "intake",
-  apiKey: alchemy.secret(process.env.NEON_API_KEY),
-});
-
-// Only Hyperdrive's connectionString reaches the Worker (see
-// src/server/worker-env.ts) — Neon's connection_uris[0] is already a
-// Secret, passed straight through as the origin.
-const hyperdrive = await Hyperdrive("db-hyperdrive", {
-  origin: neon.connection_uris[0].connection_uri,
-});
-
-// finalize() always runs, even if the migration or a later resource fails,
-// so CloudflareStateStore never ends up mid-apply for the next deploy to find.
+// finalize() always runs, even if provisioning or the migration fails, so
+// CloudflareStateStore never ends up mid-apply for the next deploy to find.
 try {
+  const neon = await NeonProject("db", {
+    name: "intake",
+    apiKey: alchemy.secret(process.env.NEON_API_KEY),
+  });
+
+  // Only Hyperdrive's connectionString reaches the Worker (see
+  // src/server/worker-env.ts) — Neon's connection_uris[0] is already a
+  // Secret, passed straight through as the origin.
+  const hyperdrive = await Hyperdrive("db-hyperdrive", {
+    origin: neon.connection_uris[0].connection_uri,
+  });
+
   // Runs migrations against Neon directly, ahead of any Worker binding
   // existing — idempotent, so safe on every deploy (see docs/adr/0008).
   // finally ensures the pool always closes, even if a migration throws.
