@@ -1,8 +1,7 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/core";
 import { sql } from "drizzle-orm";
-import { db, pool } from "../db";
+import { db } from "../db";
 import { env } from "../env";
-import { initGlitchtip } from "./glitchtip";
 
 // Issue #49's cron tripwire: model_calls is kept indefinitely (no pruning),
 // so this is the "someone should look at this" nudge past
@@ -21,32 +20,17 @@ const currentModelCallCount = async (): Promise<number> => {
   return Number(result.rows[0]?.count ?? 0);
 };
 
-// Run on a schedule (platform cron / a scheduled GitHub Actions workflow —
-// per alchemy.run.ts, real infra provisioning is deferred to deploy). Alerts
-// via GlitchTip rather than failing loudly: a full model_calls table isn't
-// an application error, so `Sentry.captureMessage` (not
-// `captureEffectFailure`) is the right call here — there's no Effect Cause
-// to unwrap.
+// Run on a schedule (the Worker cron and tripwire-cli.ts). Alerts via
+// GlitchTip rather than failing loudly — a full model_calls table isn't an
+// application error, so `Sentry.captureMessage` is the right call, routed by
+// `@sentry/core` to whichever client the entrypoint initialized.
 export const checkTripwire = async (): Promise<void> => {
   const count = await currentModelCallCount();
 
   if (isOverTripwireThreshold(count, env.MODEL_CALLS_TRIPWIRE_THRESHOLD)) {
-    initGlitchtip();
     Sentry.captureMessage(
       `model_calls has ${count} rows, past the ${env.MODEL_CALLS_TRIPWIRE_THRESHOLD} tripwire threshold`,
       "warning",
     );
   }
 };
-
-if (import.meta.url === `file://${process.argv[1]}`) {
-  checkTripwire()
-    .then(async () => {
-      await pool.end();
-    })
-    .catch(async (error) => {
-      console.error(error);
-      await pool.end();
-      process.exit(1);
-    });
-}

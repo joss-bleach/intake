@@ -16,6 +16,12 @@ importers:
       '@react-email/render':
         specifier: ^2.1.0
         version: 2.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@sentry/cloudflare':
+        specifier: 10.70.0
+        version: 10.70.0(@cloudflare/workers-types@5.20260815.1)(supports-color@10.2.2)(wrangler@4.120.1(@cloudflare/workers-types@5.20260815.1))
+      '@sentry/core':
+        specifier: 10.70.0
+        version: 10.70.0
       '@sentry/node':
         specifier: ^10.70.0
         version: 10.70.0(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(supports-color@10.2.2)
@@ -2535,6 +2541,18 @@ packages:
 
   '@selderee/plugin-htmlparser2@0.11.0':
     resolution: {integrity: sha512-P33hHGdldxGabLFjPPpaTxVolMrzrcegejx+0GxjrIb9Zv48D8yAIA/QTDR2dFl7Uz7urX8aX6+5bCZslr+gWQ==}
+
+  '@sentry/cloudflare@10.70.0':
+    resolution: {integrity: sha512-jlr9txw3lQrbc6KQn9FzlpgC1KcB36u7aIGSlUhXAZ2MB93DgwjuTnHF20qQHxmHbZylg7CtHoMq3rGiTXAgpg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@cloudflare/workers-types': ^4.x || ^5.x
+      wrangler: ^4.x
+    peerDependenciesMeta:
+      '@cloudflare/workers-types':
+        optional: true
+      wrangler:
+        optional: true
 
   '@sentry/conventions@0.16.0':
     resolution: {integrity: sha512-fO9PLmHdVURcSPUpWCItWAtgKiMwGdJHbovoSEyLplX5sxs2ugvI4CBPTrkkgqhObnZOD0CnWBKDzSVQYBKEyQ==}
@@ -7398,6 +7416,18 @@ snapshots:
     dependencies:
       domhandler: 5.0.3
       selderee: 0.11.0
+
+  '@sentry/cloudflare@10.70.0(@cloudflare/workers-types@5.20260815.1)(supports-color@10.2.2)(wrangler@4.120.1(@cloudflare/workers-types@5.20260815.1))':
+    dependencies:
+      '@opentelemetry/api': 1.9.1
+      '@sentry/core': 10.70.0
+      '@sentry/server-utils': 10.70.0(supports-color@10.2.2)
+      magic-string: 0.30.21
+    optionalDependencies:
+      '@cloudflare/workers-types': 5.20260815.1
+      wrangler: 4.120.1(@cloudflare/workers-types@5.20260815.1)
+    transitivePeerDependencies:
+      - supports-color
 
   '@sentry/conventions@0.16.0': {}
 

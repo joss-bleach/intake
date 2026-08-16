@@ -203,6 +203,8 @@ export const parseArgs = (argv: readonly string[]): RunOptions => {
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  const { initGlitchtip } = await import("../server/observability/glitchtip-node");
+  initGlitchtip();
   const options = parseArgs(process.argv.slice(2));
   Effect.runPromise(runEval(options))
     .then((summary) => {
