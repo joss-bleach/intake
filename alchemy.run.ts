@@ -4,7 +4,7 @@ import { Pool } from "pg";
 import alchemy from "alchemy";
 import { Assets, Hyperdrive, Worker } from "alchemy/cloudflare";
 import { NeonProject } from "alchemy/neon";
-import { ClientKey, Project as SentryProject, Team as SentryTeam } from "alchemy/sentry";
+import { ClientKey, Project as SentryProject } from "alchemy/sentry";
 import { CloudflareStateStore } from "alchemy/state";
 
 // Deploy target (issue #97): one Worker serves the built SPA and /api,
@@ -45,15 +45,13 @@ try {
     await migrationPool.end();
   }
 
-  const sentryTeam = await SentryTeam("team", {
-    organization: alchemy.env("SENTRY_ORG"),
-    slug: alchemy.env("SENTRY_TEAM"),
-    adopt: true,
-  });
-
+  // The Sentry team pre-dates this deploy, so Alchemy owns the project and
+  // key only and takes the team as a plain slug. Its Team resource cannot
+  // adopt one anyway: adopt keys off a thrown "already exists" error, but
+  // the Sentry client returns non-ok responses instead of throwing.
   const sentryProject = await SentryProject("project", {
     organization: alchemy.env("SENTRY_ORG"),
-    team: sentryTeam.slug!,
+    team: alchemy.env("SENTRY_TEAM"),
     name: "intake",
     platform: "node",
     adopt: true,
