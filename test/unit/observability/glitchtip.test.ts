@@ -7,7 +7,7 @@ const captureException = vi.fn();
 // captureEffectFailure unwraps Effect's Cause/FiberFailure shapes correctly,
 // not that the SDK can reach a real server (out of scope here; see
 // docker-compose.yml's glitchtip-* services for that).
-vi.mock("@sentry/node", () => ({
+vi.mock("@sentry/core", () => ({
   init: vi.fn(),
   captureException,
   captureMessage: vi.fn(),

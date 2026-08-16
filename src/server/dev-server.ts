@@ -2,12 +2,17 @@ import http from "node:http";
 import cors from "cors";
 import { handleApiRequest } from "./app";
 import { env } from "./env";
+import { initGlitchtip } from "./observability/glitchtip-node";
 
 // Local-only entrypoint: bridges node:http to the same fetch handler the
 // Worker uses, and adds CORS for Vite's separate origin (:5173 vs :3001).
 // Production is same-origin, so neither node:http nor cors ships in the
 // Worker bundle — worker.ts never imports this file.
 const corsMiddleware = cors({ origin: env.CLIENT_ORIGIN, credentials: true });
+
+// Captures route through @sentry/core (see observability/glitchtip.ts), so
+// each entrypoint initializes its own runtime's client — Node's here.
+initGlitchtip();
 
 const toWebHeaders = (nodeHeaders: http.IncomingHttpHeaders): Headers => {
   const headers = new Headers();
