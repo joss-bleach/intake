@@ -81,13 +81,11 @@ jobs:
 
     env:
       APP_DOMAIN: ${{ vars.APP_DOMAIN }}
-      SENTRY_ORG: ${{ vars.SENTRY_ORG }}
-      SENTRY_TEAM: ${{ vars.SENTRY_TEAM }}
+      GLITCHTIP_DSN: ${{ vars.GLITCHTIP_DSN }}
       RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       ALCHEMY_PASSWORD: ${{ secrets.ALCHEMY_PASSWORD }}
