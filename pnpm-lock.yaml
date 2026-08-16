@@ -4,6 +4,8 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+packageExtensionsChecksum: sha256-WdZgzsjmD4Dwr6bp/sSHsidJsrqTm3CjunSDsTnLlkA=
+
 importers:
 
   .:
@@ -7804,6 +7806,7 @@ snapshots:
       picocolors: 1.1.1
       proper-lockfile: 4.1.2
       signal-exit: 4.1.0
+      undici: 7.29.0
       unenv: 2.0.0-rc.21
       wrangler: 4.120.1(@cloudflare/workers-types@5.20260815.1)
       ws: 8.21.3

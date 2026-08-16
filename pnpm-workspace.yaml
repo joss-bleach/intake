@@ -7,3 +7,11 @@ minimumReleaseAgeExclude:
   - '@ai-sdk/provider-utils@5.0.27'
   - ai@7.0.62
   - globals@17.11.0
+# alchemy's safeFetch does a bare `import("undici")` without declaring it, so it
+# picks up pnpm's hoisted copy — undici 8 (via jsdom). Node's built-in fetch
+# passes an undici-7-shaped handler, which undici 8 rejects ("invalid
+# onRequestStart method"), breaking every Cloudflare API call in `alchemy deploy`.
+packageExtensions:
+  alchemy:
+    dependencies:
+      undici: ^7.29.0
