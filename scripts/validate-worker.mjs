@@ -56,6 +56,13 @@ const { Miniflare } = await import(require.resolve("miniflare"));
 const databaseUrl =
   process.env.DATABASE_URL ?? "postgres://intake:intake@localhost:5432/intake";
 
+// The bundle validates src/server/env.ts at boot, so workerd needs the vars
+// without a default. Cloudflare supplies these as plain-text/secret bindings;
+// miniflare has to be told the same, or the first request 500s on env
+// validation instead of exercising what this script is here to catch.
+const authSecret =
+  process.env.BETTER_AUTH_SECRET ?? "validation-only-secret-0000000000000";
+
 const mf = new Miniflare({
   modules: [
     {
@@ -67,6 +74,7 @@ const mf = new Miniflare({
   compatibilityDate: DEFAULT_COMPATIBILITY_DATE,
   compatibilityFlags,
   hyperdrives: { HYPERDRIVE: databaseUrl },
+  bindings: { BETTER_AUTH_SECRET: authSecret, DATABASE_URL: databaseUrl },
 });
 
 try {
@@ -76,13 +84,12 @@ try {
   await mf.ready;
 
   // A cookie-less get-session short-circuits before Postgres, so sign a
-  // session cookie the way better-auth does (HMAC-SHA256, dev-default
-  // secret): the token doesn't exist, but verifying it forces a real DB
+  // session cookie the way better-auth does (HMAC-SHA256, same secret the
+  // worker was bound with): the token doesn't exist, but verifying it forces a real DB
   // lookup per request — catching the cross-request pg-socket hang.
-  const secret = process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-in-production";
   const token = "workerd-validation-check";
   const signature = crypto
-    .createHmac("sha256", secret)
+    .createHmac("sha256", authSecret)
     .update(token)
     .digest("base64");
   const cookie = `better-auth.session_token=${encodeURIComponent(`${token}.${signature}`)}`;
