@@ -23,6 +23,29 @@ export const createAuth = (
     // sign-in method. Sign-up stays open: emailOTP's disableSignUp defaults
     // to false, so there's no allowlist to configure.
     emailAndPassword: { enabled: false },
+    // Set explicitly rather than left to betterauth's defaults, which are
+    // wrong for this deployment twice over: `enabled` defaults to
+    // `NODE_ENV === "production"` (the Worker sets no NODE_ENV, so it would
+    // be off), and `storage` defaults to "memory" (per-isolate on Workers,
+    // so a counter resets whenever a request lands on a fresh isolate). The
+    // emailOTP plugin's own per-endpoint limits ride on this same machinery
+    // — without it, OTP sends and verify attempts are both uncapped.
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 30,
+      storage: "database",
+    },
+    advanced: {
+      // Without this, betterauth can't resolve a client IP and collapses
+      // every caller into one shared per-path bucket — so the rate limit
+      // above stops protecting accounts and starts being a denial-of-service
+      // lever instead: one attacker exhausts the OTP-send bucket for
+      // everybody. CF-Connecting-IP is the header Cloudflare sets, and the
+      // Worker is the origin, so a client can't forge it. Falls back to the
+      // shared bucket locally, where there is no proxy — correct there.
+      ipAddress: { ipAddressHeaders: ["cf-connecting-ip"] },
+    },
     plugins: [emailOTP({ sendVerificationOTP })],
   });
 

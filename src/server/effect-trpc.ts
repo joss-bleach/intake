@@ -72,11 +72,15 @@ export const runEffect = async <A, E>(
   }
 
   // A defect (unexpected throw, interruption) rather than a typed Effect
-  // failure — no tag to report, so fall back to the rendered cause.
+  // failure — nothing here was written for a user to read. The rendered cause
+  // goes to GlitchTip via report() and rides along as `cause` for tRPC's
+  // server-side logging; the client gets a fixed string, because Cause.pretty
+  // renders whatever the throw carried — driver errors quoting SQL and
+  // connection strings, upstream API bodies, file paths.
   report(exit.cause);
   throw new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
-    message: Cause.pretty(exit.cause),
+    message: "Something went wrong.",
     cause: exit.cause,
   });
 };

@@ -4,6 +4,24 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Document CSP. Lives here rather than as a response header because the
+      document is served by Cloudflare's asset handler, not the Worker (see
+      alchemy.run.ts's run_worker_first) — the Worker's own headers, set in
+      src/server/app.ts, only reach /api and /trpc responses.
+
+      The client talks to nothing but its own origin (no CDN, no analytics,
+      no client-side error reporter), so everything is 'self'. Exceptions:
+      data:/blob: images for the camera preview, and 'unsafe-inline' styles,
+      which React's `style=` attributes require.
+
+      Note frame-ancestors is ignored in a <meta> CSP — clickjacking cover
+      for the document needs a Cloudflare Transform Rule (see /wizard).
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    />
     <meta name="theme-color" content="#7c3aed" />
     <!-- iOS Safari's "Add to Home Screen" doesn't read the manifest's icons/display mode -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -73,6 +73,8 @@ const toHit = (product: z.infer<typeof offProduct>): OffLiveHit | null => {
   };
 };
 
+const OFF_SEARCH_TIMEOUT_MS = 5000;
+
 export class OffLiveClient extends Effect.Service<OffLiveClient>()(
   "OffLiveClient",
   {
@@ -94,7 +96,14 @@ export class OffLiveClient extends Effect.Service<OffLiveClient>()(
             url.searchParams.set("tag_contains_0", "contains");
             url.searchParams.set("tag_0", "united-kingdom");
 
-            const response = await fetch(url);
+            // A live lookup sits in the critical path of a user's confirm
+            // request, and OFF is a third party we don't control — without a
+            // timeout, one slow upstream holds a Worker request open until
+            // the platform kills it. A miss is a handled outcome here
+            // (isFoodResolutionMiss), a hang is not.
+            const response = await fetch(url, {
+              signal: AbortSignal.timeout(OFF_SEARCH_TIMEOUT_MS),
+            });
             if (!response.ok) {
               throw new Error(`OFF search responded ${response.status}`);
             }

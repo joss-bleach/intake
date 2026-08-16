@@ -6,6 +6,11 @@ import { z } from "zod";
 // process.env, which doesn't exist in the browser. If/when client code needs
 // env vars, add a sibling src/client/env.ts with its own createEnv() call
 // reading import.meta.env, using a VITE_-prefixed clientPrefix.
+
+// Rejected explicitly by the BETTER_AUTH_SECRET schema below. Named here so
+// the check can't drift from the value .env.example and older docs suggest.
+const DEV_PLACEHOLDER_SECRET = "dev-secret-change-in-production";
+
 export const env = createEnv({
   server: {
     DATABASE_URL: z
@@ -17,6 +22,17 @@ export const env = createEnv({
     // only needs to keep genuine cache misses from hammering OFF's API.
     FOOD_LOOKUP_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
     FOOD_LOOKUP_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60),
+    // Per-account ceiling on paid model calls (label OCR, description
+    // parsing) — see src/server/model-call-rate-limiter.ts. Sized for a
+    // person logging meals, not for a client in a loop: a busy few minutes
+    // of logging is a handful of calls, so 20/minute leaves plenty of room
+    // while still bounding what one stolen session can spend.
+    MODEL_CALL_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(20),
+    MODEL_CALL_RATE_LIMIT_WINDOW_SECONDS: z.coerce
       .number()
       .int()
       .positive()
@@ -57,9 +73,18 @@ export const env = createEnv({
     // bake-off — see ADR 0005). Overridable for a future re-run.
     DESCRIPTION_PARSE_MODEL: z.string().min(1).default("deepseek/deepseek-chat-v3.1"),
     // Sign-in (issue #87, ADR 0006): signs betterauth's session cookies.
-    // Defaulted like DATABASE_URL for local dev/CI convenience — a real
-    // deployment must override this with a private, generated secret.
-    BETTER_AUTH_SECRET: z.string().min(1).default("dev-secret-change-in-production"),
+    // Deliberately has no default, unlike DATABASE_URL: a wrong DATABASE_URL
+    // fails loudly on the first query, whereas a defaulted signing secret
+    // works perfectly while letting anyone who has read the repo forge a
+    // session cookie for any user. Fail at boot instead. Generate one with
+    // `openssl rand -base64 32`; local dev and CI set it like any other var.
+    BETTER_AUTH_SECRET: z
+      .string()
+      .min(32, "BETTER_AUTH_SECRET must be at least 32 characters")
+      .refine(
+        (secret) => secret !== DEV_PLACEHOLDER_SECRET,
+        "BETTER_AUTH_SECRET is still the placeholder — generate one with `openssl rand -base64 32`",
+      ),
     // Where betterauth's own /api/auth/* handler is reachable from — used to
     // build its cookies/redirects, not the app's public URL.
     BETTER_AUTH_URL: z.url().default("http://localhost:3001"),

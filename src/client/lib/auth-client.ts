@@ -1,6 +1,6 @@
 import { createAuthClient } from "better-auth/react";
 import { emailOTPClient } from "better-auth/client/plugins";
-import { queryClient } from "./trpc";
+import { clearPersistedCache } from "./trpc";
 import { clearPersistedSignIn } from "./sign-in-persistence";
 
 // Proxied by Vite's dev server to the standalone server (see vite.config.ts
@@ -16,6 +16,6 @@ export const { useSession } = authClient;
 // are persisted 24h — see lib/trpc.ts) before its own data lands.
 export const signOut = async () => {
   await authClient.signOut();
-  queryClient.clear();
+  await clearPersistedCache();
   clearPersistedSignIn();
 };

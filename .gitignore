@@ -35,3 +35,7 @@ npm-debug.log*
 
 # Alchemy local state
 .alchemy
+
+# One lockfile only — pnpm is the package manager (packageManager field in
+# package.json). A stray npm lockfile drifts from it and gets installed from.
+package-lock.json

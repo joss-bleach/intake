@@ -2,6 +2,7 @@ import { Effect, Schema } from "effect";
 import { z } from "zod";
 import { protectedProcedure, router } from "../trpc";
 import { runEffect } from "../effect-trpc";
+import { consumeModelCallBudget } from "../model-call-rate-limiter";
 import { FoodLookupRateLimiter } from "../food/rate-limiter";
 import { OffLiveClient } from "../food/off-client";
 import { isFoodResolutionMiss } from "../food/errors";
@@ -16,8 +17,15 @@ import {
   getDiaryEntryEffect,
 } from "../log-description/log-description";
 
+// Free-text caps. Nothing here is a real user limit — a meal description
+// runs to a couple of hundred characters and a food name to a few dozen —
+// they exist so an unbounded string can't be pushed through the model (parse)
+// or into a LIKE scan (searchFood) on someone else's budget.
+const MAX_DESCRIPTION_LENGTH = 2000;
+const MAX_SEARCH_QUERY_LENGTH = 200;
+
 const parseInput = z.object({
-  description: z.string().trim().min(1),
+  description: z.string().trim().min(1).max(MAX_DESCRIPTION_LENGTH),
 });
 
 const getInput = z.object({
@@ -28,12 +36,21 @@ const getInput = z.object({
 // validator (tRPC v11 accepts any Standard Schema), same as label-photo's
 // `save` — one schema owns what a valid ingredient looks like on both the
 // parse and confirm sides.
+// One meal, not a batch job: each ingredient fans out to its own food
+// resolution (and, on a miss, its own live Open Food Facts lookup), so an
+// unbounded array is an amplification lever on a single request.
+const MAX_INGREDIENTS_PER_CONFIRM = 50;
+
 const confirmInput = Schema.standardSchemaV1(
-  Schema.Struct({ ingredients: Schema.NonEmptyArray(ClarifiedIngredient) }),
+  Schema.Struct({
+    ingredients: Schema.NonEmptyArray(ClarifiedIngredient).pipe(
+      Schema.maxItems(MAX_INGREDIENTS_PER_CONFIRM),
+    ),
+  }),
 );
 
 const searchFoodInput = z.object({
-  query: z.string().trim().min(1),
+  query: z.string().trim().min(1).max(MAX_SEARCH_QUERY_LENGTH),
 });
 
 const nutrientCode = z.enum(
@@ -46,15 +63,21 @@ const correctItemInput = z.object({
   quantityUnit: z.enum(["g", "ml", "serving"]),
   resolution: z.union([
     z.object({ kind: z.literal("food"), foodId: z.string().uuid() }),
-    z.object({ kind: z.literal("search"), searchTerm: z.string().trim().min(1) }),
+    z.object({
+      kind: z.literal("search"),
+      searchTerm: z.string().trim().min(1).max(MAX_SEARCH_QUERY_LENGTH),
+    }),
   ]),
 });
 
 const correctFoodInput = z.object({
   foodId: z.string().uuid(),
+  // One entry per known nutrient code is the most a correction can carry;
+  // `code` is already an enum, so anything longer is duplicates.
   nutrients: z
     .array(z.object({ code: nutrientCode, value: z.number().nonnegative() }))
-    .min(1),
+    .min(1)
+    .max(Object.keys(NUTRIENT_CODES).length),
 });
 
 // Provides the two Effect services the description path's Stage 3
@@ -78,8 +101,16 @@ export const logDescriptionRouter = router({
   // no save. The client shows a clarifying chip for any ingredient that has
   // clarifyOptions, then round-trips the (possibly answered/edited)
   // ingredient array to `confirm`.
-  parse: protectedProcedure.input(parseInput).mutation(({ input }) =>
-    runEffect(parseDescriptionEffect(input.description)),
+  // Rate-limited per account before the model is called (not after): this is
+  // one of the two endpoints that spends money on our OpenRouter key, so the
+  // check has to gate the spend, not report on it.
+  parse: protectedProcedure.input(parseInput).mutation(({ ctx, input }) =>
+    runEffect(
+      Effect.gen(function* () {
+        yield* consumeModelCallBudget(ctx.user.id);
+        return yield* parseDescriptionEffect(input.description);
+      }),
+    ),
   ),
 
   // Stage 3 + save over an already-parsed ingredient array (issue #50).

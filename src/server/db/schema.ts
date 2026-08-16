@@ -7,6 +7,7 @@ import {
   numeric,
   type PgColumn,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -322,6 +323,22 @@ export const foodLookupRateLimitWindows = pgTable("food_lookup_rate_limit_window
   windowStart: timestamp("window_start", { withTimezone: true }).primaryKey(),
   count: integer("count").notNull().default(0),
 });
+
+// Backs the per-user model-call rate limiter (src/server/ai-rate-limiter.ts).
+// Separate from foodLookupRateLimitWindows above because the two protect
+// different things: that one caps the app's *aggregate* live traffic to Open
+// Food Facts, a third party; this one caps what a *single account* can spend
+// of our own OpenRouter budget. Same fixed-window shape, keyed by
+// (subject, window_start) so one account's usage can't deny another's.
+export const modelCallRateLimitWindows = pgTable(
+  "model_call_rate_limit_windows",
+  {
+    subject: text("subject").notNull(),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (table) => [primaryKey({ columns: [table.subject, table.windowStart] })],
+);
 
 // Exported (not local like the other enum arrays above) so it's the single
 // source of truth for the outcome vocabulary — model-calls.ts's
