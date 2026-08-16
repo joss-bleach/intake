@@ -6,15 +6,18 @@
  *
  * STAGE=runner pnpm tsx --env-file=.env.production scripts/forget-orphan-state.ts
  */
-import alchemy from "alchemy";
+import alchemy, { Scope } from "alchemy";
 import { CloudflareStateStore } from "alchemy/state";
 
 const ORPHANS = ["sentry-key", "project", "team"];
 
-const app = await alchemy("intake", {
+await alchemy("intake", {
   phase: "read",
   stateStore: (scope) => new CloudflareStateStore(scope),
 });
+
+// alchemy() returns the root scope; resources live one level down, in the stage.
+const app = Scope.current;
 
 // list() names the resources without decrypting them — no password needed.
 const tracked = new Set(await app.state.list());
