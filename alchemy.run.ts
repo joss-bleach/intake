@@ -1,11 +1,11 @@
 import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
 import alchemy from "alchemy";
 import { Assets, Hyperdrive, Worker } from "alchemy/cloudflare";
 import { NeonProject } from "alchemy/neon";
 import { ClientKey, Project as SentryProject, Team as SentryTeam } from "alchemy/sentry";
 import { CloudflareStateStore } from "alchemy/state";
-import { migrate } from "./src/server/db/migrate";
 
 // Deploy target (issue #97): one Worker serves the built SPA and /api,
 // backed by Neon Postgres via Hyperdrive, errors reported to Sentry. State
@@ -34,12 +34,13 @@ try {
 
   // Runs migrations against Neon directly, ahead of any Worker binding
   // existing — idempotent, so safe on every deploy (see docs/adr/0008).
-  // finally ensures the pool always closes, even if a migration throws.
+  // Calls drizzle's migrator, not src/server/db/migrate: the alchemy CLI
+  // loads this file with plain Node, which can't resolve app imports.
   const migrationPool = new Pool({
     connectionString: neon.connection_uris[0].connection_uri.unencrypted,
   });
   try {
-    await migrate(drizzle(migrationPool));
+    await migrate(drizzle(migrationPool), { migrationsFolder: "drizzle" });
   } finally {
     await migrationPool.end();
   }
