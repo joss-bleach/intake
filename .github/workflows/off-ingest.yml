@@ -1,0 +1,42 @@
+name: OFF ingest
+
+# Nightly delta-refresh for the Open Food Facts cache (issue #44). Runs as a
+# scheduled Action rather than a Worker cron: the dump is a multi-GB gz file
+# streamed line-by-line from local disk, which doesn't fit a Worker's model
+# (no filesystem, no room to buffer/download it). See docs/adr/0008.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DATABASE_URL: ${{ secrets.OFF_INGEST_DATABASE_URL }}
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download OFF dump
+        run: curl -sSL -o off-dump.jsonl.gz https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz
+
+      - name: Decompress
+        run: gunzip off-dump.jsonl.gz
+
+      - name: Ingest (upserts on provenance + external_id, safe to re-run)
+        run: pnpm food:ingest-off off-dump.jsonl

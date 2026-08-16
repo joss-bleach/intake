@@ -46,13 +46,12 @@ export default defineConfig({
       host: true,
       allowedHosts: ["jossbox"],
     proxy: {
+      // Both kept at their real path — fetchRequestHandler's endpoint
+      // ("/trpc") and betterauth both match routes against the full path.
       "/trpc": {
         target: "http://localhost:3001",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/trpc/, ""),
       },
-      // betterauth's own endpoints (issue #87) — kept at their real path,
-      // unlike /trpc above, since betterauth matches routes against it.
       "/api/auth": {
         target: "http://localhost:3001",
         changeOrigin: true,

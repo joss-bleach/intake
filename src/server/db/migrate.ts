@@ -1,19 +1,21 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import { migrate as drizzleMigrate } from "drizzle-orm/node-postgres/migrator";
 import { db, pool } from "../db";
+import type * as schema from "./schema";
 
-const migrationsFolder = path.resolve(
+export const migrationsFolder = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../../drizzle",
 );
 
-// Applies every pending SQL migration under drizzle/ (generated from
-// src/server/db/schema.ts via `pnpm db:generate`), tracked by drizzle-orm's
-// own `drizzle.__drizzle_migrations` table. Safe to call repeatedly —
-// already-applied migrations are skipped.
-export const migrate = (): Promise<void> =>
-  drizzleMigrate(db, { migrationsFolder });
+// Applies pending SQL migrations under drizzle/, tracked so re-runs are
+// safe. Defaults to the app's own `db`; alchemy.run.ts passes one pointed
+// straight at Neon instead, since deploy-time migration runs before any
+// Worker binding exists.
+export const migrate = (target: NodePgDatabase<typeof schema> = db): Promise<void> =>
+  drizzleMigrate(target, { migrationsFolder });
 
 // Run directly via `pnpm db:migrate` — not invoked when this module is only
 // imported, e.g. from tests.
