@@ -4,13 +4,16 @@ import { Pool } from "pg";
 import alchemy from "alchemy";
 import { Assets, Hyperdrive, Worker } from "alchemy/cloudflare";
 import { NeonProject } from "alchemy/neon";
-import { ClientKey, Project as SentryProject } from "alchemy/sentry";
 import { CloudflareStateStore } from "alchemy/state";
 
 // Deploy target (issue #97): one Worker serves the built SPA and /api,
 // backed by Neon Postgres via Hyperdrive, errors reported to Sentry. State
 // lives in a Cloudflare-hosted store (not local .alchemy/) so CI and local
 // `pnpm infra:deploy` runs share it — see docs/adr/0008.
+
+// Sentry is config, not infrastructure — its project outlives any deploy, so
+// the DSN arrives as GLITCHTIP_DSN. Alchemy's Sentry resources cannot manage
+// it: they build paths from fields they never populate (see docs/adr/0008).
 const app = await alchemy("intake", {
   stateStore: (scope) => new CloudflareStateStore(scope),
 });
@@ -45,25 +48,6 @@ try {
     await migrationPool.end();
   }
 
-  // The Sentry team pre-dates this deploy, so Alchemy owns the project and
-  // key only and takes the team as a plain slug. Its Team resource cannot
-  // adopt one anyway: adopt keys off a thrown "already exists" error, but
-  // the Sentry client returns non-ok responses instead of throwing.
-  const sentryProject = await SentryProject("project", {
-    organization: alchemy.env("SENTRY_ORG"),
-    team: alchemy.env("SENTRY_TEAM"),
-    name: "intake",
-    platform: "node",
-    adopt: true,
-  });
-
-  const sentryKey = await ClientKey("sentry-key", {
-    organization: alchemy.env("SENTRY_ORG"),
-    project: sentryProject.slug!,
-    name: "intake-worker",
-    adopt: true,
-  });
-
   const assets = await Assets({ path: "./dist" });
 
   await Worker("server", {
@@ -84,7 +68,7 @@ try {
       OPENROUTER_API_KEY: alchemy.secret(process.env.OPENROUTER_API_KEY),
       RESEND_API_KEY: alchemy.secret(process.env.RESEND_API_KEY),
       RESEND_FROM_EMAIL: alchemy.env("RESEND_FROM_EMAIL"),
-      GLITCHTIP_DSN: sentryKey.dsn.public,
+      GLITCHTIP_DSN: alchemy.env("GLITCHTIP_DSN"),
       BETTER_AUTH_URL: `https://${APP_DOMAIN}`,
       CLIENT_ORIGIN: `https://${APP_DOMAIN}`,
     },
