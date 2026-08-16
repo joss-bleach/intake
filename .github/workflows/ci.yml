@@ -10,6 +10,9 @@ permissions:
 
 env:
   DATABASE_URL: postgres://intake:intake@localhost:5432/intake
+  # Throwaway CI value. env.ts requires this with no default so a production
+  # deploy can never silently fall back to a known secret.
+  BETTER_AUTH_SECRET: ci-only-not-a-real-secret-0000000000
 
 jobs:
   ci:

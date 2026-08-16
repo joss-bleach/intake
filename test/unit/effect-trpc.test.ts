@@ -45,6 +45,24 @@ describe("runEffect", () => {
     await expect(runEffect(program)).rejects.toBeInstanceOf(TRPCError);
   });
 
+  it("does not put a defect's rendered cause in the client-facing message", async () => {
+    const program = Effect.sync(() => {
+      throw new Error("connection to postgres://user:hunter2@db failed");
+    });
+
+    // Cause.pretty renders whatever the throw carried — driver errors quoting
+    // connection strings, upstream response bodies, file paths. None of it is
+    // written for a user, and all of it reaches the browser if it becomes the
+    // TRPCError message. The cause still travels for server-side reporting.
+    await expect(runEffect(program)).rejects.toMatchObject({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Something went wrong.",
+    });
+    await expect(runEffect(program)).rejects.not.toMatchObject({
+      message: expect.stringContaining("hunter2"),
+    });
+  });
+
   it("reports a defect to GlitchTip", async () => {
     const program = Effect.sync(() => {
       throw new Error("unexpected");

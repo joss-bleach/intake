@@ -8,6 +8,10 @@ import { theme, reviewBadgeClass, confidentDotClass } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
 import { OFFLINE_LOG_MESSAGE, useOnlineStatus } from "@/lib/offline";
 import {
+  isSupportedImageMediaType,
+  type SupportedImageMediaType,
+} from "../../../ai/image-media-types";
+import {
   availableUnits,
   computeTotals,
   describeForHandoff,
@@ -78,7 +82,9 @@ const stepperConfigFor = (basisUnit: "g" | "ml") =>
 // Reads a File as a data URL, then splits it into the base64 payload and
 // media type the server's extract mutation expects — the same split the
 // input's own "data:image/jpeg;base64,..." URL already carries.
-function readPhoto(file: File): Promise<{ data: string; mediaType: string }> {
+function readPhoto(
+  file: File,
+): Promise<{ data: string; mediaType: SupportedImageMediaType }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error ?? new Error("Couldn't read that photo."));
@@ -87,6 +93,14 @@ function readPhoto(file: File): Promise<{ data: string; mediaType: string }> {
       const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
       if (!match) {
         reject(new Error("Unexpected photo format."));
+        return;
+      }
+      // `accept="image/*"` still lets a device hand back something the
+      // vision model can't read (a TIFF, an AVIF). Caught here so the user
+      // sees "try a different photo" rather than a validation error from
+      // the extract mutation, which rejects the same list.
+      if (!isSupportedImageMediaType(match[1])) {
+        reject(new Error("That image format isn't supported — try a photo."));
         return;
       }
       resolve({ mediaType: match[1], data: match[2] });

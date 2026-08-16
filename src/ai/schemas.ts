@@ -10,6 +10,16 @@ import { NUTRIENT_CODES, NUTRIENT_UNITS } from "../server/food/nutrient-codes";
 // pattern: every field carries a per-field "confident" | "needs_review"
 // provenance tag, not a numeric score (ADR 0001 rejected the latter — no
 // settled method yet for deriving a trustworthy score).
+// Free-text ceilings, applied to every string field below. These bind two
+// callers at once: the model, whose Stage 2 output is decoded through these
+// schemas, and the client, which round-trips the same shapes back to
+// `confirm`/`save`/`correct*`. Deliberately far above any real food name or
+// unit, so they never reject a legitimate read — they exist so an unbounded
+// string can't be written into the shared `foods` table or pushed back
+// through a lookup.
+const MAX_NAME_LENGTH = 200;
+const MAX_LABEL_LENGTH = 100;
+
 export const ConfidenceLevel = Schema.Literal("confident", "needs_review");
 export type ConfidenceLevel = typeof ConfidenceLevel.Type;
 
@@ -37,8 +47,8 @@ const OptionalWithConfidence = <A, I>(value: Schema.Schema<A, I>) =>
 export class ClarifyOption extends Schema.Class<ClarifyOption>(
   "ClarifyOption",
 )({
-  label: Schema.String,
-  searchTerm: Schema.String,
+  label: Schema.String.pipe(Schema.maxLength(MAX_LABEL_LENGTH)),
+  searchTerm: Schema.String.pipe(Schema.maxLength(MAX_NAME_LENGTH)),
 }) {}
 
 // Stage 2, description path: one guessed ingredient out of a free-text
@@ -48,7 +58,7 @@ export class ClarifyOption extends Schema.Class<ClarifyOption>(
 export class ParsedIngredient extends Schema.Class<ParsedIngredient>(
   "ParsedIngredient",
 )({
-  name: Schema.String,
+  name: Schema.String.pipe(Schema.maxLength(MAX_NAME_LENGTH)),
   nameConfidence: ConfidenceLevel,
   quantity: Schema.Positive,
   quantityUnit: QuantityUnit,
@@ -71,7 +81,9 @@ export class ClarifiedIngredient extends Schema.Class<ClarifiedIngredient>(
   "ClarifiedIngredient",
 )({
   ...ParsedIngredient.fields,
-  clarificationSearchTerm: Schema.optional(Schema.String),
+  clarificationSearchTerm: Schema.optional(
+    Schema.String.pipe(Schema.maxLength(MAX_NAME_LENGTH)),
+  ),
 }) {}
 
 // Stage 2, description path (ADR 0001). A multi-ingredient description
@@ -111,7 +123,7 @@ export class ExtractedNutrient extends Schema.Class<ExtractedNutrient>(
 )({
   code: Schema.Literal(...Object.values(NUTRIENT_CODES)),
   value: Schema.NonNegative,
-  unit: Schema.String,
+  unit: Schema.String.pipe(Schema.maxLength(MAX_LABEL_LENGTH)),
   confidence: ConfidenceLevel,
 }) {}
 
@@ -122,14 +134,16 @@ export class ExtractedNutrient extends Schema.Class<ExtractedNutrient>(
 export class ParsedLabelReading extends Schema.Class<ParsedLabelReading>(
   "ParsedLabelReading",
 )({
-  foodName: Schema.String,
+  foodName: Schema.String.pipe(Schema.maxLength(MAX_NAME_LENGTH)),
   foodNameConfidence: ConfidenceLevel,
-  brand: OptionalWithConfidence(Schema.String),
+  brand: OptionalWithConfidence(Schema.String.pipe(Schema.maxLength(MAX_NAME_LENGTH))),
   basisUnit: Schema.Literal("g", "ml"),
   servingSize: OptionalWithConfidence(Schema.Positive),
   // Free-text discrete-unit descriptor ("1 slice") for the printed serving
   // size, when the panel prints one — display-only (issue #80).
-  servingSizeDescriptor: OptionalWithConfidence(Schema.String),
+  servingSizeDescriptor: OptionalWithConfidence(
+    Schema.String.pipe(Schema.maxLength(MAX_LABEL_LENGTH)),
+  ),
   // Same "at least one" guarantee as Schema.NonEmptyArray, but typed as a
   // plain ReadonlyArray rather than a `[X, ...X[]]` tuple: the label-save
   // router (issue #47) round-trips this exact shape from the client, whose

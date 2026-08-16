@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { bigint, pgTable, text, timestamp, boolean, index, integer } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -72,6 +72,19 @@ export const verification = pgTable(
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
+
+// Backs betterauth's own rate limiter, which src/server/auth/index.ts opts
+// into with `storage: "database"`. The default ("memory") is per-process —
+// on Cloudflare Workers that means per-isolate, so a counter an attacker can
+// reset just by landing on a fresh isolate. Shape is dictated by betterauth's
+// `rateLimit` model (@better-auth/core/db/get-tables): key unique, count,
+// lastRequest as epoch millis.
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),

@@ -64,6 +64,20 @@
       "when": 1786790400002,
       "tag": "0008_saved-meals-user-scoped",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786904070765,
+      "tag": "0009_better-auth-rate-limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786904505214,
+      "tag": "0010_model-call-rate-limit",
+      "breakpoints": true
     }
   ]
 }

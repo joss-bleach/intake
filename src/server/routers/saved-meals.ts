@@ -9,8 +9,15 @@ import {
   searchSuggestionsEffect,
 } from "../saved-meals/saved-meals";
 
+// Ceilings, not user limits — a meal name is a few words and a meal is a
+// handful of items. They stop an unbounded string reaching the search scan
+// or the shared `saved_meals` row, and cap the per-request item fan-out.
+const MAX_SEARCH_QUERY_LENGTH = 200;
+const MAX_MEAL_NAME_LENGTH = 200;
+const MAX_ITEMS_PER_MEAL = 50;
+
 const searchInput = z.object({
-  query: z.string().trim().min(1).optional(),
+  query: z.string().trim().min(1).max(MAX_SEARCH_QUERY_LENGTH).optional(),
 });
 
 const savedMealItemInput = z.object({
@@ -20,8 +27,8 @@ const savedMealItemInput = z.object({
 });
 
 const createInput = z.object({
-  name: z.string().trim().min(1),
-  items: z.array(savedMealItemInput).min(1),
+  name: z.string().trim().min(1).max(MAX_MEAL_NAME_LENGTH),
+  items: z.array(savedMealItemInput).min(1).max(MAX_ITEMS_PER_MEAL),
 });
 
 const relogInput = z.object({

@@ -89,6 +89,12 @@ try {
       GLITCHTIP_DSN: sentryKey.dsn.public,
       BETTER_AUTH_URL: `https://${APP_DOMAIN}`,
       CLIENT_ORIGIN: `https://${APP_DOMAIN}`,
+      // Workers set no NODE_ENV of their own, and several dependencies read
+      // it to decide how much to tell a client: tRPC attaches stack traces
+      // to error responses unless it is "production", and betterauth renders
+      // a debug HTML error page instead of redirecting. Neither should be
+      // deciding that from an unset variable.
+      NODE_ENV: "production",
     },
     // Tripwire only (issue #49) — the OFF delta-refresh (issue #44) streams
     // a multi-GB dump from disk, which doesn't fit a Worker's model; it
