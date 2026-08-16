@@ -7,11 +7,8 @@ import { checkTripwire } from "./tripwire";
 // in `@sentry/node` via initGlitchtip.
 initGlitchtip();
 checkTripwire()
-  .then(async () => {
-    await pool.end();
-  })
-  .catch(async (error) => {
+  .catch((error) => {
     console.error(error);
-    await pool.end();
-    process.exit(1);
-  });
+    process.exitCode = 1;
+  })
+  .finally(() => pool.end());

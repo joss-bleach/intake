@@ -25,13 +25,30 @@ const requestScope = new AsyncLocalStorage<DbHandle>();
 export const withDb = <T>(handle: DbHandle, fn: () => T): T =>
   requestScope.run(handle, fn);
 
+// The Worker flips this on before serving anything: DATABASE_URL's localhost
+// default means the singleton fallback there wouldn't fail — it would open a
+// pool to nowhere and silently recreate issue #107's cross-request hang for
+// any code path that escapes the AsyncLocalStorage scope. Fail loud instead.
+let requestScopeRequired = false;
+export const requireRequestScope = (): void => {
+  requestScopeRequired = true;
+};
+
 // Lazy so merely importing this module never opens a pool: the Worker bundle
 // only ever uses request-scoped handles, and tests/scripts connect on first
 // query. Local dev/CI point DATABASE_URL at a real Postgres
 // (docker-compose.yml / CI's `postgres` service).
 let singleton: DbHandle | undefined;
-const current = (): DbHandle =>
-  requestScope.getStore() ?? (singleton ??= createDb(env.DATABASE_URL));
+const current = (): DbHandle => {
+  const scoped = requestScope.getStore();
+  if (scoped) return scoped;
+  if (requestScopeRequired) {
+    throw new Error(
+      "db accessed outside withDb() in an environment where the singleton pool is forbidden (Worker) — see src/server/worker.ts",
+    );
+  }
+  return (singleton ??= createDb(env.DATABASE_URL));
+};
 
 // `db`/`pool` keep their original module-level API, resolved per access to
 // the request-scoped handle (or the singleton) — so the many existing
@@ -44,6 +61,7 @@ const delegate = <T extends object>(get: () => T): T =>
       return value instanceof Function ? value.bind(target) : value;
     },
     has: (_, prop) => Reflect.has(get(), prop),
+    getPrototypeOf: () => Reflect.getPrototypeOf(get()),
     ownKeys: () => Reflect.ownKeys(get()),
     getOwnPropertyDescriptor: (_, prop) =>
       Reflect.getOwnPropertyDescriptor(get(), prop),

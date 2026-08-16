@@ -54,7 +54,7 @@ const require = createRequire(
 const { Miniflare } = await import(require.resolve("miniflare"));
 
 const databaseUrl =
-  process.env.DATABASE_URL ?? "postgresql://intake:intake@localhost:5432/intake";
+  process.env.DATABASE_URL ?? "postgres://intake:intake@localhost:5432/intake";
 
 const mf = new Miniflare({
   modules: [
@@ -79,7 +79,7 @@ try {
   // session cookie the way better-auth does (HMAC-SHA256, dev-default
   // secret): the token doesn't exist, but verifying it forces a real DB
   // lookup per request — catching the cross-request pg-socket hang.
-  const secret = "dev-secret-change-in-production";
+  const secret = process.env.BETTER_AUTH_SECRET ?? "dev-secret-change-in-production";
   const token = "workerd-validation-check";
   const signature = crypto
     .createHmac("sha256", secret)

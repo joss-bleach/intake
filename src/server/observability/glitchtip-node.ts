@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/node";
 import { env } from "../env";
+import { glitchtipOptions } from "./glitchtip";
 
 // Node-only GlitchTip init, kept out of glitchtip.ts so `@sentry/node`
 // never reaches the Worker bundle (the Worker initializes
@@ -9,12 +10,5 @@ let initialized = false;
 export const initGlitchtip = (): void => {
   if (initialized) return;
   initialized = true;
-  Sentry.init({
-    dsn: env.GLITCHTIP_DSN,
-    // No DSN (local dev, CI, or before the VPS deployment lands) — the SDK
-    // no-ops every capture call rather than throwing, so callers never need
-    // to guard on whether tracking is configured.
-    enabled: env.GLITCHTIP_DSN !== undefined,
-    tracesSampleRate: 0,
-  });
+  Sentry.init(glitchtipOptions(env.GLITCHTIP_DSN));
 };

@@ -18,12 +18,19 @@ import { Cause, Runtime } from "effect";
 // adopting for MVP (see docs/agents — no metrics/tracing product).
 // `captureEffectFailure` below is the entire bridge.
 
+// Shared by both clients' init (worker.ts's withSentry, glitchtip-node.ts) so
+// the two runtimes stay configured identically. No DSN (local dev, CI) → the
+// SDK no-ops every capture rather than throwing, so callers never guard.
+export const glitchtipOptions = (dsn: string | undefined) => ({
+  dsn,
+  enabled: dsn !== undefined,
+  tracesSampleRate: 0,
+});
+
 // Effect's `runPromise`/`runSync` throw a `Runtime.FiberFailure` (an Error
-// wrapping the fiber's `Cause`) when an unhandled effect fails or dies —
-// this is what a top-level `catch` or an uncaught-exception handler actually
-// receives, not a `Cause` object directly. Accepting either shape here means
-// callers can pass whatever they caught without first checking which one it
-// is.
+// wrapping the fiber's `Cause`), so that — not a bare `Cause` — is what a
+// top-level `catch` receives. Accepting either shape means callers can pass
+// whatever they caught without first checking which one it is.
 const toCause = (cause: unknown): Cause.Cause<unknown> => {
   if (Runtime.isFiberFailure(cause)) {
     return cause[Runtime.FiberFailureCauseId];
