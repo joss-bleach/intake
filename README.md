@@ -25,7 +25,7 @@ Log meals by free-text description (with clarify chips and corrections) or nutri
 
 ## Stack
 
-React 19 · TypeScript · Vite · Tailwind · shadcn/ui · tRPC · TanStack Query · Effect · Vercel AI SDK (via OpenRouter) · Postgres + Drizzle · GlitchTip · Alchemy (IaC) · Vitest · Playwright · GitHub Actions
+React 19 · TypeScript · Vite · Tailwind · shadcn/ui · tRPC · TanStack Query · Effect · Vercel AI SDK (via OpenRouter) · Postgres + Drizzle · Cloudflare Workers + Hyperdrive · Neon · Sentry · GlitchTip (local dev) · Alchemy (IaC) · Vitest · Playwright · GitHub Actions
 
 ## Development
 
@@ -34,9 +34,11 @@ Requires Node 22+ and [pnpm](https://pnpm.io).
 ```sh
 pnpm install
 pnpm db:up      # local Postgres (docker compose)
-pnpm dev        # client on :5173, tRPC server on :3001
+pnpm dev        # client on :5173, server on :3001
 ```
 
 `pnpm test`, `pnpm test:e2e`, `pnpm eval`, and `pnpm lint` cover the checks; see `package.json` for the rest. Copy `.env.example` to `.env`; AI-powered logging needs `OPENROUTER_API_KEY`, everything else runs without it.
+
+Production is a single Cloudflare Worker (SPA assets + API), provisioned via `pnpm infra:deploy` (Alchemy) and deployed automatically after CI passes on `main`. See [`docs/adr/0008-cloudflare-worker-deploy.md`](docs/adr/0008-cloudflare-worker-deploy.md) for the architecture.
 
 More docs: [`docs/adr/`](docs/adr/) (architecture decisions), [`docs/research/`](docs/research/) (model candidates, confidence-signal derivation), [`CONTEXT.md`](CONTEXT.md) (domain vocabulary).

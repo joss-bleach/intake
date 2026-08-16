@@ -5,11 +5,13 @@ import * as schema from "./db/schema";
 
 const { Pool } = pg;
 
-// Single shared pool for the process. Local dev and CI both point this at a
-// real Postgres via DATABASE_URL (see docker-compose.yml / CI workflow's
-// `postgres` service).
+// Single shared pool for the process. Local dev/CI point this at a real
+// Postgres via DATABASE_URL (docker-compose.yml / CI's `postgres` service);
+// in production it's Hyperdrive's connection string (see worker-env.ts),
+// which already pools upstream — max stays low per Cloudflare's guidance.
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
+  max: 5,
 });
 
 // Drizzle query layer over the same pool — this is what procedures/tests

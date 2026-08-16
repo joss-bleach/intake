@@ -1,28 +1,103 @@
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import alchemy from "alchemy";
+import { Assets, Hyperdrive, Worker } from "alchemy/cloudflare";
+import { NeonProject } from "alchemy/neon";
+import { ClientKey, Project as SentryProject, Team as SentryTeam } from "alchemy/sentry";
+import { CloudflareStateStore } from "alchemy/state";
+import { migrate } from "./src/server/db/migrate";
 
-// Infra entry point — skeleton only, no real resources yet (see issue #40).
-// State is stored locally under .alchemy/ (gitignored) for now; a real
-// backend and the first actual resources land alongside the tickets that
-// need them.
-const app = await alchemy("intake");
+// Deploy target (issue #97): one Worker serves the built SPA and /api,
+// backed by Neon Postgres via Hyperdrive, errors reported to Sentry. State
+// lives in a Cloudflare-hosted store (not local .alchemy/) so CI and local
+// `pnpm infra:deploy` runs share it — see docs/adr/0008.
+const app = await alchemy("intake", {
+  stateStore: (scope) => new CloudflareStateStore(scope),
+});
 
-// Nightly OFF delta-refresh (issue #44): re-running `pnpm food:ingest-off`
-// against a fresh dump is already idempotent (upserts on
-// provenance+external_id — see src/server/food/off-ingest.ts), so the job
-// itself is ready. Alchemy 0.94.0 has no built-in Cron/Schedule resource, so
-// the actual nightly trigger (platform cron, a scheduled GitHub Actions
-// workflow, or a provider Cron Job once real infra is provisioned) is
-// scaffolded here as a placeholder and deferred to deploy, per the MVP
-// spec's infra-provisioning carve-out (issue #40).
-//
-// TODO(#44, deploy): wire a real schedule to `pnpm food:ingest-off <dump>`.
+const APP_DOMAIN = alchemy.env("APP_DOMAIN");
 
-// Same deferral, for the model_calls tripwire (issue #49): `pnpm
-// observability:tripwire` is ready and idempotent (a pure count-vs-threshold
-// check, no state mutated), but the actual schedule — and the GlitchTip
-// container itself (docker-compose.yml) — are VPS infra provisioning, out
-// of this repo's scope per the MVP spec's carve-out.
-//
-// TODO(#49, deploy): wire a real schedule to `pnpm observability:tripwire`.
+// finalize() always runs, even if provisioning or the migration fails, so
+// CloudflareStateStore never ends up mid-apply for the next deploy to find.
+try {
+  const neon = await NeonProject("db", {
+    name: "intake",
+    apiKey: alchemy.secret(process.env.NEON_API_KEY),
+  });
 
-await app.finalize();
+  // Only Hyperdrive's connectionString reaches the Worker (see
+  // src/server/worker-env.ts) — Neon's connection_uris[0] is already a
+  // Secret, passed straight through as the origin.
+  const hyperdrive = await Hyperdrive("db-hyperdrive", {
+    origin: neon.connection_uris[0].connection_uri,
+  });
+
+  // Runs migrations against Neon directly, ahead of any Worker binding
+  // existing — idempotent, so safe on every deploy (see docs/adr/0008).
+  // finally ensures the pool always closes, even if a migration throws.
+  const migrationPool = new Pool({
+    connectionString: neon.connection_uris[0].connection_uri.unencrypted,
+  });
+  try {
+    await migrate(drizzle(migrationPool));
+  } finally {
+    await migrationPool.end();
+  }
+
+  const sentryTeam = await SentryTeam("team", {
+    organization: alchemy.env("SENTRY_ORG"),
+    slug: alchemy.env("SENTRY_TEAM"),
+    adopt: true,
+  });
+
+  const sentryProject = await SentryProject("project", {
+    organization: alchemy.env("SENTRY_ORG"),
+    team: sentryTeam.slug!,
+    name: "intake",
+    platform: "node",
+    adopt: true,
+  });
+
+  const sentryKey = await ClientKey("sentry-key", {
+    organization: alchemy.env("SENTRY_ORG"),
+    project: sentryProject.slug!,
+    name: "intake-worker",
+    adopt: true,
+  });
+
+  const assets = await Assets({ path: "./dist" });
+
+  await Worker("server", {
+    name: "intake",
+    entrypoint: "src/server/worker.ts",
+    compatibility: "node",
+    // The Worker only ever runs for API paths — everything else falls
+    // through to the static SPA build, with client-side routes handled by
+    // the "single-page-application" fallback.
+    assets: {
+      run_worker_first: ["/api/*", "/trpc/*"],
+      not_found_handling: "single-page-application",
+    },
+    bindings: {
+      ASSETS: assets,
+      HYPERDRIVE: hyperdrive,
+      BETTER_AUTH_SECRET: alchemy.secret(process.env.BETTER_AUTH_SECRET),
+      OPENROUTER_API_KEY: alchemy.secret(process.env.OPENROUTER_API_KEY),
+      RESEND_API_KEY: alchemy.secret(process.env.RESEND_API_KEY),
+      RESEND_FROM_EMAIL: alchemy.env("RESEND_FROM_EMAIL"),
+      GLITCHTIP_DSN: sentryKey.dsn.public,
+      BETTER_AUTH_URL: `https://${APP_DOMAIN}`,
+      CLIENT_ORIGIN: `https://${APP_DOMAIN}`,
+    },
+    // Tripwire only (issue #49) — the OFF delta-refresh (issue #44) streams
+    // a multi-GB dump from disk, which doesn't fit a Worker's model; it
+    // stays a scheduled GitHub Actions job (off-ingest.yml). See
+    // docs/adr/0008 for the full reasoning.
+    crons: ["0 3 * * *"],
+    // `domains` provisions its own DnsRecords via Alchemy's CustomDomain
+    // resource — no separate DnsRecords call needed (see docs/adr/0008).
+    domains: [APP_DOMAIN],
+  });
+} finally {
+  await app.finalize();
+}
