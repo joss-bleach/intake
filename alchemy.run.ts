@@ -29,7 +29,7 @@ try {
   });
 
   // Only Hyperdrive's connectionString reaches the Worker (see
-  // src/server/worker-env.ts) — Neon's connection_uris[0] is already a
+  // src/server/worker.ts) — Neon's connection_uris[0] is already a
   // Secret, passed straight through as the origin.
   const hyperdrive = await Hyperdrive("db-hyperdrive", {
     origin: neon.connection_uris[0].connection_uri,

@@ -1,37 +1,22 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/core";
 import { Cause, Runtime } from "effect";
-import { env } from "../env";
 
 // Error tracking (issue #49): self-hosted GlitchTip is Sentry-SDK-compatible
-// (same DSN/ingest protocol), so `@sentry/node` talks to it directly — no
-// GlitchTip-specific client needed. Actual VPS deployment of the GlitchTip
-// container is infra provisioning, out of this repo's scope (see the MVP
-// spec's carve-out); this module only needs a DSN to point at once one
-// exists.
-//
+// (same DSN/ingest protocol), so the Sentry SDKs talk to it directly — no
+// GlitchTip-specific client needed.
+
+// Runtime-neutral on purpose (issue #107): captures go through
+// `@sentry/core`, routed to whichever client the entrypoint initialized —
+// `@sentry/cloudflare` in worker.ts, `@sentry/node` via glitchtip-node.ts.
+
+// `@sentry/node` must stay out of this file: it assumes Node's http/OTel
+// machinery (silently broken on workerd) and this file ships in the Worker
+// bundle via effect-trpc.ts/model-calls.ts. No client (tests) → no-op.
+
 // Deliberately not the official `@sentry/effect` SDK (per the ticket): that
 // package assumes Sentry's own tracing/span model, which this project isn't
-// adopting for MVP (error tracking + Effect's structured logging only, see
-// docs/agents — no metrics/tracing product). `captureEffectFailure` below is
-// the entire bridge.
-// Lazy, idempotent, rather than a module-load side effect: every consumer
-// (captureEffectFailure below, the cron tripwire's own Sentry.captureMessage)
-// calls this first, so init always runs exactly once regardless of import
-// order, and importing this module in a test never reaches out to Sentry's
-// init machinery unless a capture actually happens.
-let initialized = false;
-export const initGlitchtip = (): void => {
-  if (initialized) return;
-  initialized = true;
-  Sentry.init({
-    dsn: env.GLITCHTIP_DSN,
-    // No DSN (local dev, CI, or before the VPS deployment lands) — the SDK
-    // no-ops every capture call rather than throwing, so callers never need
-    // to guard on whether tracking is configured.
-    enabled: env.GLITCHTIP_DSN !== undefined,
-    tracesSampleRate: 0,
-  });
-};
+// adopting for MVP (see docs/agents — no metrics/tracing product).
+// `captureEffectFailure` below is the entire bridge.
 
 // Effect's `runPromise`/`runSync` throw a `Runtime.FiberFailure` (an Error
 // wrapping the fiber's `Cause`) when an unhandled effect fails or dies —
@@ -59,8 +44,6 @@ export const captureEffectFailure = (
   cause: unknown,
   context?: { readonly tags?: Record<string, string> },
 ): void => {
-  initGlitchtip();
-
   const effectCause = toCause(cause);
   if (Cause.isInterruptedOnly(effectCause)) return;
 

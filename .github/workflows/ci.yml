@@ -52,6 +52,12 @@ jobs:
       - name: Run migrations
         run: pnpm db:migrate
 
+      # Bundles the Worker exactly as alchemy does and boots it in workerd:
+      # catches global-scope upload rejections (error 10021) and cross-request
+      # I/O reuse before a deploy from main can fail (issue #107).
+      - name: Validate Worker bundle in workerd
+        run: pnpm infra:validate
+
       - name: Unit tests
         run: pnpm test
 
