@@ -166,7 +166,7 @@ export function PrivacyScreen({ onBack }: { onBack: () => void }) {
               "Resend sends your sign-in code to your email address.",
               "OpenRouter runs the AI models that read your meal descriptions and your label photos, and gives back the food and the nutrition.",
               "Open Food Facts answers a question about a food by name or barcode, when that food is not already in the Intake database. Intake sends no account data with the question.",
-              "GlitchTip receives error reports from the Intake server. It runs on Joss’s own server.",
+              "Sentry receives error reports from the Intake server. Joss uses these reports to find and fix faults.",
             ]}
           />
         </Section>
