@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.21.0",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.9"
   },
   "scripts": {
     "dev": "concurrently -n client,server -c blue,green \"npm:dev:client\" \"npm:dev:server\"",
@@ -21,7 +21,7 @@
     "db:up": "docker compose up -d postgres",
     "observability:up": "docker compose up -d glitchtip-web glitchtip-worker",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/server/db/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env.local src/server/db/migrate.ts",
     "food:ingest-off": "tsx src/server/food/off-ingest.ts",
     "food:ingest-cofid": "tsx src/server/food/cofid-ingest.ts",
     "eval": "tsx src/eval/run.ts",
