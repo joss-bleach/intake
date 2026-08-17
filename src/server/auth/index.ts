@@ -6,6 +6,7 @@ import { db } from "../db";
 import * as authSchema from "../db/auth-schema";
 import { env } from "../env";
 import { sendOtpEmail } from "./mailer";
+import { authRateLimitStorage } from "./rate-limit-storage";
 
 // Factory instead of a bare instance so integration tests can swap in a
 // stub `sendVerificationOTP` (capturing the OTP instead of calling Resend)
@@ -35,6 +36,10 @@ export const createAuth = (
       window: 60,
       max: 30,
       storage: "database",
+      // Same database-backed semantics, one atomic upsert instead of
+      // betterauth's read-then-insert (issue #115). Takes precedence over
+      // `storage`, which stays as documentation of the intent.
+      customStorage: authRateLimitStorage,
     },
     advanced: {
       // Without this, betterauth can't resolve a client IP and collapses
