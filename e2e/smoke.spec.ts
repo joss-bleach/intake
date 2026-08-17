@@ -63,6 +63,22 @@ test.describe.serial("app shell", () => {
     await expect(page.getByRole("heading", { name: "Intake" })).toBeVisible();
   });
 
+  test("the privacy policy is reachable from the profile screen", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Profile" }).click();
+    await page.getByRole("button", { name: "Privacy policy" }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Privacy policy" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Back" }).click();
+
+    await expect(page.getByRole("heading", { name: "Intake" })).toBeVisible();
+  });
+
   // Issue #56: offline reads are in, offline writes are out — a plain
   // indicator, and both logging entry points disabled with a message
   // instead of accepting a submit that would fail (ADR 0003).

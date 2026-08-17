@@ -20,7 +20,7 @@ import {
 
 // Minimal email-OTP sign-in (#88) — request a code, then verify it. No
 // password/OAuth (ADR 0006), so this is the only entry point into the app.
-export function SignInScreen() {
+export function SignInScreen({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
   // step/email persist in sessionStorage, not plain state (#95) — a
   // backgrounded tab reload on mobile would otherwise wipe a code that's
   // already been sent. `otp` stays local; the user re-checks it from their
@@ -174,6 +174,15 @@ export function SignInScreen() {
           </Button>
         </div>
       </GlassPanel>
+
+      <button
+        type="button"
+        onClick={onOpenPrivacy}
+        className="mt-6 self-center text-xs underline"
+        style={{ color: theme.text.faint }}
+      >
+        Privacy policy
+      </button>
     </AppShell>
   );
 }

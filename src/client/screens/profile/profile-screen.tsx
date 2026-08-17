@@ -17,9 +17,11 @@ import type { ProteinOverrideInput } from "@/lib/router-types";
 export function ProfileScreen({
   onBack,
   onSaved,
+  onOpenPrivacy,
 }: {
   onBack: () => void;
   onSaved: () => void;
+  onOpenPrivacy: () => void;
 }) {
   const goalsQuery = useQuery(trpc.goals.get.queryOptions());
   const profileQuery = useQuery(trpc.profile.get.queryOptions());
@@ -256,6 +258,15 @@ export function ProfileScreen({
           Sign out
         </Button>
       </GlassPanel>
+
+      <button
+        type="button"
+        onClick={onOpenPrivacy}
+        className="mt-6 self-center text-xs underline"
+        style={{ color: theme.text.faint }}
+      >
+        Privacy policy
+      </button>
     </AppShell>
   );
 }
