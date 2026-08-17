@@ -3,10 +3,9 @@ import { ArrowLeft } from "lucide-react";
 import { AppShell, GlassPanel } from "@/components/shell";
 import { theme } from "@/lib/theme";
 
-// Static privacy policy (#99). Reachable signed-out (sign-in footer) and
-// signed-in (profile), so App.tsx routes to it before the session gate.
-// No cookie banner: the one cookie is better-auth's session cookie, which is
-// strictly necessary and so exempt from consent (see #99 for the reasoning).
+// Static privacy policy (#99). No cookie banner: the one cookie is
+// better-auth's session cookie, which is strictly necessary and so exempt
+// from consent (see #99 for the reasoning).
 
 const CONTACT_EMAIL = "joss@bleach.digital";
 
@@ -32,14 +31,14 @@ function Body({ children }: { children: ReactNode }) {
   );
 }
 
-function List({ items }: { items: ReactNode[] }) {
+function List({ items }: { items: string[] }) {
   return (
     <ul
       className="ml-4 flex list-disc flex-col gap-1.5 text-sm leading-relaxed"
       style={{ color: theme.text.body }}
     >
-      {items.map((item, index) => (
-        <li key={index}>{item}</li>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
       ))}
     </ul>
   );
@@ -50,6 +49,21 @@ function ContactLink() {
     <a className="underline" href={`mailto:${CONTACT_EMAIL}`}>
       {CONTACT_EMAIL}
     </a>
+  );
+}
+
+// The footer link into the policy, shared by the two screens that offer it
+// (sign-in and profile) so their wording and placement can't drift apart.
+export function PrivacyPolicyLink({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mt-6 self-center text-xs underline"
+      style={{ color: theme.text.faint }}
+    >
+      Privacy policy
+    </button>
   );
 }
 
@@ -93,10 +107,16 @@ export function PrivacyScreen({ onBack }: { onBack: () => void }) {
             items={[
               "Your email address. You give this when you sign in with a one-time code.",
               "Your diet data. This is your calorie goal, your profile (weight and macro targets), your diary entries, and your saved meals.",
+              "What you send to log a meal. This is the meal description you type, or the label photo you take.",
             ]}
           />
           <Body>
             Intake ties this data to your account. No other user can read it.
+          </Body>
+          <Body>
+            Intake keeps only the food and the amounts it works out from a
+            description or a photo. It does not keep the photo, and it does not
+            keep the text you typed.
           </Body>
         </Section>
 
@@ -119,7 +139,7 @@ export function PrivacyScreen({ onBack }: { onBack: () => void }) {
               "Session cookie. better-auth sets it. It keeps you signed in. It is strictly necessary, so Intake does not ask for your consent to it.",
               "sessionStorage. Holds your sign-in step and the email you typed, so you do not lose a code after you reload the tab.",
               "localStorage. Holds the ID of the last account to sign in on this device. This clears the cached data when a different account signs in.",
-              "IndexedDB. Holds a copy of your recently viewed screens for up to 24 hours, so the app can show them when you are offline.",
+              "IndexedDB. Holds a copy of the diet data you recently looked at, such as your diary and your goals, for up to 24 hours. This lets the app show it when you are offline.",
             ]}
           />
           <Body>
@@ -135,13 +155,20 @@ export function PrivacyScreen({ onBack }: { onBack: () => void }) {
           </Body>
         </Section>
 
-        <Section title="Error reports">
+        <Section title="Other services Intake uses">
           <Body>
-            The Intake server sends error reports to GlitchTip. GlitchTip is an
-            error logger on Joss&rsquo;s own server. It processes those reports
-            for Intake only. It runs on the server, and sets no cookie in your
-            browser.
+            The Intake server sends some data to other services so that the app
+            can work. Each one processes that data for Intake only. None of
+            them set a cookie in your browser.
           </Body>
+          <List
+            items={[
+              "Resend sends your sign-in code to your email address.",
+              "OpenRouter runs the AI models that read your meal descriptions and your label photos, and gives back the food and the nutrition.",
+              "Open Food Facts answers a question about a food by name or barcode, when that food is not already in the Intake database. Intake sends no account data with the question.",
+              "GlitchTip receives error reports from the Intake server. It runs on Joss’s own server.",
+            ]}
+          />
         </Section>
 
         <Section title="How long Intake keeps your data">

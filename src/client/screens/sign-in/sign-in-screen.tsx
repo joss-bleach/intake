@@ -8,6 +8,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { theme } from "@/lib/theme";
+import { PrivacyPolicyLink } from "@/screens/privacy/privacy-screen";
 import { authClient } from "@/lib/auth-client";
 import {
   type SignInStep,
@@ -175,14 +176,7 @@ export function SignInScreen({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
         </div>
       </GlassPanel>
 
-      <button
-        type="button"
-        onClick={onOpenPrivacy}
-        className="mt-6 self-center text-xs underline"
-        style={{ color: theme.text.faint }}
-      >
-        Privacy policy
-      </button>
+      <PrivacyPolicyLink onClick={onOpenPrivacy} />
     </AppShell>
   );
 }

@@ -50,6 +50,14 @@ function App() {
   // otherwise a stale extraction would resurface on the next unrelated
   // visit to "Describe a meal".
   const [handoffText, setHandoffText] = useState<string | null>(null);
+  // The privacy policy is entered from two places (#99), so its Back has to
+  // return to whichever one it was opened from.
+  const [routeBeforePrivacy, setRouteBeforePrivacy] =
+    useState<Route>("dashboard");
+  const openPrivacy = () => {
+    setRouteBeforePrivacy(route);
+    setRoute("privacy");
+  };
 
   if (sessionIsPending) {
     return null;
@@ -58,11 +66,11 @@ function App() {
   // Ahead of the session gate: the privacy policy (#99) has to be readable
   // before anyone signs in, not only from the profile screen.
   if (route === "privacy") {
-    return <PrivacyScreen onBack={() => setRoute("dashboard")} />;
+    return <PrivacyScreen onBack={() => setRoute(routeBeforePrivacy)} />;
   }
 
   if (!session) {
-    return <SignInScreen onOpenPrivacy={() => setRoute("privacy")} />;
+    return <SignInScreen onOpenPrivacy={openPrivacy} />;
   }
 
   if (goalsQuery.isPending) {
@@ -99,7 +107,7 @@ function App() {
     return (
       <ProfileScreen
         onBack={() => setRoute("dashboard")}
-        onOpenPrivacy={() => setRoute("privacy")}
+        onOpenPrivacy={openPrivacy}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: trpc.goals.get.queryKey() });
           setRoute("dashboard");

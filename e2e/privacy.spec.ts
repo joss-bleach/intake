@@ -18,11 +18,15 @@ test("a signed-out visitor can read the privacy policy from the sign-in screen",
   await expect(
     page.getByRole("heading", { name: "Privacy policy" }),
   ).toBeVisible();
-  await expect(page.getByText("Joss is the data controller")).toBeVisible();
-  await expect(page.getByRole("link", { name: "joss@bleach.digital" }).first()).toHaveAttribute(
-    "href",
-    "mailto:joss@bleach.digital",
-  );
+  // The contact address repeats in three sections; assert against the one
+  // that names the controller, so the check has a subject.
+  const controller = page
+    .locator("section")
+    .filter({ hasText: "Who controls your data" });
+  await expect(controller).toContainText("Joss is the data controller");
+  await expect(
+    controller.getByRole("link", { name: "joss@bleach.digital" }),
+  ).toHaveAttribute("href", "mailto:joss@bleach.digital");
 
   await page.getByRole("button", { name: "Back" }).click();
 

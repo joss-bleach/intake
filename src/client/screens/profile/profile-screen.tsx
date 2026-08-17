@@ -4,6 +4,7 @@ import { AppShell, GlassPanel } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MacroRatioEditor } from "@/components/goals/macro-ratio-editor";
+import { PrivacyPolicyLink } from "@/screens/privacy/privacy-screen";
 import { theme } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
 import { signOut } from "@/lib/auth-client";
@@ -259,14 +260,7 @@ export function ProfileScreen({
         </Button>
       </GlassPanel>
 
-      <button
-        type="button"
-        onClick={onOpenPrivacy}
-        className="mt-6 self-center text-xs underline"
-        style={{ color: theme.text.faint }}
-      >
-        Privacy policy
-      </button>
+      <PrivacyPolicyLink onClick={onOpenPrivacy} />
     </AppShell>
   );
 }

@@ -76,7 +76,8 @@ test.describe.serial("app shell", () => {
 
     await page.getByRole("button", { name: "Back" }).click();
 
-    await expect(page.getByRole("heading", { name: "Intake" })).toBeVisible();
+    // Back returns to where the policy was opened from, not the dashboard.
+    await expect(page.getByRole("heading", { name: "Profile" })).toBeVisible();
   });
 
   // Issue #56: offline reads are in, offline writes are out — a plain
