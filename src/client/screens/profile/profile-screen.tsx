@@ -4,6 +4,7 @@ import { AppShell, GlassPanel } from "@/components/shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MacroRatioEditor } from "@/components/goals/macro-ratio-editor";
+import { PrivacyPolicyLink } from "@/screens/privacy/privacy-screen";
 import { theme } from "@/lib/theme";
 import { trpc } from "@/lib/trpc";
 import { signOut } from "@/lib/auth-client";
@@ -17,9 +18,11 @@ import type { ProteinOverrideInput } from "@/lib/router-types";
 export function ProfileScreen({
   onBack,
   onSaved,
+  onOpenPrivacy,
 }: {
   onBack: () => void;
   onSaved: () => void;
+  onOpenPrivacy: () => void;
 }) {
   const goalsQuery = useQuery(trpc.goals.get.queryOptions());
   const profileQuery = useQuery(trpc.profile.get.queryOptions());
@@ -256,6 +259,8 @@ export function ProfileScreen({
           Sign out
         </Button>
       </GlassPanel>
+
+      <PrivacyPolicyLink onClick={onOpenPrivacy} />
     </AppShell>
   );
 }

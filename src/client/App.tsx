@@ -9,6 +9,7 @@ import { LogDescriptionScreen } from "@/screens/log-description/log-description-
 import { LogLabelPhotoScreen } from "@/screens/log-label-photo/log-label-photo-screen";
 import { InsightsScreen } from "@/screens/insights/insights-screen";
 import { SignInScreen } from "@/screens/sign-in/sign-in-screen";
+import { PrivacyScreen } from "@/screens/privacy/privacy-screen";
 import { theme } from "@/lib/theme";
 import { trpc, queryClient } from "@/lib/trpc";
 import { useSession } from "@/lib/auth-client";
@@ -19,7 +20,8 @@ type Route =
   | "log-choice"
   | "log-description"
   | "log-label-photo"
-  | "insights";
+  | "insights"
+  | "privacy";
 
 // Top-level screen switch, driven by whether a goal has been set (#45):
 // no `user_goals` row means onboarding hasn't run yet, so that's shown
@@ -48,13 +50,27 @@ function App() {
   // otherwise a stale extraction would resurface on the next unrelated
   // visit to "Describe a meal".
   const [handoffText, setHandoffText] = useState<string | null>(null);
+  // The privacy policy is entered from two places (#99), so its Back has to
+  // return to whichever one it was opened from.
+  const [routeBeforePrivacy, setRouteBeforePrivacy] =
+    useState<Route>("dashboard");
+  const openPrivacy = () => {
+    setRouteBeforePrivacy(route);
+    setRoute("privacy");
+  };
 
   if (sessionIsPending) {
     return null;
   }
 
+  // Ahead of the session gate: the privacy policy (#99) has to be readable
+  // before anyone signs in, not only from the profile screen.
+  if (route === "privacy") {
+    return <PrivacyScreen onBack={() => setRoute(routeBeforePrivacy)} />;
+  }
+
   if (!session) {
-    return <SignInScreen />;
+    return <SignInScreen onOpenPrivacy={openPrivacy} />;
   }
 
   if (goalsQuery.isPending) {
@@ -91,6 +107,7 @@ function App() {
     return (
       <ProfileScreen
         onBack={() => setRoute("dashboard")}
+        onOpenPrivacy={openPrivacy}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: trpc.goals.get.queryKey() });
           setRoute("dashboard");

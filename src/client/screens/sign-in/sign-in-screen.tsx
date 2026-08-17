@@ -8,6 +8,7 @@ import {
   InputOTPSlot,
 } from "@/components/ui/input-otp";
 import { theme } from "@/lib/theme";
+import { PrivacyPolicyLink } from "@/screens/privacy/privacy-screen";
 import { authClient } from "@/lib/auth-client";
 import {
   type SignInStep,
@@ -20,7 +21,7 @@ import {
 
 // Minimal email-OTP sign-in (#88) — request a code, then verify it. No
 // password/OAuth (ADR 0006), so this is the only entry point into the app.
-export function SignInScreen() {
+export function SignInScreen({ onOpenPrivacy }: { onOpenPrivacy: () => void }) {
   // step/email persist in sessionStorage, not plain state (#95) — a
   // backgrounded tab reload on mobile would otherwise wipe a code that's
   // already been sent. `otp` stays local; the user re-checks it from their
@@ -174,6 +175,8 @@ export function SignInScreen() {
           </Button>
         </div>
       </GlassPanel>
+
+      <PrivacyPolicyLink onClick={onOpenPrivacy} />
     </AppShell>
   );
 }
