@@ -6,8 +6,6 @@ I built it before my wedding. I wanted one health app for activity, trending wei
 
 Today it logs meals by description or label photo, and shows daily totals, a streak, trends, saved meals, and macro goals. The food database comes from Open Food Facts and UK CoFID.
 
-![Intake dashboard screenshot](docs/screenshots/dashboard.png)
-
 Live demo: https://intake.jossbleach.co.uk
 
 ## Key features
@@ -28,7 +26,7 @@ Live demo: https://intake.jossbleach.co.uk
 
 ## Setup
 
-You need Node 22 or later, [pnpm](https://pnpm.io), and Docker.
+You need Node 22.9 or later, [pnpm](https://pnpm.io), and Docker.
 
 ```sh
 git clone https://github.com/joss-bleach/intake.git
